@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc -b",
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run dist/index.mjs"
+  },
+  "dependencies": {
+    "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
+    "@Stratford-city-motorcars-Ltd/db": "workspace:*",
+    "@Stratford-city-motorcars-Ltd/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "hono": "^4.12.32",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@Stratford-city-motorcars-Ltd/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "tsdown": "^0.22.14",
+    "typescript": "catalog:"
+  }
+}

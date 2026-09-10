@@ -1,0 +1,3 @@
+{
+  "extends": "@Stratford-city-motorcars-Ltd/config/tsconfig.base.json"
+}

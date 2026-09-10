@@ -1,0 +1,24 @@
+{
+  "name": "@Stratford-city-motorcars-Ltd/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@Stratford-city-motorcars-Ltd/db": "workspace:*",
+    "@Stratford-city-motorcars-Ltd/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@Stratford-city-motorcars-Ltd/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
