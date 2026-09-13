@@ -1,3 +1,5 @@
+import { site } from "../site";
+
 export type FaqCategory = "Sales" | "Finance" | "Visiting";
 
 export interface Faq {
@@ -53,8 +55,7 @@ export const faqs: Faq[] = [
   {
     id: "faq-009",
     question: "Can I view vehicles outside business hours?",
-    answer:
-      "Yes, we offer appointments outside normal business hours for viewings and collections. Our standard hours are Mon-Sat 9am-6pm and Sun 10am-4pm, but we're flexible to accommodate your schedule. Just call to arrange a convenient time.",
+    answer: `Yes. ${site.hours.sentence} ${site.hours.outOfHours}`,
     category: "Visiting",
   },
   {

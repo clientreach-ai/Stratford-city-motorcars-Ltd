@@ -102,7 +102,7 @@ export function SiteFooter() {
             </li>
             <li className="pt-1">
               <dl className="space-y-1 text-sm text-bone/60">
-                {site.openingHoursSummary.map((entry) => (
+                {site.hours.summary.map((entry) => (
                   <div key={entry.label} className="flex justify-between gap-4">
                     <dt>{entry.label}</dt>
                     <dd data-numeric className="text-bone/80">{entry.value}</dd>
