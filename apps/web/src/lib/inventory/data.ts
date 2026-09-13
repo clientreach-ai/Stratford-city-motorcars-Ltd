@@ -1,8 +1,15 @@
 import type { Vehicle } from "./types";
 
 /**
- * Current stock, transcribed from the dealership's own inventory API
+ * Vehicle records, transcribed from the dealership's own inventory API
  * (`/api/vehicles` on the previous site) on 10 September 2026.
+ *
+ * EVERY RECORD IS UNPUBLISHED (`published: false`). These are the old site's
+ * seven cars; the client holds around 30 and has not confirmed that any of
+ * these are still for sale or correctly priced. Two prices are confirmed wrong
+ * (Dawn, Corniche). The records are kept, not deleted, so a confirmed car can
+ * be corrected and published by flipping its flag. With nothing published the
+ * site shows its empty-stock states.
  *
  * Rules followed when transcribing:
  *  - Price, mileage, year, fuel, transmission, colour, body type, description
@@ -75,6 +82,9 @@ export const vehicles: Vehicle[] = [
         },
       },
     ],
+    // Hidden: the client confirmed £30,000 is an error. Do not publish until the
+    // correct price is supplied.
+    published: false,
     status: "available",
     featured: true,
     listedAt: "2026-05-02T01:25:31.959Z",
@@ -107,6 +117,9 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    // Hidden: the client confirmed £60,000 is an error. Do not publish until the
+    // correct price (or a decision on POA) is supplied.
+    published: false,
     status: "available",
     featured: true,
     listedAt: "2026-05-02T01:25:31.959Z",
@@ -141,6 +154,7 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    published: false,
     status: "available",
     featured: true,
     listedAt: "2026-05-02T01:25:31.959Z",
@@ -174,6 +188,7 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    published: false,
     status: "available",
     featured: true,
     listedAt: "2026-05-02T01:25:31.959Z",
@@ -205,6 +220,7 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    published: false,
     status: "available",
     featured: false,
     listedAt: "2026-05-02T01:25:31.959Z",
@@ -238,6 +254,7 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    published: false,
     status: "available",
     featured: false,
     listedAt: "2026-05-02T01:25:31.959Z",
@@ -271,6 +288,7 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    published: false,
     status: "available",
     featured: false,
     listedAt: "2026-05-02T01:25:31.959Z",

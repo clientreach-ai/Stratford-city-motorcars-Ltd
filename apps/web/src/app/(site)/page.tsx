@@ -22,31 +22,38 @@ export default async function HomePage() {
       {/* ---- Featured stock ------------------------------------------------ */}
       <Section size="md">
         <Container>
-          <SectionHeading
-            eyebrow="Current stock"
-            title="On the floor right now"
-            lede="Hand-picked, properly prepared and priced to be looked at closely. Take your time — nobody here works on commission."
-            action={
-              <Link
-                href="/vehicles"
-                className="group inline-flex items-center gap-2.5 border-b border-[var(--rule)] pb-1 text-sm transition-colors hover:text-[var(--rule)]"
-              >
-                View all vehicles
-                <ArrowRight className="size-4 transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-1" />
-              </Link>
-            }
-          />
-
-          <div className="mt-12 grid gap-px bg-[var(--border)] sm:grid-cols-2 xl:grid-cols-4">
-            {featured.map((vehicle, index) => (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                priority={index < 2}
-                className="reveal border-0"
+          {featured.length > 0 ? (
+            <>
+              <SectionHeading
+                eyebrow="Current stock"
+                title="On the floor right now"
+                lede="Hand-picked, properly prepared and priced to be looked at closely. Take your time — nobody here works on commission."
+                action={
+                  <Link
+                    href="/vehicles"
+                    className="group inline-flex items-center gap-2.5 border-b border-[var(--rule)] pb-1 text-sm transition-colors hover:text-[var(--rule)]"
+                  >
+                    View all vehicles
+                    <ArrowRight className="size-4 transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-1" />
+                  </Link>
+                }
               />
-            ))}
-          </div>
+
+              <div className="mt-12 grid gap-px bg-[var(--border)] sm:grid-cols-2 xl:grid-cols-4">
+                {featured.map((vehicle, index) => (
+                  <VehicleCard
+                    key={vehicle.id}
+                    vehicle={vehicle}
+                    priority={index < 2}
+                    className="reveal border-0"
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            // No published stock: no grid and no "on the floor" claim.
+            <SectionHeading eyebrow="Current stock" title="Tell us what you're looking for" />
+          )}
 
           <p className="mt-8 text-sm text-[var(--muted-foreground)]">
             Stock moves and we don&rsquo;t list everything online.{" "}

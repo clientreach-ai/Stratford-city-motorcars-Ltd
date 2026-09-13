@@ -123,7 +123,8 @@ export function vehicleSchema(vehicle: VehicleView) {
   if (vehicle.engine) optional.vehicleEngine = { "@type": "EngineSpecification", name: vehicle.engine };
   if (vehicle.doors) optional.numberOfDoors = vehicle.doors;
   if (vehicle.seats) optional.seatingCapacity = vehicle.seats;
-  if (vehicle.registration) optional.vehicleIdentificationNumber = vehicle.registration;
+  // A UK registration mark is not a VIN, and Schema.org has no registration
+  // property, so the registration is deliberately not published here.
 
   return {
     "@context": "https://schema.org",

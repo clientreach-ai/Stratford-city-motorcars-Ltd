@@ -1,11 +1,13 @@
 import { vehicles as staticVehicles } from "./data";
-import type {
-  FacetValue,
-  SortOption,
-  Vehicle,
-  VehicleFacets,
-  VehicleQuery,
-  VehicleView,
+import {
+  DEFAULT_SORT,
+  type FacetValue,
+  type NumericRange,
+  type SortOption,
+  type Vehicle,
+  type VehicleFacets,
+  type VehicleQuery,
+  type VehicleView,
 } from "./types";
 
 /**
@@ -37,9 +39,17 @@ import type {
  * Filtering happens in memory because the stock list is small (tens, not
  * thousands). If the inventory grows past a few hundred vehicles, push
  * `searchVehicles` down into SQL and keep the same signature.
+ *
+ * Visibility: unpublished vehicles are removed here, and only here. Every
+ * public function below — listings, featured, related, facets, the make/model
+ * index, static params, the sitemap and single-vehicle lookups (so a hidden
+ * car's URL 404s) — reads through `loadVehicles()`, so a hidden car cannot
+ * leak through any of them. Any replacement source must keep this filter.
+ *
+ * Every consumer must also cope with this returning an empty array.
  */
 async function loadVehicles(): Promise<Vehicle[]> {
-  return staticVehicles;
+  return staticVehicles.filter((vehicle) => vehicle.published);
 }
 
 /** A listing counts as a new arrival for this many days after being listed. */
@@ -180,7 +190,7 @@ export async function searchVehicles(
   const sorted = [...results].sort((a, b) => {
     const soldScore = Number(a.status === "sold") - Number(b.status === "sold");
     if (soldScore !== 0) return soldScore;
-    return sorters[query.sort ?? "newest"](a, b);
+    return sorters[query.sort ?? DEFAULT_SORT](a, b);
   });
 
   return { results: sorted, total: all.length, facets: buildFacets(all, query) };
@@ -226,11 +236,13 @@ const FILTERABLE_FEATURES = [
   "Convertible Roof",
 ] as const;
 
-function buildFacets(all: VehicleView[], query: VehicleQuery): VehicleFacets {
-  const prices = all.map((vehicle) => vehicle.price);
-  const years = all.map((vehicle) => vehicle.year);
-  const mileages = all.map((vehicle) => vehicle.mileage);
+/** Min/max of a list, or `null` for an empty list (never ±Infinity). */
+function rangeOf(values: number[]): NumericRange | null {
+  if (values.length === 0) return null;
+  return { min: Math.min(...values), max: Math.max(...values) };
+}
 
+function buildFacets(all: VehicleView[], query: VehicleQuery): VehicleFacets {
   const featureCounts = FILTERABLE_FEATURES.map((feature) => {
     const others: VehicleQuery = { ...query, features: undefined };
     const pool = applyFilters(all, others);
@@ -249,9 +261,9 @@ function buildFacets(all: VehicleView[], query: VehicleQuery): VehicleFacets {
     transmission: countBy(all, query, "transmission", (vehicle) => vehicle.transmission),
     bodyType: countBy(all, query, "bodyType", (vehicle) => vehicle.bodyType),
     features: featureCounts,
-    priceRange: { min: Math.min(...prices), max: Math.max(...prices) },
-    yearRange: { min: Math.min(...years), max: Math.max(...years) },
-    mileageRange: { min: Math.min(...mileages), max: Math.max(...mileages) },
+    priceRange: rangeOf(all.map((vehicle) => vehicle.price)),
+    yearRange: rangeOf(all.map((vehicle) => vehicle.year)),
+    mileageRange: rangeOf(all.map((vehicle) => vehicle.mileage)),
   };
 }
 
