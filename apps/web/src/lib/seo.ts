@@ -87,15 +87,20 @@ export function autoDealerSchema() {
       latitude: site.geo.latitude,
       longitude: site.geo.longitude,
     },
-    openingHoursSpecification: site.openingHours.map((entry) => ({
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: `https://schema.org/${entry.day}`,
-      opens: entry.opens,
-      closes: entry.closes,
-    })),
+    // Regular hours only. Weekend and bank-holiday viewings are by appointment,
+    // which Schema.org cannot express, so no entries are published for them.
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: site.hours.open.days.map((day) => `https://schema.org/${day}`),
+        opens: site.hours.open.opens,
+        closes: site.hours.open.closes,
+      },
+    ],
+    // The showroom is in London; cars are delivered nationwide.
     areaServed: [
       { "@type": "City", name: "London" },
-      { "@type": "AdministrativeArea", name: "Greater London" },
+      { "@type": "Country", name: "United Kingdom" },
     ],
     paymentAccepted: "Cash, Bank transfer, Debit card, Credit card, Finance",
     currenciesAccepted: "GBP",

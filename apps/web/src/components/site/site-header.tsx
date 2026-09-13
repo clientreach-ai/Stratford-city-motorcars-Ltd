@@ -136,7 +136,7 @@ function UtilityStrip() {
         </p>
         <div className="flex items-center gap-6">
           <span className="text-bone/55">
-            Mon–Sat 9–6 · Sun 10–4
+            {site.hours.compact}
           </span>
           <a
             href={site.phone.href}
@@ -302,7 +302,7 @@ function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
           <p className="pt-2 text-center text-[0.6875rem] leading-relaxed text-bone/60">
             {site.address.full}
             <br />
-            Mon–Sat 9am–6pm · Sun 10am–4pm
+            {site.hours.compact}
           </p>
         </div>
       </div>

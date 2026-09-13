@@ -53,7 +53,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
             Opening hours
           </h3>
           <dl className="mt-4 space-y-2">
-            {site.openingHoursSummary.map((entry) => (
+            {site.hours.summary.map((entry) => (
               <div key={entry.label} className="flex justify-between gap-6 text-sm">
                 <dt className="text-[var(--muted-foreground)]">{entry.label}</dt>
                 <dd data-numeric className="font-medium">{entry.value}</dd>
@@ -61,7 +61,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
             ))}
           </dl>
           <p className="mt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
-            {site.outOfHours}
+            {site.hours.outOfHours}
           </p>
         </div>
 
@@ -108,7 +108,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
           <TravelCard
             icon={<Car className="size-4" />}
             title="By road"
-            detail={`A11 and A12 access. ${site.parking} Sat nav ${site.satNavPostcode}.`}
+            detail={`A11 and A12 access. ${site.parking}`}
             label="Free parking on site"
           />
           <TravelCard

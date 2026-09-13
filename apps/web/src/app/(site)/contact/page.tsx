@@ -15,8 +15,7 @@ import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
   title: "Contact — Romford Road, Stratford E15",
-  description:
-    "Call, WhatsApp or email us. Find us at 21-25 Romford Road, Stratford, London E15 4LJ with free parking on site. Open Mon–Sat 9–6, Sun 10–4.",
+  description: `Call, WhatsApp or email us. Find us at ${site.address.full} with free parking on site. ${site.hours.sentence}`,
   path: "/contact",
 });
 
@@ -45,7 +44,7 @@ export default function ContactPage() {
             icon={<Phone className="size-5" />}
             label="Call the showroom"
             value={site.phone.display}
-            detail="Mon–Sat 9am–6pm · Sun 10am–4pm"
+            detail={site.hours.compact}
           />
           <ChannelCard
             href={whatsappLinks.general}
@@ -114,9 +113,7 @@ export default function ContactPage() {
               21-25 Romford Road, Stratford
             </h2>
             <p className="mt-5 leading-relaxed text-[var(--muted-foreground)]">
-              We&rsquo;re on Romford Road with free parking on site. Sat nav can
-              be vague around here — {site.satNavPostcode} takes you to the
-              parking entrance more reliably than the postcode.
+              We&rsquo;re on Romford Road with free parking on site.
             </p>
           </div>
 

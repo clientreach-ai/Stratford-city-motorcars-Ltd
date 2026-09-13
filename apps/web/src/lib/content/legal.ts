@@ -37,7 +37,7 @@ const contactBlocks: Block[] = [
       { term: "Address", detail: site.address.full },
       { term: "Email", detail: site.email },
       { term: "Phone", detail: site.phone.display },
-      { term: "Hours", detail: "Mon–Sat 9am–6pm, Sun 10am–4pm" },
+      { term: "Hours", detail: site.hours.compact },
     ],
   },
 ];
