@@ -135,9 +135,11 @@ function UtilityStrip() {
           {site.address.street}, {site.address.locality} {site.address.postcode}
         </p>
         <div className="flex items-center gap-6">
-          <span className="text-bone/55">
-            {site.hours.compact}
-          </span>
+          {/* The full line wraps the fixed-height strip below lg, so tablets
+              get the weekday hours; the appointment-only times stay in the
+              footer, the showroom panel and the mobile drawer. */}
+          <span className="text-bone/55 lg:hidden">{site.hours.short}</span>
+          <span className="hidden text-bone/55 lg:inline">{site.hours.compact}</span>
           <a
             href={site.phone.href}
             className="flex items-center gap-2 tracking-wide transition-colors hover:text-brass"

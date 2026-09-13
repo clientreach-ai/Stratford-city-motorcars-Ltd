@@ -98,6 +98,9 @@ export const site = {
     /** One line for tight spaces: header strip, mobile drawer, contact card. */
     compact: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes} · Weekends & bank holidays by appointment`,
 
+    /** Weekday hours only, for the header strip where `compact` would wrap. */
+    short: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes}`,
+
     /** Full sentence for metadata and running copy. */
     sentence: `We're open ${firstDay} to ${lastDay}, ${openTimes}, and by appointment at weekends and on bank holidays.`,
 
