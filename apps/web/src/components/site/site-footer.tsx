@@ -17,7 +17,6 @@ const stockLinks = [
 const serviceLinks = [
   { href: "/finance", label: "Car finance" },
   { href: "/part-exchange", label: "Part exchange" },
-  { href: "/hire", label: "Executive hire" },
   { href: "/about", label: "About us" },
   { href: "/contact", label: "Contact" },
 ] as const;

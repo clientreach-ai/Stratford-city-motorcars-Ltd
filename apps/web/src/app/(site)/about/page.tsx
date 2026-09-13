@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 
-import { Testimonials } from "@/components/home/testimonials";
 import { PageHero } from "@/components/site/page-hero";
 import { ShowroomPanel } from "@/components/site/showroom-panel";
 import { ButtonLink } from "@/components/ui/button";
@@ -104,7 +103,7 @@ export default async function AboutPage() {
                   <Fact term="Where" value={`${site.address.street}, ${site.address.locality} ${site.address.postcode}`} />
                   <Fact term="Type" value="Independent dealership" />
                   <Fact term="Marques in stock" value={marques.join(", ")} />
-                  <Fact term="Also offering" value="Finance · Part exchange · Executive hire" />
+                  <Fact term="Also offering" value="Finance · Part exchange" />
                   <Fact term="Every car" value="HPI clear and inspected before sale" />
                 </dl>
               </div>
@@ -144,8 +143,6 @@ export default async function AboutPage() {
           </ul>
         </Container>
       </Section>
-
-      <Testimonials />
 
       {/* ---- Visit ------------------------------------------------------------ */}
       <Section tinted size="md">

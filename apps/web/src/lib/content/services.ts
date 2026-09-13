@@ -1,10 +1,13 @@
 /**
- * Editorial content for the finance, part-exchange, trust and hire sections.
+ * Editorial content for the finance, part-exchange and trust sections.
  *
  * Every factual claim traces back to the dealership's existing site, FAQs or
- * terms. Where they state a figure (deposit from 10%, terms to 5 years, £0.15
- * per excess mile) it is reproduced exactly. No rates, APRs, approval odds or
- * guarantees have been added — those would need to come from the lender.
+ * terms. Where they state a figure (deposit from 10%, terms to 5 years) it is
+ * reproduced exactly. No rates, APRs, approval odds or guarantees have been
+ * added — those would need to come from the lender.
+ *
+ * Vehicle hire is intentionally absent: the client confirmed hire is not part
+ * of this business (City Chauffeurs handles it).
  */
 
 export interface FinanceProduct {
@@ -172,39 +175,3 @@ export const trustPoints: TrustPoint[] = [
       "You deal with the same people from first enquiry through to handover. No call centre, no rotating salespeople, no pressure to decide today.",
   },
 ];
-
-// ---- Executive hire -------------------------------------------------------
-
-/**
- * The dealership's existing hire line. Facts are taken from their FAQs, terms
- * and the CarRental schema on their previous homepage. The indicative daily
- * range (£39–£79) is their published figure; it is labelled as a guide because
- * we cannot verify it is current.
- */
-export const hire = {
-  summary:
-    "Alongside sales we run a small hire fleet from the same Stratford showroom — useful if you need something for a few days, or want to live with a car before committing to it.",
-  indicativeDailyRange: "£39 – £79 per day",
-  included: [
-    "Comprehensive insurance",
-    "24/7 breakdown cover",
-    "Mileage allowance as set out in the agreement",
-    "All documentation",
-  ],
-  requirements: [
-    "Minimum age 21, or 25 for premium and executive vehicles",
-    "Valid UK or EU driving licence held for at least two years",
-    "Security deposit taken at collection",
-    "Additional drivers must be declared and meet the same requirements",
-  ],
-  terms: [
-    "Same-day hire is available subject to availability — call before 4pm",
-    "Fuel is full-to-full",
-    "Excess mileage is charged at £0.15 per mile",
-    "UK mainland use only unless agreed in advance",
-    "Free cancellation up to 24 hours before the hire starts",
-    "No smoking in any hire vehicle",
-  ],
-  delivery:
-    "Delivery within the London area can be arranged for an additional fee — useful for airport, hotel and business collections.",
-};
