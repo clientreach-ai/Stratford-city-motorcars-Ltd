@@ -59,8 +59,8 @@ export async function Hero() {
 
           <p className="mt-7 max-w-xl text-base leading-relaxed text-bone/65 md:text-lg">
             {marques.length} marques on the floor in Stratford, from{" "}
-            {formatPrice(cheapest)}. Every car HPI clear, inspected and properly
-            prepared before we put a price on it.
+            {formatPrice(cheapest)}. Every car has a full service and MOT before
+            it goes on sale.
           </p>
 
           <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
@@ -73,7 +73,7 @@ export async function Hero() {
               size="lg"
               className="w-full sm:w-auto"
             >
-              Finance your car
+              Car finance
             </ButtonLink>
             <ButtonLink
               href="/part-exchange"

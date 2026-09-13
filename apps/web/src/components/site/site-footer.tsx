@@ -37,8 +37,8 @@ export function SiteFooter() {
             />
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-bone/55">
               An independent Stratford showroom dealing in prestige, performance
-              and classic motorcars. Every car HPI clear, inspected and prepared
-              before it is offered for sale.
+              and classic motorcars. Every car has a full service and MOT before
+              it is offered for sale.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2">
@@ -114,11 +114,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-14 border-t border-bone/10 pt-8">
-          <p className="max-w-4xl text-xs leading-relaxed text-bone/60">
-            {site.compliance.creditBroker} {site.compliance.financeSubjectToStatus}
-          </p>
-
-          <div className="mt-6 flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-center">
+          <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-center">
             <p>
               © {new Date().getFullYear()} {site.name}. All rights reserved.
             </p>

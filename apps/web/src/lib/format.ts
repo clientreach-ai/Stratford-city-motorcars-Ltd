@@ -25,15 +25,6 @@ export function formatNumber(value: number): string {
   return decimal.format(value);
 }
 
-/**
- * Warranty as the dealership words it. Zero months is not "no warranty" —
- * their AA cover is optional on older stock, so it reads as an option.
- */
-export function formatWarranty(months: number): string {
-  if (months <= 0) return "AA warranty options available";
-  return months === 1 ? "1 month included" : `${months} months included`;
-}
-
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",

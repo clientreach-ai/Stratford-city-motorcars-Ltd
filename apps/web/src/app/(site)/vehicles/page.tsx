@@ -39,7 +39,7 @@ export async function generateMetadata(
     ...pageMetadata({
       title: "Used Cars for Sale in Stratford, London",
       description:
-        "Browse prestige, performance and classic used cars at our Stratford showroom. Every vehicle HPI clear and inspected. Finance and part exchange available.",
+        "Browse prestige, performance and classic used cars at our Stratford showroom. Every car has a full service and MOT before sale. Part exchange welcome.",
       path: "/vehicles",
     }),
     ...(filtered ? { robots: { index: false, follow: true } } : {}),
@@ -134,8 +134,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
               )}
 
               <p className="mt-10 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                All prices include VAT where applicable.{" "}
-                {site.compliance.financeSubjectToStatus}
+                All prices include VAT where applicable.
               </p>
             </div>
           </div>

@@ -213,8 +213,8 @@ export function vehicleMetaDescription(vehicle: VehicleView): string {
   const parts = [
     `${vehicle.year} ${vehicle.title} for sale in Stratford, East London.`,
     `${formatMileage(vehicle.mileage)}, ${vehicle.fuel}, ${vehicle.transmission}.`,
-    vehicle.hpiClear ? "HPI clear." : "",
-    "Finance and part exchange available.",
+    vehicle.hpiStatus === "clear" ? "History check clear." : "",
+    "Part exchange welcome.",
   ];
   return parts.filter(Boolean).join(" ");
 }

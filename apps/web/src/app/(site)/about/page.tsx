@@ -6,7 +6,6 @@ import { ShowroomPanel } from "@/components/site/showroom-panel";
 import { ButtonLink } from "@/components/ui/button";
 import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
-import { trustPoints } from "@/lib/content/services";
 import { getAllVehicles } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -103,8 +102,8 @@ export default async function AboutPage() {
                   <Fact term="Where" value={`${site.address.street}, ${site.address.locality} ${site.address.postcode}`} />
                   <Fact term="Type" value="Independent dealership" />
                   <Fact term="Marques in stock" value={marques.join(", ")} />
-                  <Fact term="Also offering" value="Finance · Part exchange" />
-                  <Fact term="Every car" value="HPI clear and inspected before sale" />
+                  <Fact term="Also offering" value="Part exchange" />
+                  <Fact term="Before sale" value="Every car has a full service and MOT" />
                 </dl>
               </div>
 
@@ -113,34 +112,6 @@ export default async function AboutPage() {
               </ButtonLink>
             </aside>
           </div>
-        </Container>
-      </Section>
-
-      {/* ---- What we commit to ----------------------------------------------- */}
-      <Section dark size="md">
-        <Container>
-          <SectionHeading
-            eyebrow="How we work"
-            title="What you can hold us to"
-            lede="Every one of these is something you can check before any money changes hands."
-          />
-
-          <ul className="mt-14 grid gap-x-12 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
-            {trustPoints.map((point, index) => (
-              <li key={point.title} className="reveal">
-                <span aria-hidden data-numeric className="font-display text-sm text-brass">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div className="mt-3 h-px w-full bg-bone/15" />
-                <h3 className="mt-5 font-display text-xl leading-snug">
-                  {point.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-bone/60">
-                  {point.detail}
-                </p>
-              </li>
-            ))}
-          </ul>
         </Container>
       </Section>
 
