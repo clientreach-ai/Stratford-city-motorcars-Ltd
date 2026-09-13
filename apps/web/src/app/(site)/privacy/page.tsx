@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 
-import { LegalDocumentPage } from "@/components/site/legal-document";
+import { LegalPlaceholderPage } from "@/components/site/legal-document";
 import { JsonLd } from "@/components/ui/json-ld";
-import { privacyPolicy } from "@/lib/content/legal";
+import { beingPrepared, legalPlaceholders } from "@/lib/content/legal";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
+const document = legalPlaceholders.privacy;
+
+// Interim placeholder: kept out of search results until an approved policy exists.
 export const metadata: Metadata = pageMetadata({
-  title: "Privacy Policy",
-  description:
-    "How Stratford City Motorcars collects, uses and protects your personal information under UK GDPR and the Data Protection Act 2018.",
+  title: document.title,
+  description: `${beingPrepared(document)}.`,
   path: "/privacy",
+  noIndex: true,
 });
 
 const crumbs = [
@@ -21,7 +24,7 @@ export default function PrivacyPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
-      <LegalDocumentPage document={privacyPolicy} crumbs={crumbs} />
+      <LegalPlaceholderPage document={document} crumbs={crumbs} />
     </>
   );
 }

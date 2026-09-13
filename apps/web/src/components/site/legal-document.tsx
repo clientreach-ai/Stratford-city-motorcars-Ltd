@@ -1,17 +1,18 @@
 import { PageHero } from "@/components/site/page-hero";
 import { Container, Section } from "@/components/ui/section";
-import type { Block, LegalDocument } from "@/lib/content/legal";
+import { beingPrepared, type LegalPlaceholder } from "@/lib/content/legal";
+import { site } from "@/lib/site";
 
 /**
- * Renders a legal document from structured content, so privacy, terms and
- * cookies all read identically and the copy stays in one reviewable file
- * rather than scattered through JSX.
+ * Interim page for a legal document that is still being prepared. It makes no
+ * legal statements of its own — it says the document is not yet available and
+ * how to contact the business in the meantime. See `lib/content/legal.ts`.
  */
-export function LegalDocumentPage({
+export function LegalPlaceholderPage({
   document,
   crumbs,
 }: {
-  document: LegalDocument;
+  document: LegalPlaceholder;
   crumbs: { name: string; path: string }[];
 }) {
   return (
@@ -19,121 +20,46 @@ export function LegalDocumentPage({
       <PageHero
         eyebrow="Legal"
         title={document.title}
-        lede={document.intro}
+        lede={`${beingPrepared(document)} and will be published on this page.`}
         crumbs={crumbs}
       />
 
       <Section size="md">
         <Container>
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,16rem)_1fr] lg:gap-20">
-            {/* Contents rail — long documents need a way in. */}
-            <nav aria-label="On this page" className="lg:sticky lg:top-28 lg:self-start">
-              <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
-                Contents
-              </p>
-              <ol className="mt-5 space-y-2.5">
-                {document.sections.map((section, index) => (
-                  <li key={section.heading}>
-                    <a
-                      href={`#${slug(section.heading)}`}
-                      className="flex gap-3 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
-                    >
-                      <span data-numeric className="tabular-nums">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      {section.heading}
-                    </a>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-8 border-t border-[var(--border)] pt-5 text-xs text-[var(--muted-foreground)]">
-                Last updated {document.updated}
-              </p>
-            </nav>
+          <div className="max-w-2xl space-y-5 leading-[1.75] text-[var(--muted-foreground)]">
+            <p>If you have a question in the meantime, please contact us.</p>
 
-            <div className="min-w-0 space-y-14">
-              {document.sections.map((section, index) => (
-                <section
-                  key={section.heading}
-                  id={slug(section.heading)}
-                  className="scroll-mt-28"
-                >
-                  <h2 className="flex gap-4 border-b border-[var(--border)] pb-4 text-[clamp(1.35rem,2.6vw,1.75rem)] leading-tight">
-                    <span
-                      aria-hidden
-                      data-numeric
-                      className="font-display text-sm text-[var(--rule)]"
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    {section.heading}
-                  </h2>
-
-                  <div className="mt-6 space-y-5">
-                    {section.blocks.map((block, blockIndex) => (
-                      <BlockContent key={blockIndex} block={block} />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
+            <dl className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
+              <div className="grid gap-1 py-3.5 sm:grid-cols-[8rem_1fr] sm:gap-6">
+                <dt className="text-sm font-medium text-[var(--foreground)]">Email</dt>
+                <dd className="text-sm">
+                  <a
+                    href={`mailto:${site.email}`}
+                    className="break-all transition-colors hover:text-[var(--foreground)]"
+                  >
+                    {site.email}
+                  </a>
+                </dd>
+              </div>
+              <div className="grid gap-1 py-3.5 sm:grid-cols-[8rem_1fr] sm:gap-6">
+                <dt className="text-sm font-medium text-[var(--foreground)]">Phone</dt>
+                <dd className="text-sm">
+                  <a
+                    href={site.phone.href}
+                    className="transition-colors hover:text-[var(--foreground)]"
+                  >
+                    {site.phone.display}
+                  </a>
+                </dd>
+              </div>
+              <div className="grid gap-1 py-3.5 sm:grid-cols-[8rem_1fr] sm:gap-6">
+                <dt className="text-sm font-medium text-[var(--foreground)]">Address</dt>
+                <dd className="text-sm">{site.address.full}</dd>
+              </div>
+            </dl>
           </div>
         </Container>
       </Section>
     </>
   );
-}
-
-function BlockContent({ block }: { block: Block }) {
-  if (block.type === "p") {
-    return (
-      <p className="max-w-3xl leading-[1.75] text-[var(--muted-foreground)]">
-        {block.text}
-      </p>
-    );
-  }
-
-  if (block.type === "subheading") {
-    return (
-      <h3 className="pt-2 font-roman text-[0.625rem] uppercase tracking-[0.2em] text-[var(--foreground)]">
-        {block.text}
-      </h3>
-    );
-  }
-
-  if (block.type === "list") {
-    return (
-      <ul className="max-w-3xl space-y-2.5">
-        {block.items.map((item) => (
-          <li
-            key={item}
-            className="flex items-start gap-3 leading-relaxed text-[var(--muted-foreground)]"
-          >
-            <span aria-hidden className="mt-2.5 size-1 shrink-0 bg-[var(--rule)]" />
-            {item}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  return (
-    <dl className="max-w-3xl divide-y divide-[var(--border)] border-y border-[var(--border)]">
-      {block.items.map((item) => (
-        <div key={item.term} className="grid gap-1 py-3.5 sm:grid-cols-[12rem_1fr] sm:gap-6">
-          <dt className="text-sm font-medium">{item.term}</dt>
-          <dd className="text-sm leading-relaxed text-[var(--muted-foreground)]">
-            {item.detail}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function slug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
