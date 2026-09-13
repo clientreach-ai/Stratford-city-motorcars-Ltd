@@ -7,7 +7,7 @@ import type { Route } from "next";
 
 import { Select } from "@/components/ui/field";
 import { formatNumber, formatPrice } from "@/lib/format";
-import { SORT_OPTIONS } from "@/lib/inventory/types";
+import { DEFAULT_SORT, SORT_OPTIONS } from "@/lib/inventory/types";
 
 function useUpdateParams() {
   const router = useRouter();
@@ -43,10 +43,10 @@ export function VehicleSort() {
         // The visible label is hidden below sm, so the control carries its own
         // name rather than relying on a label that disappears on phones.
         aria-label="Sort vehicles"
-        value={searchParams.get("sort") ?? "newest"}
+        value={searchParams.get("sort") ?? DEFAULT_SORT}
         onChange={(event) =>
           update((params) => {
-            if (event.target.value === "newest") params.delete("sort");
+            if (event.target.value === DEFAULT_SORT) params.delete("sort");
             else params.set("sort", event.target.value);
           })
         }

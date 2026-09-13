@@ -4,16 +4,10 @@ import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { Container, Eyebrow } from "@/components/ui/section";
 import { StockSearch } from "@/components/vehicle/stock-search";
 import { formatPrice } from "@/lib/format";
+import { priceCeilings } from "@/lib/inventory/price-bands";
 import { getAllVehicles, getMakeModelIndex } from "@/lib/inventory/repository";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { WhatsAppIcon } from "@/components/ui/icons";
-
-const PRICE_BANDS = [
-  { value: "15000", label: "Up to £15,000" },
-  { value: "25000", label: "Up to £25,000" },
-  { value: "40000", label: "Up to £40,000" },
-  { value: "60000", label: "Up to £60,000" },
-];
 
 export async function Hero() {
   const [vehicles, makeModels] = await Promise.all([
@@ -22,9 +16,16 @@ export async function Hero() {
   ]);
 
   const available = vehicles.filter((vehicle) => vehicle.status !== "sold");
-  const cheapest = Math.min(...available.map((vehicle) => vehicle.price));
+  // With no published stock the stock summary and the search are left out
+  // entirely, rather than rendering "0 marques… from £Infinity" or empty selects.
+  const hasStock = available.length > 0;
+  const prices = available.map((vehicle) => vehicle.price);
   const marques = [...new Set(available.map((vehicle) => vehicle.make))];
 
+  const priceBands = priceCeilings(prices).map((ceiling) => ({
+    value: String(ceiling),
+    label: `Up to ${formatPrice(ceiling)}`,
+  }));
   const fuels = [...new Set(available.map((vehicle) => vehicle.fuel))].sort();
   const transmissions = [
     ...new Set(available.map((vehicle) => vehicle.transmission)),
@@ -58,9 +59,13 @@ export async function Hero() {
           </h1>
 
           <p className="mt-7 max-w-xl text-base leading-relaxed text-bone/65 md:text-lg">
-            {marques.length} marques on the floor in Stratford, from{" "}
-            {formatPrice(cheapest)}. Every car has a full service and MOT before
-            it goes on sale.
+            {hasStock ? (
+              <>
+                {marques.length} {marques.length === 1 ? "marque" : "marques"} on
+                the floor in Stratford, from {formatPrice(Math.min(...prices))}.{" "}
+              </>
+            ) : null}
+            Every car has a full service and MOT before it goes on sale.
           </p>
 
           <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
@@ -88,34 +93,36 @@ export async function Hero() {
       </Container>
 
       {/* Search sits on the seam between the hero and the page below it. */}
-      <Container className="relative">
-        <div className="border border-bone/15 bg-ink-900/70 backdrop-blur-[2px]">
-          <div className="flex items-center justify-between gap-4 border-b border-bone/12 px-4 py-3 md:px-5">
-            <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-brass">
-              Find your car
-            </p>
-            <ExternalButtonLink
-              href={whatsappLinks.browsing}
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="ghost"
-              size="sm"
-              className="hidden text-bone/70 hover:text-bone sm:inline-flex"
-            >
-              <WhatsAppIcon className="size-3.5" />
-              Or just ask us
-            </ExternalButtonLink>
-          </div>
+      {hasStock ? (
+        <Container className="relative">
+          <div className="border border-bone/15 bg-ink-900/70 backdrop-blur-[2px]">
+            <div className="flex items-center justify-between gap-4 border-b border-bone/12 px-4 py-3 md:px-5">
+              <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-brass">
+                Find your car
+              </p>
+              <ExternalButtonLink
+                href={whatsappLinks.browsing}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="ghost"
+                size="sm"
+                className="hidden text-bone/70 hover:text-bone sm:inline-flex"
+              >
+                <WhatsAppIcon className="size-3.5" />
+                Or just ask us
+              </ExternalButtonLink>
+            </div>
 
-          <StockSearch
-            makeModels={makeModels}
-            priceBands={PRICE_BANDS}
-            fuels={fuels}
-            transmissions={transmissions}
-            className="p-4 md:p-5"
-          />
-        </div>
-      </Container>
+            <StockSearch
+              makeModels={makeModels}
+              priceBands={priceBands}
+              fuels={fuels}
+              transmissions={transmissions}
+              className="p-4 md:p-5"
+            />
+          </div>
+        </Container>
+      ) : null}
 
       <div className="h-14 md:h-20" />
     </section>

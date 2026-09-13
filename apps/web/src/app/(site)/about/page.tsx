@@ -61,14 +61,6 @@ export default async function AboutPage() {
                 </p>
 
                 <p className="text-[var(--muted-foreground)]">
-                  That approach is why our stock looks the way it does. A 1978
-                  Silver Shadow and a 2016 SL63 AMG have almost nothing in common
-                  mechanically, but they end up here for the same reason —
-                  someone looked at that specific car and thought it was worth
-                  having.
-                </p>
-
-                <p className="text-[var(--muted-foreground)]">
                   The showroom itself is relaxed. Come in, take your time, ask
                   whatever you like. There&rsquo;s no pressure and no script.
                   We&rsquo;d far rather you left without buying than bought
@@ -101,7 +93,9 @@ export default async function AboutPage() {
                 <dl className="divide-y divide-[var(--border)]">
                   <Fact term="Where" value={`${site.address.street}, ${site.address.locality} ${site.address.postcode}`} />
                   <Fact term="Type" value="Independent dealership" />
-                  <Fact term="Marques in stock" value={marques.join(", ")} />
+                  {marques.length > 0 ? (
+                    <Fact term="Marques in stock" value={marques.join(", ")} />
+                  ) : null}
                   <Fact term="Also offering" value="Part exchange" />
                   <Fact term="Before sale" value="Every car has a full service and MOT" />
                 </dl>
