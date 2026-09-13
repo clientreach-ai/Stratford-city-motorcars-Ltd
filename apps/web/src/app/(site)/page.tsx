@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
 
 import { Hero } from "@/components/home/hero";
-import { Testimonials } from "@/components/home/testimonials";
 import { ShowroomPanel } from "@/components/site/showroom-panel";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -214,11 +213,9 @@ export default async function HomePage() {
         </Container>
       </Section>
 
-      {/* ---- Testimonials --------------------------------------------------- */}
-      <Testimonials />
-
       {/* ---- Showroom ------------------------------------------------------- */}
-      <Section tinted size="md">
+      {/* Untinted: it now follows the tinted part-exchange band directly. */}
+      <Section size="md">
         <Container>
           <SectionHeading
             eyebrow="The showroom"

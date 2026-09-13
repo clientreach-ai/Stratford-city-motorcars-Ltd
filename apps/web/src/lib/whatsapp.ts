@@ -35,8 +35,6 @@ export const whatsappLinks = {
     `Hi ${site.name}, I'd like a part-exchange valuation for my car.`,
   ),
 
-  hire: build(`Hi ${site.name}, I'd like to enquire about hiring a vehicle.`),
-
   bookViewing: build(
     `Hi ${site.name}, I'd like to book a viewing at your Stratford showroom.`,
   ),

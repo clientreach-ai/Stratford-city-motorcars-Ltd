@@ -11,7 +11,6 @@ export const navItems: NavItem[] = [
   { href: "/vehicles", label: "Stock", hint: "Browse every car we have" },
   { href: "/finance", label: "Finance", hint: "Spread the cost" },
   { href: "/part-exchange", label: "Part Exchange", hint: "Value your current car" },
-  { href: "/hire", label: "Hire", hint: "Executive and everyday hire" },
   { href: "/about", label: "About", hint: "Who we are" },
   { href: "/contact", label: "Contact", hint: "Find and reach the showroom" },
 ];

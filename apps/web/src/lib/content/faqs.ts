@@ -1,4 +1,4 @@
-export type FaqCategory = "Sales" | "Finance" | "Hire" | "Visiting";
+export type FaqCategory = "Sales" | "Finance" | "Visiting";
 
 export interface Faq {
   id: string;
@@ -8,9 +8,11 @@ export interface Faq {
 }
 
 /**
- * Transcribed from the dealership's `/api/faqs` endpoint on 10 September 2026.
- * Wording is theirs; only the category of the two general entries has been
- * renamed to "Visiting" so they group sensibly on the contact page.
+ * Originally transcribed from the dealership's `/api/faqs` endpoint on
+ * 10 September 2026. The client intake overrides that source: hire FAQs were
+ * removed (hire is not offered) and the delivery answer reflects the confirmed
+ * nationwide delivery. The two general entries use the "Visiting" category so
+ * they group sensibly on the contact page.
  */
 export const faqs: Faq[] = [
   {
@@ -59,29 +61,8 @@ export const faqs: Faq[] = [
     id: "faq-010",
     question: "Do you offer delivery services?",
     answer:
-      "We can arrange vehicle delivery within the London area for an additional fee. This is particularly useful for hire customers who need vehicles delivered to airports, hotels, or business premises. Contact us for delivery rates and availability.",
+      "Yes, we deliver nationwide. Delivery charges may sometimes apply — ask us about delivery for the car you're interested in.",
     category: "Visiting",
-  },
-  {
-    id: "faq-002",
-    question: "Can I hire a car the same day?",
-    answer:
-      "Absolutely! Subject to availability, we offer same-day hire for our full fleet. Just call us before 4pm and we'll have your vehicle ready for collection. All hire vehicles come fully insured with comprehensive cover and 24/7 breakdown assistance.",
-    category: "Hire",
-  },
-  {
-    id: "faq-005",
-    question: "What are your hire vehicle age requirements?",
-    answer:
-      "Minimum age is 21 years for most vehicles, with 25+ required for premium and executive categories. You'll need a valid UK or EU driving license held for at least 2 years. Additional drivers can be added to the agreement and must meet the same requirements.",
-    category: "Hire",
-  },
-  {
-    id: "faq-007",
-    question: "What's included in your hire prices?",
-    answer:
-      "Our hire rates include comprehensive insurance, unlimited mileage within the daily allowance, 24/7 breakdown cover, and all necessary documentation. Additional mileage is charged at £0.15 per mile. Fuel is on a full-to-full basis.",
-    category: "Hire",
   },
 ];
 
