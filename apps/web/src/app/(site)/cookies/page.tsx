@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 
-import { LegalDocumentPage } from "@/components/site/legal-document";
+import { LegalPlaceholderPage } from "@/components/site/legal-document";
 import { JsonLd } from "@/components/ui/json-ld";
-import { cookiePolicy } from "@/lib/content/legal";
+import { beingPrepared, legalPlaceholders } from "@/lib/content/legal";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
+const document = legalPlaceholders.cookies;
+
+// Interim placeholder: kept out of search results until an approved policy exists.
 export const metadata: Metadata = pageMetadata({
-  title: "Cookie Policy",
-  description:
-    "How Stratford City Motorcars uses cookies, what each type does, and how to control them in your browser.",
+  title: document.title,
+  description: `${beingPrepared(document)}.`,
   path: "/cookies",
+  noIndex: true,
 });
 
 const crumbs = [
@@ -21,7 +24,7 @@ export default function CookiesPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
-      <LegalDocumentPage document={cookiePolicy} crumbs={crumbs} />
+      <LegalPlaceholderPage document={document} crumbs={crumbs} />
     </>
   );
 }

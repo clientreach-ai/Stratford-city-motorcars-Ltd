@@ -21,9 +21,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${site.url}/part-exchange`, changeFrequency: "monthly", priority: 0.8 },
       { url: `${site.url}/about`, changeFrequency: "monthly", priority: 0.6 },
       { url: `${site.url}/contact`, changeFrequency: "monthly", priority: 0.7 },
-      { url: `${site.url}/privacy`, changeFrequency: "yearly", priority: 0.2 },
-      { url: `${site.url}/terms`, changeFrequency: "yearly", priority: 0.2 },
-      { url: `${site.url}/cookies`, changeFrequency: "yearly", priority: 0.2 },
+      // /privacy, /terms and /cookies are interim noindex placeholders and are
+      // deliberately left out until approved documents replace them.
     ] as const
   ).map((entry) => ({ ...entry, lastModified: now }));
 

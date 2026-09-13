@@ -149,9 +149,6 @@ export const site = {
     companyNumber: null as string | null,
     vatNumber: null as string | null,
   },
-
-  /** Deposit band taken verbatim from their terms. */
-  reservationDeposit: "£99 – £500",
 } as const;
 
 /** Google Maps deep links, built from the address rather than hardcoded URLs. */
