@@ -8,21 +8,24 @@ pnpm install
 pnpm dev:web        # http://localhost:3001
 pnpm --filter web build
 pnpm check-types
+pnpm --filter web check-content   # fails if copy the client rejected returns
 ```
 
 ## Routes
 
 | Route | Rendering | Notes |
 | --- | --- | --- |
-| `/` | Static | Hero search, featured stock, trust, finance, part exchange, testimonials, showroom, closing CTA |
-| `/vehicles` | Dynamic | Reads `searchParams`; filtered views are `noindex` and canonicalise to `/vehicles` |
-| `/vehicles/[slug]` | SSG | Prerendered from `generateStaticParams`, one page per vehicle |
-| `/finance` | Static | HP / PCP / personal loan, four-step process, enquiry form |
+| `/` | Static | Hero search, featured stock, finance, part exchange, showroom, closing CTA. Stock summary, search and featured grid are omitted when no vehicle is published |
+| `/vehicles` | Dynamic | Reads `searchParams`; defaults to price high to low; filtered views are `noindex` and canonicalise to `/vehicles`. Filters and sort are omitted when no vehicle is published |
+| `/vehicles/[slug]` | SSG | Prerendered for **published** vehicles only; any other slug returns 404 |
+| `/finance` | Static | HP / PCP / personal loan explained, enquiry form |
 | `/part-exchange` | Static | Valuation form, what happens next |
-| `/hire` | Static | The existing hire line — see "Scope" below |
 | `/about`, `/contact` | Static | |
-| `/privacy`, `/terms`, `/cookies` | Static | Rendered from `lib/content/legal.ts` |
-| `/sitemap.xml`, `/robots.txt` | Static | 17 URLs; staff routes disallowed |
+| `/privacy`, `/terms`, `/cookies` | Static | Interim `noindex` placeholders — see "Needed from the client" |
+| `/sitemap.xml`, `/robots.txt` | Static | Public pages plus published, unsold vehicles; legal placeholders excluded; staff routes disallowed |
+
+There is no `/hire` route. The client confirmed vehicle hire is not part of this
+business (City Chauffeurs handles it), so the URL falls through to the 404 page.
 | `/login`, `/dashboard` | — | Better-Auth scaffolding in the `(admin)` route group, `noindex`. Untouched; this is where the admin dashboard goes. |
 
 Route groups: `(site)` carries the public chrome, `(admin)` deliberately carries
@@ -58,13 +61,25 @@ async function loadVehicles(): Promise<Vehicle[]> {
 Filtering runs in memory because the stock list is small. Past a few hundred
 vehicles, push `searchVehicles` into SQL and keep the signature.
 
+**Visibility lives here too.** `loadVehicles()` drops every vehicle whose
+`published` flag is false, and every listing, featured grid, related list, facet,
+make/model index, static param, sitemap entry and single-vehicle lookup reads
+through it. A replacement source must keep that filter, and every consumer must
+cope with it returning an empty array. `published` is separate from `status`
+(available / reserved / sold): a sold car stays published and keeps its page.
+
+There is no backend yet, so `src/lib/inventory/data.ts` is the stock source.
+To list a car the client has confirmed, correct its record there and set
+`published: true`.
+
 ### 2. Enquiries — `src/lib/forms/leads.ts`
 
 **Nothing is wired up yet, and the forms say so.** With no destination
 configured, a valid submission returns `status: "unavailable"`, the form shows
 "We couldn't send that" with the phone and WhatsApp buttons, and the server logs
-a loud warning. A lead that silently vanishes is worse for the dealership than
-one that never submitted.
+a loud warning containing only the form kind and a reference — never the
+customer's name, email, phone or message. A lead that silently vanishes is
+worse for the dealership than one that never submitted.
 
 To switch it on:
 
@@ -87,19 +102,20 @@ the schemas and pull Zod into the browser bundle.
 
 ```
 src/lib/
-  site.ts                  Business facts — NAP, hours, transport, compliance
+  site.ts                  Business facts — NAP, the single hours model,
+                           transport, warranty statement, compliance slots
   seo.ts                   Metadata helper + JSON-LD builders
   whatsapp.ts              Contextual wa.me deep links
   inventory/
-    types.ts               Vehicle model; every spec field optional
-    data.ts                The seven real vehicles
-    repository.ts          ← integration point
+    types.ts               Vehicle model; every spec field optional; DEFAULT_SORT
+    data.ts                The old site's seven records, all unpublished
+    repository.ts          ← integration point (and the visibility filter)
     query-params.ts        URL ⇄ query
+    price-bands.ts         Homepage "Up to £X" bands, derived from published prices
   content/
-    services.ts            Finance products, part-exchange steps, trust, hire
-    testimonials.ts        Six real testimonials
-    faqs.ts                Ten real FAQs
-    legal.ts               Privacy, terms, cookies
+    services.ts            Finance products, part-exchange steps
+    faqs.ts                Warranty, part-exchange, visiting and delivery FAQs
+    legal.ts               Interim legal placeholders (no policy wording)
   forms/
     options.ts             Option lists + FormState (no Zod)
     schemas.ts             Zod schemas, server only
@@ -109,21 +125,33 @@ src/lib/
 
 ### Content rules that were followed
 
-Everything factual came from the previous site or its API on 10 September 2026.
-Nothing was invented. Specifically:
+The client intake (September 2026) is authoritative. Content from the previous
+site or its API (10 September 2026) is used only where the intake does not
+contradict it. Nothing is invented. Specifically:
 
-- Spec fields render **only** where a value exists. Registration, power, doors
-  and seats are absent from the source, so no vehicle shows those rows.
+- **Hours are defined once**, in `site.ts` (Monday–Friday 12pm–5pm; weekends and
+  bank holidays by appointment; out-of-hours viewings by WhatsApp or text).
+  Every visible string and the structured data derive from it. Structured data
+  publishes only the weekday hours.
+- Spec fields render **only** where a value exists. Power, doors and seats are
+  absent from the source, so no vehicle shows those rows. A registration is
+  shown on the page but never published as a VIN.
 - `engine`, `interior` and `serviceHistory` are set only where the dealership's
   own feature list or description states them.
+- **History checks are per vehicle.** `hpiStatus` is `"clear"`, `"not-checked"`
+  or unset (unknown → "Ask us"). The client confirmed most cars, not all, are
+  checked, so there is no site-wide HPI claim.
+- **Warranty is never shown as included.** It is sold separately through a
+  third-party provider; one statement in `site.warranty` covers every page.
 - **ULEZ status is never asserted.** It depends on a vehicle's Euro rating, not
   its age, and that is not held. The vehicle page says it will be confirmed in
   writing.
-- No APRs, monthly figures, approval odds, review counts, awards or
-  certifications appear anywhere. "Finance available" is as far as it goes,
-  because no rates are known.
-- The credit-broker disclosure is quoted from their own terms and appears on
-  every page that mentions finance.
+- **No finance availability or regulatory claims.** The HP, PCP and personal
+  loan descriptions are the client-confirmed ones. There is no broker/lender
+  statement, lender panel, approval-speed claim, APR or monthly figure: the
+  client has no lender panel yet and its regulatory wording is unconfirmed.
+- No reviews, testimonials, review counts, awards or certifications appear
+  anywhere. The old site's named reviews were confirmed as made up.
 
 ### Two corrections to the old site
 
@@ -135,16 +163,24 @@ Nothing was invented. Specifically:
 
 ## Needed from the client before launch
 
+None of these have been decided. Do not fill them in from the old site.
+
 | Item | Why |
 | --- | --- |
-| **Vehicle photography** | See [PHOTOGRAPHY.md](./PHOTOGRAPHY.md). The biggest single improvement available. |
-| **Lead destination** | Forms are honest about being unwired, but they are not capturing enquiries. |
-| **Company registration number and registered office** | UK companies must show these on their website. `site.compliance` has null slots ready. |
-| **FCA firm reference number** | Required to describe yourself as a credit broker. Renders once supplied. |
+| **Which cars are for sale, at what price** | Every record in `data.ts` is unpublished. The client holds ~30 cars; the seven old-site records are unconfirmed, and the Dawn and Corniche prices are confirmed wrong. |
+| **Cars without photographs** | The client asked for un-photographed cars to be hidden, and no car has photographs yet. Decide whether to launch with no listings, allow placeholders temporarily, or wait for a first photographed batch. See [PHOTOGRAPHY.md](./PHOTOGRAPHY.md). |
+| **History-check status per car** | Set `hpiStatus` only from the client's confirmation. |
+| **Finance availability and regulatory wording** | Whether finance can be arranged today, and the approved FCA status wording. |
+| **FCA firm reference number** | The intake gives it, but `site.compliance` keeps it null and nothing renders it: it needs approved wording and a component to display it. |
+| **Company registration number and registered office** | UK companies must show these on their website. The intake gives the number; the registered office address is unconfirmed. `site.compliance` keeps null slots. |
 | **VAT number** | If VAT registered. |
+| **Legal documents** | `/privacy`, `/terms` and `/cookies` are noindex placeholders. The client has no written terms, privacy policy or complaints procedure; approved documents are needed. |
+| **Whether forms stay live** | Forms collect personal data before a privacy notice and a lead destination exist. |
+| **Lead destination** | Forms are honest about being unwired, but they are not capturing enquiries. |
+| **Warranty detail** | Whether third-party cover is offered on every car, and any term range. |
+| **POA for rare classics** | Requested in the intake; `price` is currently a required number. |
 | **Confirm the canonical domain** | The site trades on `.com`; the old markup referenced a `.co.uk` that does not resolve. Set `NEXT_PUBLIC_SITE_URL`. |
-| **Review the legal pages** | Transcribed from their published policies, last dated September 2024. |
-| **Google Business Profile** | The six testimonials are self-hosted. Independently verifiable reviews carry far more weight — and feed the local pack. |
+| **Google Business Profile** | The client has no reviews yet. Independently verifiable reviews carry far more weight than self-hosted quotes — and feed the local pack. |
 
 ## Design system
 
@@ -177,10 +213,20 @@ Run the app, then from the repo:
 
 ```bash
 pnpm check-types
+pnpm --filter web check-content
 pnpm --filter web build
+node apps/web/scripts/check-content.mjs .next/server/app   # rendered HTML too
 ```
 
-At the last full pass, on the production build:
+`check-content` scans the source (and, optionally, the built HTML) for copy the
+client intake rejected — vehicle hire, the fabricated testimonials, the old
+hours and sat-nav postcode, finance/broker claims, "included"/AA warranty,
+blanket HPI claims and the old legal boilerplate — and exits non-zero on a hit.
+
+The results below are from the original build pass, **before** the client-intake
+content corrections. They have not been re-run since, and the route count and
+prerendered vehicle pages have changed (no `/hire`; only published vehicles are
+prerendered):
 
 - **Build:** clean. 24 routes; all seven vehicle pages prerendered.
 - **TypeScript:** no errors. `typedRoutes` is on, so every internal link is
@@ -199,8 +245,8 @@ At the last full pass, on the production build:
 
 ## Scope
 
-Sales-led, with one Executive Hire page retained because the dealership already
-runs that line and it had search presence — built only from facts already
-published on their site (indicative £39–£79/day, insurance and breakdown cover
-included, age and licence requirements, £0.15 per excess mile). Hire has no
-booking form on purpose: availability changes daily and the page says to call.
+Sales only. An earlier build carried an Executive Hire page taken from the old
+site; the client confirmed hire is not part of this business (City Chauffeurs
+handles hiring), so the page, its navigation, FAQs, form option, sitemap entry
+and structured data were removed. No referral to City Chauffeurs has been added
+— the intake does not ask for one.
