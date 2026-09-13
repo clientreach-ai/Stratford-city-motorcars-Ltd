@@ -118,19 +118,32 @@ export const site = {
   },
 
   /**
-   * Regulatory position, quoted from the dealership's own terms. They are an
-   * introducer, not a lender — this wording must not be softened.
+   * Confirmed by the client: warranties are not included in the price and are
+   * sold separately through a third-party provider. The provider is not named,
+   * and whether cover is offered on every car is unconfirmed — so the site says
+   * neither.
+   */
+  warranty: {
+    label: "Sold separately",
+    statement:
+      "Warranty is not included in the vehicle price. Third-party warranty cover is sold separately.",
+  },
+
+  /**
+   * Regulatory wording. The previous site's "credit broker, not a lender" and
+   * "subject to status… lender approval" lines were removed: the client has no
+   * lender panel yet and is still confirming whether it acts as a broker,
+   * lender or introducer. Replacement wording must come from the client's
+   * compliance adviser — do not write it here.
    */
   compliance: {
-    creditBroker:
-      "Stratford City Motorcars is a credit broker, not a lender. We introduce customers to FCA-regulated finance partners.",
-    financeSubjectToStatus:
-      "All finance is subject to status, eligibility and lender approval. Terms and conditions apply.",
     partExchangeSubjectToInspection:
       "All valuations are an initial guide and are confirmed only after a physical inspection and document check.",
     /**
-     * Their published site carries no FCA firm reference, company number or VAT
-     * number. These render only once real values are supplied — never invented.
+     * Not rendered anywhere. The intake supplies FCA firm reference 1042347 and
+     * company number 15481206, but they stay null until the approved FCA status
+     * wording and the registered office address are confirmed and a component
+     * is added to display them.
      */
     fcaFirmReferenceNumber: null as string | null,
     companyNumber: null as string | null,

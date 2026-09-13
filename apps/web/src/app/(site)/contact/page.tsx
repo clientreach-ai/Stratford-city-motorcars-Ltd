@@ -26,10 +26,19 @@ const crumbs = [
 
 export default function ContactPage() {
   const visitingFaqs = faqsByCategory("Visiting");
+  // FAQ structured data is only emitted alongside the visible questions, and
+  // never as an empty FAQPage.
+  const hasFaqs = visitingFaqs.length > 0;
 
   return (
     <>
-      <JsonLd data={[breadcrumbSchema(crumbs), faqSchema(visitingFaqs)]} />
+      <JsonLd
+        data={
+          hasFaqs
+            ? [breadcrumbSchema(crumbs), faqSchema(visitingFaqs)]
+            : breadcrumbSchema(crumbs)
+        }
+      />
 
       <PageHero
         eyebrow="Contact"
@@ -124,19 +133,21 @@ export default function ContactPage() {
       </Section>
 
       {/* ---- FAQs ------------------------------------------------------------ */}
-      <Section size="md">
-        <Container>
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-20">
-            <div>
-              <Eyebrow>Before you come</Eyebrow>
-              <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
-                Visiting questions
-              </h2>
+      {hasFaqs ? (
+        <Section size="md">
+          <Container>
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-20">
+              <div>
+                <Eyebrow>Before you come</Eyebrow>
+                <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
+                  Visiting questions
+                </h2>
+              </div>
+              <FaqList faqs={visitingFaqs} />
             </div>
-            <FaqList faqs={visitingFaqs} />
-          </div>
-        </Container>
-      </Section>
+          </Container>
+        </Section>
+      ) : null}
     </>
   );
 }

@@ -5,8 +5,12 @@ import type { Vehicle } from "./types";
  * (`/api/vehicles` on the previous site) on 10 September 2026.
  *
  * Rules followed when transcribing:
- *  - Price, mileage, year, fuel, transmission, colour, body type, HPI status,
- *    warranty months, description and feature lists are copied verbatim.
+ *  - Price, mileage, year, fuel, transmission, colour, body type, description
+ *    and feature lists are copied verbatim, except that "HPI clear" claims were
+ *    removed (the client confirmed most, not all, cars are history checked).
+ *  - `hpiStatus` is left unset on every car until the client confirms each
+ *    car's history-check result. There is no per-car warranty field: warranty
+ *    is never included in the price (see `site.warranty`).
  *  - `engine`, `interior` and `serviceHistory` are only set where the
  *    dealership's own feature list or description states them. Nothing is
  *    inferred from the model name.
@@ -34,8 +38,6 @@ export const vehicles: Vehicle[] = [
     colour: "Arctic White",
     engine: "6.6L Twin-Turbo V12",
     interior: "Cream leather with navy hood",
-    hpiClear: true,
-    warrantyMonths: 12,
     ulezCompliant: null,
     description:
       "The Rolls-Royce Dawn is the most social of super-luxury cars — an open-top four-seater that makes an entrance everywhere it goes. This stunning example in arctic white with a navy hood and cream leather interior is simply spectacular. The whisper-quiet fabric roof opens in 22 seconds, transforming this masterpiece into the ultimate open-air experience.",
@@ -92,8 +94,6 @@ export const vehicles: Vehicle[] = [
     colour: "Silver Seraph",
     interior: "Connolly leather with burr walnut dashboard",
     serviceHistory: "Comprehensive history file",
-    hpiClear: true,
-    warrantyMonths: 0,
     ulezCompliant: null,
     description:
       "One of the most desirable and elegant convertibles ever produced, the Rolls-Royce Corniche is a true classic motorcar. Hand-built with unrivalled attention to detail, this example features the sumptuous Connolly leather interior and burr walnut dashboard that define Rolls-Royce craftsmanship at its finest.",
@@ -102,7 +102,6 @@ export const vehicles: Vehicle[] = [
       "Connolly Leather Interior",
       "Burr Walnut Dashboard",
       "Power Hood",
-      "HPI Clear",
       "Comprehensive History File",
       "Matching Numbers",
     ],
@@ -127,8 +126,6 @@ export const vehicles: Vehicle[] = [
     colour: "Obsidian Black",
     engine: "5.5L Biturbo V8",
     interior: "Red leather",
-    hpiClear: true,
-    warrantyMonths: 6,
     ulezCompliant: null,
     description:
       "The SL63 AMG is the definitive grand tourer — breathtaking to look at and even more thrilling to drive. This 2016 example features the twin-turbo V8, AMG Performance exhaust and retractable hardtop. Finished in obsidian black with a red leather interior, it commands attention wherever it goes.",
@@ -163,15 +160,12 @@ export const vehicles: Vehicle[] = [
     colour: "Jet Black Metallic",
     engine: "3.0L Twin-Turbo V6",
     serviceHistory: "Full Porsche service history",
-    hpiClear: true,
-    warrantyMonths: 3,
     ulezCompliant: null,
     description:
       "The Porsche Macan S is the benchmark for the premium compact SUV segment — combining Porsche sports car DNA with everyday practicality. This 2014 example in jet black metallic is in excellent condition with a full Porsche service history, making it a superb choice for the discerning driver.",
     features: [
       "3.0L Twin-Turbo V6",
       "Full Porsche Service History",
-      "HPI Clear",
       "Sport Chrono Package",
       "PASM Suspension",
       "BOSE Sound System",
@@ -199,8 +193,6 @@ export const vehicles: Vehicle[] = [
     colour: "Silver",
     interior: "Original",
     serviceHistory: "Comprehensive history",
-    hpiClear: true,
-    warrantyMonths: 0,
     ulezCompliant: null,
     description:
       "An iconic piece of British motoring history — the Rolls-Royce Silver Shadow is one of the most recognisable and celebrated classic cars in the world. This beautifully preserved example is a collector's dream, offering the serenity and prestige that only a Rolls-Royce can provide.",
@@ -208,7 +200,6 @@ export const vehicles: Vehicle[] = [
       "Classic British Icon",
       "Original Interior",
       "Comprehensive History",
-      "HPI Clear",
       "Matching Numbers",
       "Collector Quality",
     ],
@@ -233,14 +224,11 @@ export const vehicles: Vehicle[] = [
     colour: "Midnight Black",
     interior: "Leather",
     serviceHistory: "Full service history",
-    hpiClear: true,
-    warrantyMonths: 3,
     ulezCompliant: null,
     description:
-      "A stunning example of the iconic Jaguar XF in deep midnight black. This executive saloon presents beautifully inside and out with a refined interior, smooth automatic gearbox and the effortless performance Jaguar is renowned for. Full service history, HPI clear and ready to drive away.",
+      "A stunning example of the iconic Jaguar XF in deep midnight black. This executive saloon presents beautifully inside and out with a refined interior, smooth automatic gearbox and the effortless performance Jaguar is renowned for. Full service history and ready to drive away.",
     features: [
       "Full Service History",
-      "HPI Clear",
       "Leather Interior",
       "Heated Seats",
       "Sat Nav",
@@ -269,14 +257,11 @@ export const vehicles: Vehicle[] = [
     colour: "Silver",
     engine: "6.3L V8",
     interior: "Full leather",
-    hpiClear: true,
-    warrantyMonths: 0,
     ulezCompliant: null,
     description:
       "A rare and formidable ML63 AMG — Mercedes-Benz's most powerful ML of its era. The 6.3-litre naturally aspirated V8 delivers explosive performance in a commanding SUV body. This example presents well and offers extraordinary value for a true AMG icon.",
     features: [
       "6.3L V8 AMG Engine",
-      "HPI Clear",
       "Full Leather",
       "AMG Sports Package",
       "Panoramic Roof",

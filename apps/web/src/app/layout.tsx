@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description:
-    "Independent Stratford dealer in prestige, performance and classic used cars. Every vehicle HPI clear and inspected. Finance and part exchange available.",
+    "Independent Stratford dealer in prestige, performance and classic used cars. Every car has a full service and MOT before sale. Part exchange welcome.",
   applicationName: site.name,
   authors: [{ name: site.name, url: site.url }],
   creator: site.name,

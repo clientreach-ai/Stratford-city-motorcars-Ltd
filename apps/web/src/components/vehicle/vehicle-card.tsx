@@ -94,9 +94,6 @@ export function VehicleCard({
               >
                 {formatPrice(vehicle.price)}
               </p>
-              <p className="mt-1.5 text-[0.6875rem] text-[var(--muted-foreground)]">
-                Finance available
-              </p>
             </div>
 
             <div className="flex items-center gap-1.5">

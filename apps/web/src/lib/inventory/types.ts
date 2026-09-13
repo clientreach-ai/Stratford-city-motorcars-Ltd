@@ -48,6 +48,9 @@ export interface VehicleImage {
 
 export type VehicleStatus = "available" | "reserved" | "sold";
 
+/** Confirmed history-check outcomes. Unknown is represented by leaving it unset. */
+export type HpiStatus = "clear" | "not-checked";
+
 export interface Vehicle {
   id: string;
   /** SEO-friendly URL segment, e.g. `mercedes-benz-sl63-amg-2016`. */
@@ -79,9 +82,16 @@ export interface Vehicle {
   interior?: string;
   serviceHistory?: string;
 
-  hpiClear: boolean;
-  /** Months of warranty included. 0 means none stated; options are available. */
-  warrantyMonths: number;
+  /**
+   * History check result for this specific car, as confirmed by the dealership
+   * (checks are run through Autotrader). Leave unset when it is not confirmed:
+   * unset means "ask us" and never implies either a clear or a failed check.
+   * Not every car is checked, so there is no site-wide default.
+   *
+   * Warranty is deliberately not a per-vehicle field. It is never included in
+   * the price — third-party cover is sold separately (see `site.warranty`).
+   */
+  hpiStatus?: HpiStatus;
 
   /**
    * ULEZ status is never asserted from year and fuel alone — a car's Euro
