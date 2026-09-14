@@ -9,12 +9,17 @@ The dealership's inventory holds **no photography** — every vehicle in the
 previous site's API returned `"images": []`, and that site displayed the words
 "Photography Coming Soon". So the new site does two things:
 
-1. Where a vehicle has no photographs, it shows a designed catalogue plate
-   (marque, year, "Photography to follow", and a prompt to call). It reads as
-   deliberate rather than broken — the way an auction catalogue handles a lot
-   that arrives before the photographer does.
+1. **A car without the dealership's own photographs is not published.** The
+   client asked for cars to stay hidden until they are properly photographed,
+   interiors included, and `src/lib/inventory/visibility.ts` enforces it: a
+   car needs at least one dealer exterior and one dealer interior photograph
+   before it can appear anywhere on the site.
 2. Where a vehicle has photographs, the full gallery, lightbox and thumbnail
    rail take over automatically. No code changes needed.
+
+The designed catalogue plate (marque, year, "Photography to follow") and the
+library-image treatment still exist in the components, but with the gate in
+place no public listing reaches them.
 
 ### Why there are no stock photographs
 
@@ -30,7 +35,8 @@ Across all seven vehicles, exactly one image was both commercially licensed
 (CC0) and colour-accurate: the white-with-navy-hood Rolls-Royce Dawn now shown
 on that listing, credited in the caption. It is there so the gallery, lightbox
 and credit line have a real image to exercise, and so the treatment can be
-judged before deciding whether to extend it. Remove it by emptying
+judged before deciding whether to extend it. Library images never satisfy the
+publishing gate, so this image cannot publish the Dawn. Remove it by emptying
 `libraryImages` in `src/lib/inventory/data.ts`.
 
 ## Adding real photographs
@@ -56,20 +62,41 @@ judged before deciding whether to extend it. Remove it by emptying
        width: 2400,
        height: 1500,
        provenance: "dealer",
+       view: "exterior",
+     },
+     {
+       src: "/vehicles/mercedes-benz-sl63-amg-2016/interior-dashboard.webp",
+       alt: "2016 Mercedes-Benz SL63 AMG red leather driver's seat and dashboard",
+       width: 2400,
+       height: 1600,
+       provenance: "dealer",
+       view: "interior",
      },
      // …
    ],
    ```
 
+   `view` is `"exterior"`, `"interior"` or `"documents"`, matching the groups
+   in the shot list below. The publishing gate counts dealer photographs by
+   view.
+
 `images` always wins over `libraryImages`, and the "library image" caption
 disappears on its own once dealer photographs exist.
 
-4. **Photographs do not publish a car.** Every record in `data.ts` currently has
-   `published: false`, and a car appears on the site only once that flag is set
-   to `true` — after the client has confirmed it is for sale and its price and
-   details are correct. The client asked for cars without photographs to be
-   hidden; whether un-photographed cars may be published with the placeholder
-   plate in the meantime is still an open decision.
+4. **Photographs do not publish a car on their own, and neither does the flag.**
+   A car appears on the site only when all of these hold (see
+   `src/lib/inventory/visibility.ts`):
+   - `published: true`, set after the client has confirmed it is for sale and
+     its price and details are correct
+   - at least one `provenance: "dealer"` photograph with `view: "exterior"`
+   - at least one `provenance: "dealer"` photograph with `view: "interior"`
+   - a price within the client's normal stock range, £20,000–£1,000,000
+
+   A car marked published but failing a rule is logged once at build or
+   request time (`[inventory] … is published but withheld: …`) rather than
+   disappearing silently. `pnpm --filter web check-inventory` checks the rules.
+   The minimums are deliberately small; the twelve-frame shot list below is
+   the standard to aim for, not what the gate enforces.
 
 **`alt` text matters.** Describe the car and the angle, as above. It is read
 aloud by screen readers and indexed by Google Images. Do not write "car" or

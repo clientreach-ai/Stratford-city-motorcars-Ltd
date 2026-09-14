@@ -51,7 +51,8 @@ export default async function HomePage() {
               </div>
             </>
           ) : (
-            // No published stock: no grid and no "on the floor" claim.
+            // Nothing hand-picked: no grid and no "on the floor" claim. Other
+            // stock is deliberately not promoted here to fill the space.
             <SectionHeading eyebrow="Current stock" title="Tell us what you're looking for" />
           )}
 
