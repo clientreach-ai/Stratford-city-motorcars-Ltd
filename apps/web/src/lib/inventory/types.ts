@@ -37,12 +37,19 @@ export interface ImageCredit {
   sourceUrl: string;
 }
 
+/**
+ * What a photograph shows, following the groups in PHOTOGRAPHY.md's shot list.
+ * The publishing gate in `visibility.ts` counts dealer photographs by view.
+ */
+export type PhotoView = "exterior" | "interior" | "documents";
+
 export interface VehicleImage {
   src: string;
   alt: string;
   width: number;
   height: number;
   provenance: PhotoProvenance;
+  view: PhotoView;
   credit?: ImageCredit;
 }
 
@@ -109,15 +116,20 @@ export interface Vehicle {
   libraryImages: VehicleImage[];
 
   /**
-   * Whether the car appears on the website at all. Separate from `status`
-   * (available / reserved / sold), which describes the sale. An unpublished
-   * car is filtered out in `repository.ts` before anything else sees it, so it
-   * has no listing, no page (its URL 404s), no structured data and no sitemap
-   * entry. Only publish a car once the client has confirmed it is for sale and
-   * its details and price are correct.
+   * The dealership's intent to list the car. Separate from `status`
+   * (available / reserved / sold), which describes the sale. Only set it once
+   * the client has confirmed the car is for sale and its details and price are
+   * correct.
+   *
+   * Necessary but not sufficient: the car must also pass the publishing rules
+   * in `visibility.ts` (price within the normal stock range, required dealer
+   * photography). A car failing any of them is filtered out in
+   * `repository.ts` before anything else sees it, so it has no listing, no page
+   * (its URL 404s), no structured data and no sitemap entry.
    */
   published: boolean;
   status: VehicleStatus;
+  /** Hand-picked for the homepage. Nothing else is promoted there. */
   featured: boolean;
   /** ISO timestamp — drives "new arrival" badging and the "latest arrivals" sort. */
   listedAt: string;
