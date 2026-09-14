@@ -25,7 +25,7 @@ export function ContactForm() {
       <SuccessPanel
         reference={state.reference}
         heading="Message received"
-        detail="Thanks for getting in touch — we'll come back to you as soon as we can, usually the same day."
+        detail="Thanks for getting in touch — we'll come back to you personally as soon as we can."
       />
     );
   }

@@ -11,9 +11,9 @@ import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About — Independent Stratford Dealer",
+  title: "About — A Family Business in Stratford",
   description:
-    "An independent showroom on Romford Road in Stratford. We buy carefully, prepare properly, and sell without pressure. Meet Stratford City Motorcars.",
+    "A small family-owned business on Romford Road in Stratford, trading in sports and luxury cars. Every enquiry is handled personally.",
   path: "/about",
 });
 
@@ -32,8 +32,8 @@ export default async function AboutPage() {
 
       <PageHero
         eyebrow="About us"
-        title="A small showroom that does things properly"
-        lede="We're an independent dealer on Romford Road in Stratford. No group behind us, no targets handed down from head office, and nobody here works on commission."
+        title="A small family business"
+        lede="We're a family-owned business on Romford Road in Stratford, trading in sports and luxury cars. When you get in touch, you deal with us directly."
         crumbs={crumbs}
       />
 
@@ -46,18 +46,15 @@ export default async function AboutPage() {
 
               <div className="mt-6 space-y-6 text-base leading-[1.8] md:text-lg">
                 <p className="font-display text-[clamp(1.35rem,2.6vw,1.75rem)] leading-[1.5]">
-                  We&rsquo;re a small, independent showroom and we like it that
-                  way. It means every customer gets our full attention, and every
-                  car is chosen with care.
+                  We&rsquo;re a small family-owned business and we like it that
+                  way. It means every enquiry is handled personally.
                 </p>
 
                 <p className="text-[var(--muted-foreground)]">
-                  We&rsquo;ve spent years learning what makes a good used car —
-                  and, more to the point, what makes a good buying experience.
-                  Every vehicle we take on is chosen deliberately, checked
-                  thoroughly, and only put up for sale once we&rsquo;re genuinely
-                  happy with it. If a car doesn&rsquo;t meet that standard it
-                  doesn&rsquo;t go on the forecourt; it goes back out.
+                  We trade in sports and luxury cars. A car only appears on this
+                  website once it has been properly photographed, inside and
+                  out, so you can see what you&rsquo;re looking at before you
+                  visit.
                 </p>
 
                 <p className="text-[var(--muted-foreground)]">
@@ -69,10 +66,8 @@ export default async function AboutPage() {
                 </p>
 
                 <p className="text-[var(--muted-foreground)]">
-                  Whether you&rsquo;re after an everyday car, a prestige saloon or
-                  something genuinely special, we&rsquo;ll help you find the right
-                  one and stay available afterwards. Most of our customers reach
-                  the same person they first spoke to, months later.
+                  Tell us what you&rsquo;re after and we&rsquo;ll help you find the
+                  right car.
                 </p>
               </div>
             </div>
@@ -92,12 +87,12 @@ export default async function AboutPage() {
 
                 <dl className="divide-y divide-[var(--border)]">
                   <Fact term="Where" value={`${site.address.street}, ${site.address.locality} ${site.address.postcode}`} />
-                  <Fact term="Type" value="Independent dealership" />
+                  <Fact term="Business" value="Family owned" />
+                  <Fact term="Trading in" value="Sports and luxury cars" />
                   {marques.length > 0 ? (
                     <Fact term="Marques in stock" value={marques.join(", ")} />
                   ) : null}
                   <Fact term="Also offering" value="Part exchange" />
-                  <Fact term="Before sale" value="Every car has a full service and MOT" />
                 </dl>
               </div>
 
@@ -115,7 +110,7 @@ export default async function AboutPage() {
           <SectionHeading
             eyebrow="Come and see us"
             title="The showroom"
-            lede="Two minutes from Stratford station, free parking on site, and someone here who actually knows the cars."
+            lede="A short walk from Stratford station, with free parking on site."
           />
           <div className="mt-14">
             <ShowroomPanel />

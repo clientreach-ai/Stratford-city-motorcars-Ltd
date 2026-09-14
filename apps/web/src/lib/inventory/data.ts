@@ -8,8 +8,15 @@ import type { Vehicle } from "./types";
  * seven cars; the client holds around 30 and has not confirmed that any of
  * these are still for sale or correctly priced. Two prices are confirmed wrong
  * (Dawn, Corniche). The records are kept, not deleted, so a confirmed car can
- * be corrected and published by flipping its flag. With nothing published the
- * site shows its empty-stock states.
+ * be corrected and published. With nothing published the site shows its
+ * empty-stock states.
+ *
+ * Flipping `published` alone is not enough. The publishing rules in
+ * `visibility.ts` also require a price inside the client's normal stock range
+ * (£20,000–£1,000,000) and the dealership's own exterior and interior
+ * photographs. No record here has dealer photographs, so none can appear yet,
+ * and the Jaguar XF (£16,000) and ML63 AMG (£12,000) stay hidden on price even
+ * once photographed.
  *
  * Rules followed when transcribing:
  *  - Price, mileage, year, fuel, transmission, colour, body type, description
@@ -74,6 +81,7 @@ export const vehicles: Vehicle[] = [
         width: 1023,
         height: 639,
         provenance: "library",
+        view: "exterior",
         credit: {
           author: "crash71100",
           license: "CC0 1.0",
@@ -254,6 +262,9 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    // Protected: £16,000 is below the client's normal stock range, so the
+    // price rule in visibility.ts withholds this record even if it is
+    // published and photographed. Kept as history, not as stock.
     published: false,
     status: "available",
     featured: false,
@@ -288,6 +299,9 @@ export const vehicles: Vehicle[] = [
     ],
     images: [],
     libraryImages: [],
+    // Protected: £12,000 is below the client's normal stock range, so the
+    // price rule in visibility.ts withholds this record even if it is
+    // published and photographed. Kept as history, not as stock.
     published: false,
     status: "available",
     featured: false,
