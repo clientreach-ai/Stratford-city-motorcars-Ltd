@@ -85,7 +85,7 @@ export default function ContactPage() {
               <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
                 Whether it&rsquo;s a specific car, a finance question, a
                 part-exchange valuation or something else entirely — send it over
-                and we&rsquo;ll come back to you, usually the same day.
+                and we&rsquo;ll come back to you personally.
               </p>
 
               <div className="mt-10 border-t border-[var(--border)] pt-8">
@@ -97,9 +97,9 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-medium">Looking for something specific?</h3>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                      We hold more stock than we list online, and we can source to
-                      order. Tell us the make, model and budget and we&rsquo;ll go
-                      and look for you.
+                      We hold more stock than we list online. Tell us the make,
+                      model and budget and we&rsquo;ll let you know what we
+                      have.
                     </p>
                   </div>
                 </div>

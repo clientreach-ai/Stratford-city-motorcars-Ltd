@@ -295,7 +295,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                       detail={
                         vehicle.serviceHistory
                           ? "Documentation available to view at the showroom."
-                          : "We'll go through the history file with you before you commit."
+                          : "Ask us about this car's service history."
                       }
                     />
                   </dl>

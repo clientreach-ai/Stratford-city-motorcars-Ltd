@@ -37,9 +37,9 @@ export async function generateMetadata(
 
   return {
     ...pageMetadata({
-      title: "Used Cars for Sale in Stratford, London",
+      title: "Sports & Luxury Cars for Sale in Stratford, London",
       description:
-        "Browse prestige, performance and classic used cars at our Stratford showroom. Every car has a full service and MOT before sale. Part exchange welcome.",
+        "Browse sports and luxury cars from a small family-owned business in Stratford, East London. Part exchange welcome.",
       path: "/vehicles",
     }),
     ...(filtered ? { robots: { index: false, follow: true } } : {}),
@@ -79,7 +79,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
         lede={
           summary
             ? `Showing the ${results.length === 1 ? "one car" : `${results.length} cars`} that match. Adjust the filters to widen your search.`
-            : "Browse the cars we currently have listed. Every car has a full service and MOT before it goes on sale."
+            : "Browse the cars we currently have listed."
         }
         crumbs={crumbs}
       />
@@ -189,7 +189,8 @@ function EmptyState() {
       </h2>
       <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[var(--muted-foreground)]">
         Cars come and go quickly, and some are sold before they ever reach the
-        website. Tell us what you&rsquo;re after and we&rsquo;ll go and find it.
+        website. Tell us what you&rsquo;re after and we&rsquo;ll let you know
+        what we have.
       </p>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">

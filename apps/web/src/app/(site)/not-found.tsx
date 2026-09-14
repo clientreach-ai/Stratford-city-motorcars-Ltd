@@ -30,8 +30,7 @@ export default function NotFound() {
 
         <p className="mx-auto mt-5 max-w-md leading-relaxed text-bone/55">
           The page may have moved, or the car may have sold. Either way, the rest
-          of the stock is a click away — or tell us what you&rsquo;re after and
-          we&rsquo;ll find it.
+          of the stock is a click away — or tell us what you&rsquo;re after.
         </p>
 
         <div className="mt-10 flex flex-wrap justify-center gap-3">
