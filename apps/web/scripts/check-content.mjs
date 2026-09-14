@@ -14,8 +14,9 @@
  * so explanatory comments that name a removed claim do not trip the check.
  * "Hire Purchase" (a finance product the client confirmed) is allowed.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const RULES = [
   // Vehicle hire — the client does not offer it.
@@ -54,8 +55,17 @@ const RULES = [
 ];
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
-const root = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+// fileURLToPath decodes percent-escapes (a space in the checkout path arrives
+// as %20 in the URL) and strips the leading slash from Windows drive paths.
+const root = fileURLToPath(new URL("..", import.meta.url));
 const targets = [join(root, "src"), ...process.argv.slice(2).map((dir) => join(root, dir))];
+
+for (const target of targets) {
+  if (!existsSync(target)) {
+    console.error(`Content check cannot run: ${target} does not exist.`);
+    process.exit(2);
+  }
+}
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
