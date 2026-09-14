@@ -92,7 +92,7 @@ export const partExchangeSteps: Step[] = [
   {
     title: "Receive an initial valuation",
     detail:
-      "We come back within 24 hours with a realistic figure based on what you've told us.",
+      "We come back to you personally with an initial figure based on what you've told us.",
   },
   {
     title: "Bring it in for inspection",

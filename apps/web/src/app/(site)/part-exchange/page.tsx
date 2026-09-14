@@ -13,9 +13,9 @@ import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Part Exchange — Free Car Valuation",
+  title: "Part Exchange — Value Your Car",
   description:
-    "Put your current car towards your next one. Tell us about it and we'll come back within 24 hours with an initial valuation, confirmed on inspection.",
+    "Put your current car towards your next one. Tell us about it and we'll come back to you with an initial valuation, confirmed on inspection.",
   path: "/part-exchange",
 });
 
@@ -32,7 +32,7 @@ export default function PartExchangePage() {
       <PageHero
         eyebrow="Part exchange"
         title="Your current car can do most of the work"
-        lede="Tell us what you're driving and we'll come back within 24 hours with a realistic figure. When you bring it in we confirm that valuation — we don't quietly revise it downwards and put the difference on the new car."
+        lede="Tell us what you're driving and we'll come back to you personally with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
         crumbs={crumbs}
       />
 
@@ -92,8 +92,8 @@ export default function PartExchangePage() {
               </ul>
 
               <p className="mt-8 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                Being straight with us about condition means the figure we give
-                you is the figure you get. Surprises on inspection help nobody.
+                Being straight with us about condition keeps the initial figure
+                close to the final one. Surprises on inspection help nobody.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -132,16 +132,16 @@ export default function PartExchangePage() {
 
             <div className="mt-10 space-y-8">
               <NextStep
-                title="Within 24 hours"
-                detail="We come back by phone or email with an initial figure based on what you've told us, and what the car is genuinely worth to us at that mileage and condition."
+                title="An initial figure"
+                detail="We come back to you by phone or email with an initial figure based on what you've told us."
               />
               <NextStep
                 title="When you bring it in"
-                detail="A short inspection and a look at the documents. This is where the valuation is confirmed — it takes about twenty minutes and there's free parking on site."
+                detail="A short inspection and a look at the documents. This is where the valuation is confirmed, and there's free parking on site."
               />
               <NextStep
                 title="If you go ahead"
-                detail="The agreed value comes straight off the price of your next car, or goes towards your finance deposit. If there's outstanding finance we settle it directly with your lender."
+                detail="The agreed value comes straight off the price of your next car, or goes towards your finance deposit. Any outstanding finance must be disclosed and settled."
               />
               <NextStep
                 title="If you don't"

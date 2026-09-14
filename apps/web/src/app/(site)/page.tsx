@@ -27,7 +27,7 @@ export default async function HomePage() {
               <SectionHeading
                 eyebrow="Current stock"
                 title="On the floor right now"
-                lede="Hand-picked, properly prepared and priced to be looked at closely. Take your time — nobody here works on commission."
+                lede="Hand-picked from our current stock. Take your time, and ask us anything you'd like to know."
                 action={
                   <Link
                     href="/vehicles"
@@ -132,7 +132,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Part exchange"
             title="Your current car can do most of the work"
-            lede="Tell us about it and we'll come back within 24 hours with a realistic figure — confirmed, not revised, when you bring it in."
+            lede="Tell us about it and we'll come back to you personally with an initial figure, confirmed once we've seen the car."
             action={
               <ButtonLink href="/part-exchange" size="md">
                 Value your car
@@ -175,7 +175,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="The showroom"
             title="Come and see us in Stratford"
-            lede="We're on Romford Road with free parking on site, two minutes from Stratford station. Call ahead and we'll have the car you want to see ready and waiting."
+            lede="We're on Romford Road with free parking on site, a short walk from Stratford station. Call ahead and we'll have the car you want to see ready and waiting."
           />
           <div className="mt-14">
             <ShowroomPanel />

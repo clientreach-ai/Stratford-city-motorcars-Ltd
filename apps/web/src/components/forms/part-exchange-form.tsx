@@ -34,7 +34,7 @@ export function PartExchangeForm() {
       <SuccessPanel
         reference={state.reference}
         heading="Valuation request received"
-        detail="We'll come back to you within 24 hours with an initial figure. Bring the car in and we'll confirm it in person."
+        detail="We'll come back to you personally with an initial figure. Bring the car in and we'll confirm it in person."
       />
     );
   }
