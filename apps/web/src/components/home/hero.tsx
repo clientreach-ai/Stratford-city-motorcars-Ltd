@@ -50,12 +50,12 @@ export async function Hero() {
 
       <Container className="relative pb-14 pt-16 md:pb-20 md:pt-24 lg:pt-28">
         <div className="max-w-3xl">
-          <Eyebrow>Independent · Stratford, East London</Eyebrow>
+          <Eyebrow>Family owned · Stratford, East London</Eyebrow>
 
           <h1 className="mt-6 text-[clamp(2.6rem,7.4vw,5.25rem)] leading-[0.98] tracking-[-0.025em]">
-            Prestige, performance
+            Sports and luxury cars,
             <br className="hidden sm:block" />{" "}
-            <span className="italic text-brass-bright">and classic</span> motorcars.
+            <span className="italic text-brass-bright">from a family</span> business.
           </h1>
 
           <p className="mt-7 max-w-xl text-base leading-relaxed text-bone/65 md:text-lg">
@@ -65,7 +65,8 @@ export async function Hero() {
                 the floor in Stratford, from {formatPrice(Math.min(...prices))}.{" "}
               </>
             ) : null}
-            Every car has a full service and MOT before it goes on sale.
+            Take your time and ask us anything. Every enquiry is handled
+            personally.
           </p>
 
           <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">

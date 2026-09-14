@@ -9,6 +9,7 @@ import {
   type VehicleQuery,
   type VehicleView,
 } from "./types";
+import { publicationBlockers, selectFeatured } from "./visibility";
 
 /**
  * ============================================================================
@@ -40,16 +41,37 @@ import {
  * thousands). If the inventory grows past a few hundred vehicles, push
  * `searchVehicles` down into SQL and keep the same signature.
  *
- * Visibility: unpublished vehicles are removed here, and only here. Every
- * public function below — listings, featured, related, facets, the make/model
- * index, static params, the sitemap and single-vehicle lookups (so a hidden
- * car's URL 404s) — reads through `loadVehicles()`, so a hidden car cannot
- * leak through any of them. Any replacement source must keep this filter.
+ * Visibility: vehicles that fail the publishing rules in `visibility.ts` (not
+ * published, price outside the normal stock range, or missing the required
+ * dealer photography) are removed here, and only here. Every public function
+ * below — listings, featured, related, facets, the make/model index, static
+ * params, the sitemap and single-vehicle lookups (so a hidden car's URL 404s)
+ * — reads through `loadVehicles()`, so a hidden car cannot leak through any of
+ * them. Any replacement source must keep this filter.
  *
  * Every consumer must also cope with this returning an empty array.
  */
 async function loadVehicles(): Promise<Vehicle[]> {
-  return staticVehicles.filter((vehicle) => vehicle.published);
+  return staticVehicles.filter((vehicle) => {
+    const blockers = publicationBlockers(vehicle);
+    if (vehicle.published && blockers.length > 0) warnWithheld(vehicle, blockers);
+    return blockers.length === 0;
+  });
+}
+
+const warned = new Set<string>();
+
+/**
+ * A car marked published but withheld by a rule is logged once per process,
+ * so setting the flag never fails silently. Unpublished cars are expected and
+ * not logged.
+ */
+function warnWithheld(vehicle: Vehicle, blockers: string[]): void {
+  if (warned.has(vehicle.id)) return;
+  warned.add(vehicle.id);
+  console.warn(
+    `[inventory] ${vehicle.id} (${vehicle.slug}) is published but withheld: ${blockers.join(", ")}`,
+  );
 }
 
 /** A listing counts as a new arrival for this many days after being listed. */
@@ -87,13 +109,9 @@ export async function getVehicleSlugs(): Promise<string[]> {
   return all.map((vehicle) => vehicle.slug);
 }
 
+/** Hand-picked cars only; may return fewer than `limit`, or none. */
 export async function getFeaturedVehicles(limit = 4): Promise<VehicleView[]> {
-  const all = await getAllVehicles();
-  const available = all.filter((vehicle) => vehicle.status !== "sold");
-  const featured = available.filter((vehicle) => vehicle.featured);
-  // Fall back to the most recently listed stock so the homepage is never empty.
-  const pool = featured.length >= limit ? featured : [...featured, ...available.filter((v) => !v.featured)];
-  return pool.slice(0, limit);
+  return selectFeatured(await getAllVehicles(), limit);
 }
 
 /** Same make first, then closest on price. Used at the foot of a vehicle page. */

@@ -26,7 +26,7 @@ export function FinanceForm({ defaultVehicle }: { defaultVehicle?: string }) {
       <SuccessPanel
         reference={state.reference}
         heading="Finance enquiry received"
-        detail="Thanks — we'll come back to you about your finance enquiry, usually the same day."
+        detail="Thanks — we'll come back to you personally about your finance enquiry."
       />
     );
   }

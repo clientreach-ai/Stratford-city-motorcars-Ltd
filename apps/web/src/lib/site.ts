@@ -43,7 +43,12 @@ export const site = {
   name: "Stratford City Motorcars",
   /** Used where a longer, more formal reading suits the sentence. */
   longName: "Stratford City Motorcars",
-  tagline: "Prestige, performance and classic motorcars in Stratford, East London",
+  /**
+   * The client's own positioning: "Small family owned business trading in
+   * sports and luxury cars." Not a specialist in any one marque, not a dealer
+   * group, and no commission or preparation promises the intake does not make.
+   */
+  tagline: "Sports and luxury cars from a small family-owned business in Stratford, East London",
 
   /**
    * Canonical origin. Override per environment with NEXT_PUBLIC_SITE_URL —

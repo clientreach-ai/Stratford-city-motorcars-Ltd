@@ -42,11 +42,11 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} — Prestige Used Cars in Stratford, London`,
+    default: `${site.name} — Sports & Luxury Cars in Stratford, London`,
     template: `%s | ${site.name}`,
   },
   description:
-    "Independent Stratford dealer in prestige, performance and classic used cars. Every car has a full service and MOT before sale. Part exchange welcome.",
+    "A small family-owned business in Stratford, East London, trading in sports and luxury cars. Every enquiry is handled personally. Part exchange welcome.",
   applicationName: site.name,
   authors: [{ name: site.name, url: site.url }],
   creator: site.name,

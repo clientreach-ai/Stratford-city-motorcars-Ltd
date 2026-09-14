@@ -65,9 +65,8 @@ export async function SiteFooter() {
               className="h-11 w-auto"
             />
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-bone/55">
-              An independent Stratford showroom dealing in prestige, performance
-              and classic motorcars. Every car has a full service and MOT before
-              it is offered for sale.
+              A small family-owned business in Stratford, trading in sports and
+              luxury cars. Every enquiry is handled personally.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2">
