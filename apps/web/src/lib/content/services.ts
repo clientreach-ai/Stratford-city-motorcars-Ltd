@@ -1,10 +1,19 @@
 /**
- * Editorial content for the finance, part-exchange, trust and hire sections.
+ * Editorial content for the finance and part-exchange sections.
  *
- * Every factual claim traces back to the dealership's existing site, FAQs or
- * terms. Where they state a figure (deposit from 10%, terms to 5 years, £0.15
- * per excess mile) it is reproduced exactly. No rates, APRs, approval odds or
- * guarantees have been added — those would need to come from the lender.
+ * The finance product descriptions were confirmed by the client as accurate
+ * ("all three, exactly as described"). Figures such as deposit from 10% and
+ * terms up to 5 years are reproduced exactly. Nothing here states that finance
+ * is currently arranged, names lenders, or makes approval-speed claims — the
+ * client has no lender panel yet and its regulatory wording is unconfirmed.
+ * "Quick approvals" was removed from the loan for the same reason.
+ *
+ * The previous "six commitments" trust list was removed: four of its points
+ * (HPI on every car, multi-point inspection, AA warranty, broker/lender panel)
+ * contradicted the intake. The client's rewritten promises are pending.
+ *
+ * Vehicle hire is intentionally absent: the client confirmed hire is not part
+ * of this business (City Chauffeurs handles it).
  */
 
 export interface FinanceProduct {
@@ -62,7 +71,6 @@ export const financeProducts: FinanceProduct[] = [
       "You own the car immediately",
       "Fixed interest rates",
       "No mileage restrictions",
-      "Quick approvals",
     ],
     bestFor: "Buyers who want immediate, unencumbered ownership.",
     ownership: "Yours from the moment you buy.",
@@ -74,29 +82,6 @@ export interface Step {
   title: string;
   detail: string;
 }
-
-export const financeSteps: Step[] = [
-  {
-    title: "Tell us what you're after",
-    detail:
-      "Send us the vehicle you like, roughly what you can put down, and the monthly figure you're comfortable with.",
-  },
-  {
-    title: "We approach our lenders",
-    detail:
-      "We're a credit broker, so we put your circumstances to several FCA-regulated lenders rather than a single one.",
-  },
-  {
-    title: "You see the options in writing",
-    detail:
-      "We come back with what's actually available to you, with the total cost set out — not just the monthly figure.",
-  },
-  {
-    title: "Decide in your own time",
-    detail:
-      "Nothing is committed until you sign. If the numbers don't work for you, we'll say so.",
-  },
-];
 
 export const partExchangeSteps: Step[] = [
   {
@@ -129,82 +114,3 @@ export const partExchangeChecklist: string[] = [
   "Any modifications",
   "Outstanding finance, if there is any",
 ];
-
-export interface TrustPoint {
-  title: string;
-  detail: string;
-}
-
-/**
- * The "why us" section. Written to say something specific and checkable rather
- * than the usual dealership filler — each point corresponds to a commitment
- * the dealership already makes in its own terms and FAQs.
- */
-export const trustPoints: TrustPoint[] = [
-  {
-    title: "Every car is HPI clear",
-    detail:
-      "We run a full HPI check on every vehicle before it reaches the forecourt — no outstanding finance, no write-off record, not stolen. You see the result.",
-  },
-  {
-    title: "Inspected before it's listed",
-    detail:
-      "Multi-point safety and mechanical inspection, then proper preparation. If a car doesn't meet the standard, we don't sell it.",
-  },
-  {
-    title: "AA warranty options to 12 months",
-    detail:
-      "Cover is available on every car we sell. What's available depends on the vehicle's age and value, and we set it out in full before you buy.",
-  },
-  {
-    title: "Finance through regulated lenders",
-    detail:
-      "We're a credit broker, not a lender. We put your case to several FCA-regulated finance partners so you can compare what's genuinely open to you.",
-  },
-  {
-    title: "Honest part-exchange valuations",
-    detail:
-      "An initial figure within 24 hours, confirmed on inspection. If your car is worth less than you hoped, we'll tell you why rather than quietly adjust the new car's price.",
-  },
-  {
-    title: "One small team, start to finish",
-    detail:
-      "You deal with the same people from first enquiry through to handover. No call centre, no rotating salespeople, no pressure to decide today.",
-  },
-];
-
-// ---- Executive hire -------------------------------------------------------
-
-/**
- * The dealership's existing hire line. Facts are taken from their FAQs, terms
- * and the CarRental schema on their previous homepage. The indicative daily
- * range (£39–£79) is their published figure; it is labelled as a guide because
- * we cannot verify it is current.
- */
-export const hire = {
-  summary:
-    "Alongside sales we run a small hire fleet from the same Stratford showroom — useful if you need something for a few days, or want to live with a car before committing to it.",
-  indicativeDailyRange: "£39 – £79 per day",
-  included: [
-    "Comprehensive insurance",
-    "24/7 breakdown cover",
-    "Mileage allowance as set out in the agreement",
-    "All documentation",
-  ],
-  requirements: [
-    "Minimum age 21, or 25 for premium and executive vehicles",
-    "Valid UK or EU driving licence held for at least two years",
-    "Security deposit taken at collection",
-    "Additional drivers must be declared and meet the same requirements",
-  ],
-  terms: [
-    "Same-day hire is available subject to availability — call before 4pm",
-    "Fuel is full-to-full",
-    "Excess mileage is charged at £0.15 per mile",
-    "UK mainland use only unless agreed in advance",
-    "Free cancellation up to 24 hours before the hire starts",
-    "No smoking in any hire vehicle",
-  ],
-  delivery:
-    "Delivery within the London area can be arranged for an additional fee — useful for airport, hotel and business collections.",
-};

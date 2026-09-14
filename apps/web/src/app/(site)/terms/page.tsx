@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 
-import { LegalDocumentPage } from "@/components/site/legal-document";
+import { LegalPlaceholderPage } from "@/components/site/legal-document";
 import { JsonLd } from "@/components/ui/json-ld";
-import { termsDocument } from "@/lib/content/legal";
+import { beingPrepared, legalPlaceholders } from "@/lib/content/legal";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 
+const document = legalPlaceholders.terms;
+
+// Interim placeholder: kept out of search results until approved terms exist.
 export const metadata: Metadata = pageMetadata({
-  title: "Terms & Conditions",
-  description:
-    "Terms and conditions for vehicle sales, hire, finance and part exchange at Stratford City Motorcars.",
+  title: document.title,
+  description: `${beingPrepared(document)}.`,
   path: "/terms",
+  noIndex: true,
 });
 
 const crumbs = [
@@ -21,7 +24,7 @@ export default function TermsPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
-      <LegalDocumentPage document={termsDocument} crumbs={crumbs} />
+      <LegalPlaceholderPage document={document} crumbs={crumbs} />
     </>
   );
 }

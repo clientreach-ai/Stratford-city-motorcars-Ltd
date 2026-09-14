@@ -21,11 +21,7 @@ import { Container, Eyebrow, Section } from "@/components/ui/section";
 import { MobileActionBar } from "@/components/vehicle/mobile-action-bar";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { VehicleGallery } from "@/components/vehicle/vehicle-gallery";
-import {
-  formatMileage,
-  formatPrice,
-  formatWarranty,
-} from "@/lib/format";
+import { formatMileage, formatPrice } from "@/lib/format";
 import {
   getRelatedVehicles,
   getVehicleBySlug,
@@ -159,8 +155,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                       {formatPrice(vehicle.price)}
                     </p>
                     <p className="mt-2.5 text-xs text-[var(--muted-foreground)]">
-                      Includes VAT where applicable. Finance available subject to
-                      status.
+                      Includes VAT where applicable.
                     </p>
                   </div>
                 </div>
@@ -284,19 +279,14 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                   <dl className="mt-5 grid gap-px bg-[var(--border)] sm:grid-cols-3">
                     <AssuranceCard
                       icon={<BadgeCheck className="size-4" />}
-                      term="HPI status"
-                      value={vehicle.hpiClear ? "HPI clear" : "Ask us"}
-                      detail={
-                        vehicle.hpiClear
-                          ? "Not stolen, not written off, no outstanding finance. Documentation provided."
-                          : "We'll confirm the HPI position for this vehicle in writing."
-                      }
+                      term="History check"
+                      {...historyCheckCopy(vehicle.hpiStatus)}
                     />
                     <AssuranceCard
                       icon={<ShieldCheck className="size-4" />}
                       term="Warranty"
-                      value={formatWarranty(vehicle.warrantyMonths)}
-                      detail="AA warranty options up to 12 months. Cover depends on the vehicle's age and value."
+                      value={site.warranty.label}
+                      detail={site.warranty.statement}
                     />
                     <AssuranceCard
                       icon={<Car className="size-4" />}
@@ -339,8 +329,8 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                 </h2>
                 <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
                   Send us a message and we&rsquo;ll come back to you with
-                  anything you want to know — history, condition, finance
-                  figures, or a part-exchange valuation for your current car.
+                  anything you want to know — history, condition, finance, or a
+                  part-exchange valuation for your current car.
                 </p>
 
                 <ul className="mt-9 space-y-4">
@@ -463,6 +453,34 @@ function SpecTable({ vehicle }: { vehicle: VehicleView }) {
       ))}
     </dl>
   );
+}
+
+/**
+ * History checks are run through Autotrader and are not downloadable, and not
+ * every car is checked — so the card never implies a check the dealership has
+ * not confirmed for this specific vehicle.
+ */
+function historyCheckCopy(status: VehicleView["hpiStatus"]): {
+  value: string;
+  detail: string;
+} {
+  switch (status) {
+    case "clear":
+      return {
+        value: "Clear",
+        detail: "History checked through Autotrader. Ask us and we'll go through the result with you.",
+      };
+    case "not-checked":
+      return {
+        value: "Not checked",
+        detail: "This car has not been history checked. Ask us if you have any questions about its history.",
+      };
+    default:
+      return {
+        value: "Ask us",
+        detail: "Ask us about the history check for this car.",
+      };
+  }
 }
 
 function AssuranceCard({

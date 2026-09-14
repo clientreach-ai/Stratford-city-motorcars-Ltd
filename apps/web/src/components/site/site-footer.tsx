@@ -3,26 +3,54 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { getAllVehicles } from "@/lib/inventory/repository";
+import type { VehicleView } from "@/lib/inventory/types";
 import { mapLinks, site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
-const stockLinks = [
-  { href: "/vehicles", label: "All vehicles" },
-  { href: "/vehicles?make=Rolls-Royce", label: "Rolls-Royce" },
-  { href: "/vehicles?make=Mercedes-Benz", label: "Mercedes-Benz" },
-  { href: "/vehicles?bodyType=Convertible", label: "Convertibles" },
-  { href: "/vehicles?bodyType=SUV", label: "SUVs" },
-] as const;
+type FooterHref = React.ComponentProps<typeof Link>["href"];
+
+/** The most common values of a field across published stock, most frequent first. */
+function topValues(vehicles: VehicleView[], pick: (vehicle: VehicleView) => string, limit: number) {
+  const counts = new Map<string, number>();
+  for (const vehicle of vehicles) counts.set(pick(vehicle), (counts.get(pick(vehicle)) ?? 0) + 1);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([value]) => value);
+}
+
+/**
+ * Stock shortcuts are derived from what is actually published, so the footer
+ * never links to a make or body type with nothing behind it. With no published
+ * stock only "All vehicles" remains.
+ */
+async function getStockLinks(): Promise<{ href: FooterHref; label: string }[]> {
+  const vehicles = (await getAllVehicles()).filter((vehicle) => vehicle.status !== "sold");
+
+  return [
+    { href: "/vehicles", label: "All vehicles" },
+    ...topValues(vehicles, (vehicle) => vehicle.make, 2).map((make) => ({
+      href: { pathname: "/vehicles", query: { make } },
+      label: make,
+    })),
+    ...topValues(vehicles, (vehicle) => vehicle.bodyType, 2).map((bodyType) => ({
+      href: { pathname: "/vehicles", query: { bodyType } },
+      label: bodyType,
+    })),
+  ];
+}
 
 const serviceLinks = [
   { href: "/finance", label: "Car finance" },
   { href: "/part-exchange", label: "Part exchange" },
-  { href: "/hire", label: "Executive hire" },
   { href: "/about", label: "About us" },
   { href: "/contact", label: "Contact" },
 ] as const;
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const stockLinks = await getStockLinks();
+
   return (
     <footer data-surface="dark" className="bg-ink-950 text-bone">
       <div className="container-page py-16 md:py-20">
@@ -38,8 +66,8 @@ export function SiteFooter() {
             />
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-bone/55">
               An independent Stratford showroom dealing in prestige, performance
-              and classic motorcars. Every car HPI clear, inspected and prepared
-              before it is offered for sale.
+              and classic motorcars. Every car has a full service and MOT before
+              it is offered for sale.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2">
@@ -103,7 +131,7 @@ export function SiteFooter() {
             </li>
             <li className="pt-1">
               <dl className="space-y-1 text-sm text-bone/60">
-                {site.openingHoursSummary.map((entry) => (
+                {site.hours.summary.map((entry) => (
                   <div key={entry.label} className="flex justify-between gap-4">
                     <dt>{entry.label}</dt>
                     <dd data-numeric className="text-bone/80">{entry.value}</dd>
@@ -115,11 +143,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-14 border-t border-bone/10 pt-8">
-          <p className="max-w-4xl text-xs leading-relaxed text-bone/60">
-            {site.compliance.creditBroker} {site.compliance.financeSubjectToStatus}
-          </p>
-
-          <div className="mt-6 flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-center">
+          <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-center">
             <p>
               © {new Date().getFullYear()} {site.name}. All rights reserved.
             </p>
@@ -170,7 +194,7 @@ function FooterLink({
   href,
   children,
 }: {
-  href: React.ComponentProps<typeof Link>["href"];
+  href: FooterHref;
   children: React.ReactNode;
 }) {
   return (

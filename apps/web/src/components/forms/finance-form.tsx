@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/field";
 import { submitFinanceEnquiry } from "@/lib/forms/actions";
 import { EMPLOYMENT_STATUSES, type FormState } from "@/lib/forms/options";
-import { site } from "@/lib/site";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
 
@@ -27,7 +26,7 @@ export function FinanceForm({ defaultVehicle }: { defaultVehicle?: string }) {
       <SuccessPanel
         reference={state.reference}
         heading="Finance enquiry received"
-        detail="We'll put your details to our lending partners and come back to you with the options actually available to you — usually the same working day."
+        detail="Thanks — we'll come back to you about your finance enquiry, usually the same day."
       />
     );
   }
@@ -164,12 +163,7 @@ export function FinanceForm({ defaultVehicle }: { defaultVehicle?: string }) {
         <span>I have a car to part exchange</span>
       </label>
 
-      <SubmitButton className="w-full">Get finance options</SubmitButton>
-
-      <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-        {site.compliance.creditBroker} {site.compliance.financeSubjectToStatus} We
-        will never run a credit check without telling you first.
-      </p>
+      <SubmitButton className="w-full">Send finance enquiry</SubmitButton>
 
       <DirectContactNote />
     </form>

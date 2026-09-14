@@ -1,9 +1,10 @@
 /**
  * Single source of truth for the dealership's business facts.
  *
- * Every value here was taken from the live Stratford City Motorcars site or its
- * public API. Nothing is invented. Where a fact could not be verified it is
- * marked `null` and the UI omits it rather than guessing.
+ * The client intake (September 2026) is authoritative. Values from the previous
+ * website are kept only where the intake does not contradict them, and nothing
+ * is invented. Where a fact is not confirmed it is marked `null` and the UI
+ * omits it rather than guessing.
  *
  * The geo coordinates are the one deliberate correction: the previous site
  * published 51.5365 / 0.0040, which sits roughly 650m from the showroom. The
@@ -12,6 +13,30 @@
  */
 
 const RAW_PHONE = "+447722116355";
+
+// ---- Opening hours ----------------------------------------------------------
+//
+// Confirmed by the client: Monday to Friday 12pm–5pm; weekends and bank
+// holidays by appointment only; out-of-hours viewings arranged by WhatsApp or
+// text. These three constants are the only place hours are defined — every
+// string below and the structured data in `seo.ts` derive from them, so the
+// header, footer, contact page and schema cannot disagree again.
+
+const OPEN_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+const OPENS = "12:00";
+const CLOSES = "17:00";
+
+/** "12:00" → "12pm", "17:30" → "5:30pm". */
+function clock(time: string): string {
+  const hours = Number(time.slice(0, 2));
+  const minutes = time.slice(3, 5);
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${hour12}${minutes === "00" ? "" : `:${minutes}`}${hours >= 12 ? "pm" : "am"}`;
+}
+
+const firstDay = OPEN_DAYS[0];
+const lastDay = OPEN_DAYS[OPEN_DAYS.length - 1];
+const openTimes = `${clock(OPENS)}–${clock(CLOSES)}`;
 
 export const site = {
   /** Brand name as it is set in the logo ("MOTORCARS", one word). */
@@ -56,26 +81,31 @@ export const site = {
     longitude: 0.005234,
   },
 
-  /** Sat nav sometimes routes better to the adjacent postcode — their own guidance. */
-  satNavPostcode: "E15 2BX",
+  hours: {
+    /**
+     * The regular opening hours — the only hours published as structured data.
+     * Appointment-only times have no Schema.org equivalent and are not encoded.
+     */
+    open: { days: OPEN_DAYS, opens: OPENS, closes: CLOSES },
 
-  openingHours: [
-    { day: "Monday", opens: "09:00", closes: "18:00" },
-    { day: "Tuesday", opens: "09:00", closes: "18:00" },
-    { day: "Wednesday", opens: "09:00", closes: "18:00" },
-    { day: "Thursday", opens: "09:00", closes: "18:00" },
-    { day: "Friday", opens: "09:00", closes: "18:00" },
-    { day: "Saturday", opens: "09:00", closes: "18:00" },
-    { day: "Sunday", opens: "10:00", closes: "16:00" },
-  ],
+    /** Rows for the footer and the showroom panel. */
+    summary: [
+      { label: `${firstDay} – ${lastDay}`, value: openTimes },
+      { label: "Saturday & Sunday", value: "By appointment" },
+      { label: "Bank holidays", value: "By appointment" },
+    ],
 
-  /** Condensed form for footers and compact cards. */
-  openingHoursSummary: [
-    { label: "Monday – Saturday", value: "9:00am – 6:00pm" },
-    { label: "Sunday", value: "10:00am – 4:00pm" },
-  ],
+    /** One line for tight spaces: header strip, mobile drawer, contact card. */
+    compact: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes} · Weekends & bank holidays by appointment`,
 
-  outOfHours: "Viewings outside these hours can be arranged on request — just call ahead.",
+    /** Weekday hours only, for the header strip where `compact` would wrap. */
+    short: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes}`,
+
+    /** Full sentence for metadata and running copy. */
+    sentence: `We're open ${firstDay} to ${lastDay}, ${openTimes}, and by appointment at weekends and on bank holidays.`,
+
+    outOfHours: "To arrange a viewing outside these hours, message us on WhatsApp or send a text.",
+  },
 
   parking: "Free parking on site.",
 
@@ -88,37 +118,41 @@ export const site = {
       label: "Bus routes",
       detail: "25, 86, 238 and 276 all stop on Romford Road",
     },
-    road: {
-      label: "By road",
-      detail: `Direct access from the A11 and A12. Sat nav ${"E15 2BX"} routes to the parking entrance.`,
-    },
   },
 
   /**
-   * Regulatory position, quoted from the dealership's own terms. They are an
-   * introducer, not a lender — this wording must not be softened.
+   * Confirmed by the client: warranties are not included in the price and are
+   * sold separately through a third-party provider. The provider is not named,
+   * and whether cover is offered on every car is unconfirmed — so the site says
+   * neither.
+   */
+  warranty: {
+    label: "Sold separately",
+    statement:
+      "Warranty is not included in the vehicle price. Third-party warranty cover is sold separately.",
+  },
+
+  /**
+   * Regulatory wording. The previous site's "credit broker, not a lender" and
+   * "subject to status… lender approval" lines were removed: the client has no
+   * lender panel yet and is still confirming whether it acts as a broker,
+   * lender or introducer. Replacement wording must come from the client's
+   * compliance adviser — do not write it here.
    */
   compliance: {
-    creditBroker:
-      "Stratford City Motorcars is a credit broker, not a lender. We introduce customers to FCA-regulated finance partners.",
-    financeSubjectToStatus:
-      "All finance is subject to status, eligibility and lender approval. Terms and conditions apply.",
     partExchangeSubjectToInspection:
       "All valuations are an initial guide and are confirmed only after a physical inspection and document check.",
     /**
-     * Their published site carries no FCA firm reference, company number or VAT
-     * number. These render only once real values are supplied — never invented.
+     * Not rendered anywhere. The intake supplies FCA firm reference 1042347 and
+     * company number 15481206, but they stay null until the approved FCA status
+     * wording and the registered office address are confirmed and a component
+     * is added to display them.
      */
     fcaFirmReferenceNumber: null as string | null,
     companyNumber: null as string | null,
     vatNumber: null as string | null,
   },
-
-  /** Deposit band taken verbatim from their terms. */
-  reservationDeposit: "£99 – £500",
 } as const;
-
-export type OpeningHours = (typeof site.openingHours)[number];
 
 /** Google Maps deep links, built from the address rather than hardcoded URLs. */
 export const mapLinks = {

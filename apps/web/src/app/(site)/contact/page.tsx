@@ -15,8 +15,7 @@ import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
   title: "Contact — Romford Road, Stratford E15",
-  description:
-    "Call, WhatsApp or email us. Find us at 21-25 Romford Road, Stratford, London E15 4LJ with free parking on site. Open Mon–Sat 9–6, Sun 10–4.",
+  description: `Call, WhatsApp or email us. Find us at ${site.address.full} with free parking on site. ${site.hours.sentence}`,
   path: "/contact",
 });
 
@@ -27,10 +26,19 @@ const crumbs = [
 
 export default function ContactPage() {
   const visitingFaqs = faqsByCategory("Visiting");
+  // FAQ structured data is only emitted alongside the visible questions, and
+  // never as an empty FAQPage.
+  const hasFaqs = visitingFaqs.length > 0;
 
   return (
     <>
-      <JsonLd data={[breadcrumbSchema(crumbs), faqSchema(visitingFaqs)]} />
+      <JsonLd
+        data={
+          hasFaqs
+            ? [breadcrumbSchema(crumbs), faqSchema(visitingFaqs)]
+            : breadcrumbSchema(crumbs)
+        }
+      />
 
       <PageHero
         eyebrow="Contact"
@@ -45,7 +53,7 @@ export default function ContactPage() {
             icon={<Phone className="size-5" />}
             label="Call the showroom"
             value={site.phone.display}
-            detail="Mon–Sat 9am–6pm · Sun 10am–4pm"
+            detail={site.hours.compact}
           />
           <ChannelCard
             href={whatsappLinks.general}
@@ -114,9 +122,7 @@ export default function ContactPage() {
               21-25 Romford Road, Stratford
             </h2>
             <p className="mt-5 leading-relaxed text-[var(--muted-foreground)]">
-              We&rsquo;re on Romford Road with free parking on site. Sat nav can
-              be vague around here — {site.satNavPostcode} takes you to the
-              parking entrance more reliably than the postcode.
+              We&rsquo;re on Romford Road with free parking on site.
             </p>
           </div>
 
@@ -127,19 +133,21 @@ export default function ContactPage() {
       </Section>
 
       {/* ---- FAQs ------------------------------------------------------------ */}
-      <Section size="md">
-        <Container>
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-20">
-            <div>
-              <Eyebrow>Before you come</Eyebrow>
-              <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
-                Visiting questions
-              </h2>
+      {hasFaqs ? (
+        <Section size="md">
+          <Container>
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-20">
+              <div>
+                <Eyebrow>Before you come</Eyebrow>
+                <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
+                  Visiting questions
+                </h2>
+              </div>
+              <FaqList faqs={visitingFaqs} />
             </div>
-            <FaqList faqs={visitingFaqs} />
-          </div>
-        </Container>
-      </Section>
+          </Container>
+        </Section>
+      ) : null}
     </>
   );
 }

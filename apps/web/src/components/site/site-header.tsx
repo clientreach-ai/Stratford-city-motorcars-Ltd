@@ -135,9 +135,11 @@ function UtilityStrip() {
           {site.address.street}, {site.address.locality} {site.address.postcode}
         </p>
         <div className="flex items-center gap-6">
-          <span className="text-bone/55">
-            Mon–Sat 9–6 · Sun 10–4
-          </span>
+          {/* The full line wraps the fixed-height strip below lg, so tablets
+              get the weekday hours; the appointment-only times stay in the
+              footer, the showroom panel and the mobile drawer. */}
+          <span className="text-bone/55 lg:hidden">{site.hours.short}</span>
+          <span className="hidden text-bone/55 lg:inline">{site.hours.compact}</span>
           <a
             href={site.phone.href}
             className="flex items-center gap-2 tracking-wide transition-colors hover:text-brass"
@@ -302,7 +304,7 @@ function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
           <p className="pt-2 text-center text-[0.6875rem] leading-relaxed text-bone/60">
             {site.address.full}
             <br />
-            Mon–Sat 9am–6pm · Sun 10am–4pm
+            {site.hours.compact}
           </p>
         </div>
       </div>
