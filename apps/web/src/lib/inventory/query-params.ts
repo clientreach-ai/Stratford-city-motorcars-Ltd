@@ -1,4 +1,4 @@
-import { SORT_OPTIONS, type SortOption, type VehicleQuery } from "./types";
+import { DEFAULT_SORT, SORT_OPTIONS, type SortOption, type VehicleQuery } from "./types";
 
 /** What Next hands a page as `searchParams`. */
 export type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -47,7 +47,7 @@ export function parseSearchParams(params: RawSearchParams): VehicleQuery {
     maxMileage: toNumber(params.maxMileage),
     minYear: toNumber(params.minYear),
     maxYear: toNumber(params.maxYear),
-    sort: sortRaw && sortValues.has(sortRaw) ? (sortRaw as SortOption) : "newest",
+    sort: sortRaw && sortValues.has(sortRaw) ? (sortRaw as SortOption) : DEFAULT_SORT,
   };
 }
 
@@ -68,7 +68,7 @@ export function toSearchString(query: VehicleQuery): string {
 
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined) continue;
-    if (key === "sort" && value === "newest") continue;
+    if (key === "sort" && value === DEFAULT_SORT) continue;
     if (Array.isArray(value)) {
       for (const entry of value) params.append(key, entry);
     } else {

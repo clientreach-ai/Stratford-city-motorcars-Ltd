@@ -35,7 +35,6 @@ export const ENQUIRY_TYPES = [
   "Buying a car",
   "Finance",
   "Part exchange",
-  "Vehicle hire",
   "Something else",
 ] as const;
 

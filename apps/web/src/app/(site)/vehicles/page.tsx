@@ -39,7 +39,7 @@ export async function generateMetadata(
     ...pageMetadata({
       title: "Used Cars for Sale in Stratford, London",
       description:
-        "Browse prestige, performance and classic used cars at our Stratford showroom. Every vehicle HPI clear and inspected. Finance and part exchange available.",
+        "Browse prestige, performance and classic used cars at our Stratford showroom. Every car has a full service and MOT before sale. Part exchange welcome.",
       path: "/vehicles",
     }),
     ...(filtered ? { robots: { index: false, follow: true } } : {}),
@@ -58,11 +58,19 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
 
   const activeCount = countActiveFilters(query);
   const summary = describeQuery(query);
+  // With no published stock there is nothing to filter or sort: the rail, the
+  // filter sheet and the sort control are left out and the empty state takes
+  // the full width.
+  const hasStock = total > 0;
 
   return (
     <>
       <JsonLd
-        data={[breadcrumbSchema(crumbs), itemListSchema(results)]}
+        data={
+          results.length > 0
+            ? [breadcrumbSchema(crumbs), itemListSchema(results)]
+            : breadcrumbSchema(crumbs)
+        }
       />
 
       <PageHero
@@ -71,17 +79,19 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
         lede={
           summary
             ? `Showing the ${results.length === 1 ? "one car" : `${results.length} cars`} that match. Adjust the filters to widen your search.`
-            : "Prestige saloons, performance convertibles, classic Rolls-Royces and everyday SUVs. Each one chosen, checked and prepared before it goes on sale."
+            : "Browse the cars we currently have listed. Every car has a full service and MOT before it goes on sale."
         }
         crumbs={crumbs}
       />
 
       <Section size="sm">
         <Container>
-          <div className="grid gap-10 lg:grid-cols-[17rem_1fr] lg:gap-14">
-            <Suspense fallback={<FiltersFallback />}>
-              <VehicleFilterRail facets={facets} activeCount={activeCount} />
-            </Suspense>
+          <div className={hasStock ? "grid gap-10 lg:grid-cols-[17rem_1fr] lg:gap-14" : undefined}>
+            {hasStock ? (
+              <Suspense fallback={<FiltersFallback />}>
+                <VehicleFilterRail facets={facets} activeCount={activeCount} />
+              </Suspense>
+            ) : null}
 
             <div className="min-w-0">
               {/* Results bar: count, filter trigger, sort. */}
@@ -98,18 +108,20 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                   )}
                 </p>
 
-                <div className="flex items-center gap-3">
-                  <Suspense fallback={null}>
-                    <VehicleFilterSheet
-                      facets={facets}
-                      resultCount={results.length}
-                      activeCount={activeCount}
-                    />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <VehicleSort />
-                  </Suspense>
-                </div>
+                {hasStock ? (
+                  <div className="flex items-center gap-3">
+                    <Suspense fallback={null}>
+                      <VehicleFilterSheet
+                        facets={facets}
+                        resultCount={results.length}
+                        activeCount={activeCount}
+                      />
+                    </Suspense>
+                    <Suspense fallback={null}>
+                      <VehicleSort />
+                    </Suspense>
+                  </div>
+                ) : null}
               </div>
 
               <div className="pt-5">
@@ -133,10 +145,11 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                 <EmptyState />
               )}
 
-              <p className="mt-10 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                All prices include VAT where applicable.{" "}
-                {site.compliance.financeSubjectToStatus}
-              </p>
+              {results.length > 0 ? (
+                <p className="mt-10 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                  All prices include VAT where applicable.
+                </p>
+              ) : null}
             </div>
           </div>
         </Container>

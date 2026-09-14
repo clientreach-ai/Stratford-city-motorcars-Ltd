@@ -64,6 +64,13 @@ judged before deciding whether to extend it. Remove it by emptying
 `images` always wins over `libraryImages`, and the "library image" caption
 disappears on its own once dealer photographs exist.
 
+4. **Photographs do not publish a car.** Every record in `data.ts` currently has
+   `published: false`, and a car appears on the site only once that flag is set
+   to `true` — after the client has confirmed it is for sale and its price and
+   details are correct. The client asked for cars without photographs to be
+   hidden; whether un-photographed cars may be published with the placeholder
+   plate in the meantime is still an open decision.
+
 **`alt` text matters.** Describe the car and the angle, as above. It is read
 aloud by screen readers and indexed by Google Images. Do not write "car" or
 repeat the listing title.

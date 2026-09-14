@@ -48,6 +48,9 @@ export interface VehicleImage {
 
 export type VehicleStatus = "available" | "reserved" | "sold";
 
+/** Confirmed history-check outcomes. Unknown is represented by leaving it unset. */
+export type HpiStatus = "clear" | "not-checked";
+
 export interface Vehicle {
   id: string;
   /** SEO-friendly URL segment, e.g. `mercedes-benz-sl63-amg-2016`. */
@@ -79,9 +82,16 @@ export interface Vehicle {
   interior?: string;
   serviceHistory?: string;
 
-  hpiClear: boolean;
-  /** Months of warranty included. 0 means none stated; options are available. */
-  warrantyMonths: number;
+  /**
+   * History check result for this specific car, as confirmed by the dealership
+   * (checks are run through Autotrader). Leave unset when it is not confirmed:
+   * unset means "ask us" and never implies either a clear or a failed check.
+   * Not every car is checked, so there is no site-wide default.
+   *
+   * Warranty is deliberately not a per-vehicle field. It is never included in
+   * the price — third-party cover is sold separately (see `site.warranty`).
+   */
+  hpiStatus?: HpiStatus;
 
   /**
    * ULEZ status is never asserted from year and fuel alone — a car's Euro
@@ -98,9 +108,18 @@ export interface Vehicle {
   /** Model-accurate stand-ins shown while `images` is empty. */
   libraryImages: VehicleImage[];
 
+  /**
+   * Whether the car appears on the website at all. Separate from `status`
+   * (available / reserved / sold), which describes the sale. An unpublished
+   * car is filtered out in `repository.ts` before anything else sees it, so it
+   * has no listing, no page (its URL 404s), no structured data and no sitemap
+   * entry. Only publish a car once the client has confirmed it is for sale and
+   * its details and price are correct.
+   */
+  published: boolean;
   status: VehicleStatus;
   featured: boolean;
-  /** ISO timestamp — drives "new arrival" badging and default sort. */
+  /** ISO timestamp — drives "new arrival" badging and the "latest arrivals" sort. */
   listedAt: string;
 }
 
@@ -120,16 +139,24 @@ export interface VehicleView extends Vehicle {
 
 // ---- Search, filter and sort ---------------------------------------------
 
+/** The default comes first so the select opens on it. */
 export const SORT_OPTIONS = [
-  { value: "newest", label: "Latest arrivals" },
-  { value: "price-asc", label: "Price: low to high" },
   { value: "price-desc", label: "Price: high to low" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "newest", label: "Latest arrivals" },
   { value: "year-desc", label: "Year: newest first" },
   { value: "year-asc", label: "Year: oldest first" },
   { value: "mileage-asc", label: "Mileage: lowest first" },
 ] as const;
 
 export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
+
+/**
+ * The client's requested default ordering. Used by URL parsing, URL building,
+ * the search itself and the sort control, so the default is never left in the
+ * URL as `?sort=price-desc`.
+ */
+export const DEFAULT_SORT: SortOption = "price-desc";
 
 export interface VehicleQuery {
   q?: string;
@@ -161,7 +188,13 @@ export interface VehicleFacets {
   transmission: FacetValue[];
   bodyType: FacetValue[];
   features: FacetValue[];
-  priceRange: { min: number; max: number };
-  yearRange: { min: number; max: number };
-  mileageRange: { min: number; max: number };
+  /** `null` when there are no vehicles to take a range from. */
+  priceRange: NumericRange | null;
+  yearRange: NumericRange | null;
+  mileageRange: NumericRange | null;
+}
+
+export interface NumericRange {
+  min: number;
+  max: number;
 }

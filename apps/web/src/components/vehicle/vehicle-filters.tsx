@@ -168,8 +168,11 @@ function FilterControls({
     debounce.current = setTimeout(() => set("q", value), 350);
   };
 
-  const priceBands = buildBands(facets.priceRange, 4);
-  const mileageBands = buildBands(facets.mileageRange, 4);
+  // Ranges are null when there is no stock to derive them from; the groups
+  // that depend on them are then left out rather than offering empty selects.
+  const priceBands = facets.priceRange ? buildBands(facets.priceRange, 4) : [];
+  const mileageBands = facets.mileageRange ? buildBands(facets.mileageRange, 4) : [];
+  const years = facets.yearRange ? yearOptions(facets.yearRange) : [];
 
   return (
     <div
@@ -203,15 +206,17 @@ function FilterControls({
         />
       </div>
 
-      <FilterGroup title="Make">
-        <CheckList
-          idPrefix={idPrefix}
-          name="make"
-          options={facets.make}
-          selected={searchParams.getAll("make")}
-          onToggle={toggle}
-        />
-      </FilterGroup>
+      {facets.make.length ? (
+        <FilterGroup title="Make">
+          <CheckList
+            idPrefix={idPrefix}
+            name="make"
+            options={facets.make}
+            selected={searchParams.getAll("make")}
+            onToggle={toggle}
+          />
+        </FilterGroup>
+      ) : null}
 
       {facets.model.length > 1 ? (
         <FilterGroup title="Model">
@@ -225,113 +230,125 @@ function FilterControls({
         </FilterGroup>
       ) : null}
 
-      <FilterGroup title="Price">
-        <div className="grid grid-cols-2 gap-2">
+      {priceBands.length ? (
+        <FilterGroup title="Price">
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              aria-label="Minimum price"
+              value={searchParams.get("minPrice") ?? ""}
+              onChange={(event) => set("minPrice", event.target.value)}
+              className="h-11 text-sm"
+            >
+              <option value="">No min</option>
+              {priceBands.map((band) => (
+                <option key={band} value={band}>
+                  {formatPrice(band)}
+                </option>
+              ))}
+            </Select>
+            <Select
+              aria-label="Maximum price"
+              value={searchParams.get("maxPrice") ?? ""}
+              onChange={(event) => set("maxPrice", event.target.value)}
+              className="h-11 text-sm"
+            >
+              <option value="">No max</option>
+              {priceBands.map((band) => (
+                <option key={band} value={band}>
+                  {formatPrice(band)}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </FilterGroup>
+      ) : null}
+
+      {mileageBands.length ? (
+        <FilterGroup title="Maximum mileage">
           <Select
-            aria-label="Minimum price"
-            value={searchParams.get("minPrice") ?? ""}
-            onChange={(event) => set("minPrice", event.target.value)}
+            aria-label="Maximum mileage"
+            value={searchParams.get("maxMileage") ?? ""}
+            onChange={(event) => set("maxMileage", event.target.value)}
             className="h-11 text-sm"
           >
-            <option value="">No min</option>
-            {priceBands.map((band) => (
+            <option value="">Any mileage</option>
+            {mileageBands.map((band) => (
               <option key={band} value={band}>
-                {formatPrice(band)}
+                Under {formatNumber(band)} miles
               </option>
             ))}
           </Select>
-          <Select
-            aria-label="Maximum price"
-            value={searchParams.get("maxPrice") ?? ""}
-            onChange={(event) => set("maxPrice", event.target.value)}
-            className="h-11 text-sm"
-          >
-            <option value="">No max</option>
-            {priceBands.map((band) => (
-              <option key={band} value={band}>
-                {formatPrice(band)}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </FilterGroup>
+        </FilterGroup>
+      ) : null}
 
-      <FilterGroup title="Maximum mileage">
-        <Select
-          aria-label="Maximum mileage"
-          value={searchParams.get("maxMileage") ?? ""}
-          onChange={(event) => set("maxMileage", event.target.value)}
-          className="h-11 text-sm"
-        >
-          <option value="">Any mileage</option>
-          {mileageBands.map((band) => (
-            <option key={band} value={band}>
-              Under {formatNumber(band)} miles
-            </option>
-          ))}
-        </Select>
-      </FilterGroup>
+      {years.length ? (
+        <FilterGroup title="Year">
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              aria-label="Earliest year"
+              value={searchParams.get("minYear") ?? ""}
+              onChange={(event) => set("minYear", event.target.value)}
+              className="h-11 text-sm"
+            >
+              <option value="">From</option>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </Select>
+            <Select
+              aria-label="Latest year"
+              value={searchParams.get("maxYear") ?? ""}
+              onChange={(event) => set("maxYear", event.target.value)}
+              className="h-11 text-sm"
+            >
+              <option value="">To</option>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </FilterGroup>
+      ) : null}
 
-      <FilterGroup title="Year">
-        <div className="grid grid-cols-2 gap-2">
-          <Select
-            aria-label="Earliest year"
-            value={searchParams.get("minYear") ?? ""}
-            onChange={(event) => set("minYear", event.target.value)}
-            className="h-11 text-sm"
-          >
-            <option value="">From</option>
-            {yearOptions(facets.yearRange).map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </Select>
-          <Select
-            aria-label="Latest year"
-            value={searchParams.get("maxYear") ?? ""}
-            onChange={(event) => set("maxYear", event.target.value)}
-            className="h-11 text-sm"
-          >
-            <option value="">To</option>
-            {yearOptions(facets.yearRange).map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </FilterGroup>
+      {facets.bodyType.length ? (
+        <FilterGroup title="Body type">
+          <CheckList
+            idPrefix={idPrefix}
+            name="bodyType"
+            options={facets.bodyType}
+            selected={searchParams.getAll("bodyType")}
+            onToggle={toggle}
+          />
+        </FilterGroup>
+      ) : null}
 
-      <FilterGroup title="Body type">
-        <CheckList
-          idPrefix={idPrefix}
-          name="bodyType"
-          options={facets.bodyType}
-          selected={searchParams.getAll("bodyType")}
-          onToggle={toggle}
-        />
-      </FilterGroup>
+      {facets.fuel.length ? (
+        <FilterGroup title="Fuel">
+          <CheckList
+            idPrefix={idPrefix}
+            name="fuel"
+            options={facets.fuel}
+            selected={searchParams.getAll("fuel")}
+            onToggle={toggle}
+          />
+        </FilterGroup>
+      ) : null}
 
-      <FilterGroup title="Fuel">
-        <CheckList
-          idPrefix={idPrefix}
-          name="fuel"
-          options={facets.fuel}
-          selected={searchParams.getAll("fuel")}
-          onToggle={toggle}
-        />
-      </FilterGroup>
-
-      <FilterGroup title="Gearbox">
-        <CheckList
-          idPrefix={idPrefix}
-          name="transmission"
-          options={facets.transmission}
-          selected={searchParams.getAll("transmission")}
-          onToggle={toggle}
-        />
-      </FilterGroup>
+      {facets.transmission.length ? (
+        <FilterGroup title="Gearbox">
+          <CheckList
+            idPrefix={idPrefix}
+            name="transmission"
+            options={facets.transmission}
+            selected={searchParams.getAll("transmission")}
+            onToggle={toggle}
+          />
+        </FilterGroup>
+      ) : null}
 
       {facets.features.length ? (
         <FilterGroup title="Features">

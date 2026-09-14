@@ -47,11 +47,13 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
 
   if (!endpoint) {
     // Loud on the server, honest in the UI. Never swallowed.
+    // Operational details only: never log a customer's name, email, phone or
+    // message — server logs are not a place to hold personal data.
     console.error(
       [
         "",
         "  ⚠  Enquiry received but LEADS_WEBHOOK_URL is not configured, so it was not delivered.",
-        `     kind=${lead.kind} name=${lead.name} email=${lead.email}`,
+        `     kind=${lead.kind} ref=${reference}`,
         "     Set LEADS_WEBHOOK_URL in apps/web/.env to start capturing enquiries.",
         "     See apps/web/src/lib/forms/leads.ts",
         "",
