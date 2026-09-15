@@ -9,7 +9,14 @@ import { whatsappLinks } from "@/lib/whatsapp";
  * Showroom details. Shared by the homepage and the contact page so the address,
  * hours and travel information can never fall out of step between them.
  */
-export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
+export function ShowroomPanel({
+  showMap = true,
+  showHours = true,
+}: {
+  showMap?: boolean;
+  /** Off where the page already shows the hours prominently. */
+  showHours?: boolean;
+}) {
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
       <div>
@@ -48,22 +55,24 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
           </DetailRow>
         </dl>
 
-        <div className="mt-9 border-t border-[var(--border)] pt-7">
-          <h3 className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
-            Opening hours
-          </h3>
-          <dl className="mt-4 space-y-2">
-            {site.hours.summary.map((entry) => (
-              <div key={entry.label} className="flex justify-between gap-6 text-sm">
-                <dt className="text-[var(--muted-foreground)]">{entry.label}</dt>
-                <dd data-numeric className="font-medium">{entry.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
-            {site.hours.outOfHours}
-          </p>
-        </div>
+        {showHours ? (
+          <div className="mt-9 border-t border-[var(--border)] pt-7">
+            <h3 className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
+              Opening hours
+            </h3>
+            <dl className="mt-4 space-y-2">
+              {site.hours.summary.map((entry) => (
+                <div key={entry.label} className="flex justify-between gap-6 text-sm">
+                  <dt className="text-[var(--muted-foreground)]">{entry.label}</dt>
+                  <dd data-numeric className="font-medium">{entry.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
+              {site.hours.outOfHours}
+            </p>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <ExternalButtonLink href={site.phone.href} size="md">
