@@ -1,4 +1,4 @@
-import { auth } from "@Stratford-city-motorcars-Ltd/auth";
+import { getAuth } from "@Stratford-city-motorcars-Ltd/auth";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -10,14 +10,14 @@ app.use(logger());
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: env.CORS_ORIGIN ?? env.BETTER_AUTH_URL,
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
 );
 
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+app.on(["POST", "GET"], "/api/auth/*", (c) => getAuth().handler(c.req.raw));
 
 app.get("/", (c) => {
   return c.text("OK");
