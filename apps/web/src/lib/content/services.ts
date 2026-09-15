@@ -97,7 +97,7 @@ export const buyingJourney: JourneyStep[] = [
   {
     label: "View",
     title: "See it in person",
-    detail: `Request a viewing or a test drive and we'll confirm a time with you. ${site.hours.sentence}`,
+    detail: `Request a viewing or a test drive and we'll confirm a time with you — weekdays ${site.hours.open.opens}–${site.hours.open.closes}, weekends by appointment.`,
     options: ["Viewing requests", "Test drive requests", "Out-of-hours by arrangement"],
   },
   {
