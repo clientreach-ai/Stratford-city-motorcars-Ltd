@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
 
-import Providers from "@/components/providers";
-
 /**
- * Staff-facing routes. Kept out of the public chrome and out of the index —
- * this is the seam the admin dashboard will be built into.
+ * Staff-facing routes: sign-in and the dealership dashboard. No public chrome,
+ * never indexed (see also the X-Robots-Tag and no-store headers in
+ * next.config.ts and the robots.txt disallow).
  */
 export const metadata: Metadata = {
+  title: { default: "Dashboard", template: "%s · Dashboard · Stratford City Motorcars" },
   robots: { index: false, follow: false },
 };
 
-export default function AdminLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <Providers>
-      <div className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
-        {children}
-      </div>
-    </Providers>
-  );
+export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <div className="min-h-dvh bg-[var(--surface)] text-[var(--foreground)]">{children}</div>;
 }
