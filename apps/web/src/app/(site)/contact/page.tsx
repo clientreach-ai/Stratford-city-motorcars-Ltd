@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { Mail, MessageSquare, Phone } from "lucide-react";
+import { Check, Mail, MessageSquare, Phone } from "lucide-react";
 
 import { ContactForm } from "@/components/forms/contact-form";
-import { FaqList } from "@/components/site/faq-list";
+import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ShowroomPanel } from "@/components/site/showroom-panel";
+import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
-import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
+import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Contact — Romford Road, Stratford E15",
-  description: `Call, WhatsApp or email us. Find us at ${site.address.full} with free parking on site. ${site.hours.sentence}`,
+  title: "Contact, Viewings & Directions — Stratford, East London",
+  description: `Call, WhatsApp or email us, book a viewing, or visit the showroom at ${site.address.full}. Free parking on site. Open Monday to Friday, ${site.hours.open.opens}–${site.hours.open.closes}; weekends by appointment.`,
   path: "/contact",
 });
 
@@ -25,20 +26,9 @@ const crumbs = [
 ];
 
 export default function ContactPage() {
-  const visitingFaqs = faqsByCategory("Visiting");
-  // FAQ structured data is only emitted alongside the visible questions, and
-  // never as an empty FAQPage.
-  const hasFaqs = visitingFaqs.length > 0;
-
   return (
     <>
-      <JsonLd
-        data={
-          hasFaqs
-            ? [breadcrumbSchema(crumbs), faqSchema(visitingFaqs)]
-            : breadcrumbSchema(crumbs)
-        }
-      />
+      <JsonLd data={breadcrumbSchema(crumbs)} />
 
       <PageHero
         eyebrow="Contact"
@@ -61,7 +51,7 @@ export default function ContactPage() {
             icon={<WhatsAppIcon className="size-5" />}
             label="WhatsApp"
             value={site.whatsapp.display}
-            detail="Good for questions and photos"
+            detail="Questions, photos and out-of-hours viewings"
           />
           <ChannelCard
             href={`mailto:${site.email}`}
@@ -72,6 +62,78 @@ export default function ContactPage() {
           />
         </div>
       </PageHero>
+
+      {/* ---- Book a viewing ---------------------------------------------------- */}
+      <Section id="book-a-viewing" tinted size="md" className="scroll-mt-24">
+        <Container>
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-20">
+            <div>
+              <Eyebrow>Book a viewing</Eyebrow>
+              <h2 className="mt-5 text-[clamp(2rem,4vw,2.75rem)] leading-[1.08]">See the car before you decide</h2>
+              <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
+                Viewings and test drives are arranged as requests: tell us which car and when suits you, and
+                we&rsquo;ll confirm a time by phone or WhatsApp. Call ahead and we&rsquo;ll have the car ready for
+                you when you arrive.
+              </p>
+
+              <ul className="mt-8 space-y-4">
+                {[
+                  "Found the car online? Use “Book a viewing” on its page — the details come straight to us.",
+                  `Weekdays ${site.hours.open.opens}–${site.hours.open.closes}. Saturday and Sunday by appointment only.`,
+                  "Bank holidays and closure days: viewings can still be arranged by appointment.",
+                  site.hours.outOfHours,
+                  `Free parking on site at ${site.address.full}.`,
+                ].map((point) => (
+                  <li key={point} className="flex items-start gap-3 text-sm leading-relaxed">
+                    <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--rule)]" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
+                <ExternalButtonLink
+                  href={whatsappLinks.bookViewing}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="whatsapp"
+                  size="md"
+                  className="w-full sm:w-auto"
+                >
+                  <WhatsAppIcon className="size-4" />
+                  Request on WhatsApp
+                </ExternalButtonLink>
+                <ExternalButtonLink href={site.phone.href} variant="outline" size="md" className="w-full sm:w-auto">
+                  <Phone className="size-4" />
+                  {site.phone.display}
+                </ExternalButtonLink>
+                <ButtonLink href="/vehicles" variant="ghost" size="md" className="w-full sm:w-auto">
+                  Choose a car
+                </ButtonLink>
+              </div>
+            </div>
+
+            <div className="self-start border border-[var(--border)] bg-[var(--background)]">
+              <h3 className="border-b border-[var(--border)] px-7 py-5 font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
+                Opening hours
+              </h3>
+              <dl className="divide-y divide-[var(--border)]">
+                {site.hours.summary.map((entry) => (
+                  <div key={entry.label} className="flex items-baseline justify-between gap-6 px-7 py-5">
+                    <dt className="text-[var(--muted-foreground)]">{entry.label}</dt>
+                    <dd data-numeric className="text-right font-display text-lg">
+                      {entry.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="border-t border-[var(--border)] px-7 py-5 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                Viewings outside these hours can be arranged — message us on WhatsApp or send a text.
+              </p>
+            </div>
+          </div>
+        </Container>
+      </Section>
 
       {/* ---- Form ----------------------------------------------------------- */}
       <Section size="md">
@@ -119,35 +181,39 @@ export default function ContactPage() {
           <div className="max-w-2xl">
             <Eyebrow>Finding us</Eyebrow>
             <h2 className="mt-5 text-[clamp(2rem,4vw,2.75rem)] leading-[1.08]">
-              21-25 Romford Road, Stratford
+              {site.address.street}, {site.address.locality} {site.address.postcode}
             </h2>
             <p className="mt-5 leading-relaxed text-[var(--muted-foreground)]">
-              We&rsquo;re on Romford Road with free parking on site.
+              One showroom, on Romford Road in Stratford, East London. There&rsquo;s free parking on site.
             </p>
+            <dl className="mt-8 space-y-5">
+              {[
+                { term: "Sat nav", detail: site.directions.satNav },
+                { term: "On foot", detail: site.directions.onFoot },
+                { term: "By car", detail: site.directions.byCar },
+              ].map((row) => (
+                <div key={row.term} className="grid gap-1 sm:grid-cols-[7rem_1fr] sm:gap-6">
+                  <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--rule)] sm:pt-1">
+                    {row.term}
+                  </dt>
+                  <dd className="leading-relaxed text-[var(--muted-foreground)]">{row.detail}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="mt-14">
-            <ShowroomPanel />
+            <ShowroomPanel showHours={false} />
           </div>
         </Container>
       </Section>
 
-      {/* ---- FAQs ------------------------------------------------------------ */}
-      {hasFaqs ? (
-        <Section size="md">
-          <Container>
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-20">
-              <div>
-                <Eyebrow>Before you come</Eyebrow>
-                <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
-                  Visiting questions
-                </h2>
-              </div>
-              <FaqList faqs={visitingFaqs} />
-            </div>
-          </Container>
-        </Section>
-      ) : null}
+      <FaqSection
+        faqs={faqsByCategory("Visiting")}
+        eyebrow="Before you come"
+        title="Visiting questions"
+        lede="Anything else, give us a call or send a message on WhatsApp."
+      />
     </>
   );
 }

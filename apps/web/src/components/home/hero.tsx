@@ -4,32 +4,30 @@ import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { Container, Eyebrow } from "@/components/ui/section";
 import { StockSearch } from "@/components/vehicle/stock-search";
 import { formatPrice } from "@/lib/format";
-import { priceCeilings } from "@/lib/inventory/price-bands";
-import { getAllVehicles, getMakeModelIndex } from "@/lib/inventory/repository";
+import { getAvailableVehicles, getMakeModelIndex } from "@/lib/inventory/repository";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
+/** Four confirmed facts, set under the headline in place of stock numbers. */
+const heroFacts = [
+  { term: "Family owned", detail: "Small by choice" },
+  { term: "Sports & luxury", detail: "What we trade in" },
+  { term: "Finance & part exchange", detail: "Explained plainly" },
+  { term: "Nationwide delivery", detail: "Ask for your car" },
+];
+
 export async function Hero() {
-  const [vehicles, makeModels] = await Promise.all([
-    getAllVehicles(),
+  const [available, makeModels] = await Promise.all([
+    getAvailableVehicles(),
     getMakeModelIndex(),
   ]);
 
-  const available = vehicles.filter((vehicle) => vehicle.status !== "sold");
   // With no published stock the stock summary and the search are left out
   // entirely, rather than rendering "0 marques… from £Infinity" or empty selects.
   const hasStock = available.length > 0;
-  const prices = available.map((vehicle) => vehicle.price);
+  const prices = available.flatMap((vehicle) => (vehicle.price === null ? [] : [vehicle.price]));
   const marques = [...new Set(available.map((vehicle) => vehicle.make))];
 
-  const priceBands = priceCeilings(prices).map((ceiling) => ({
-    value: String(ceiling),
-    label: `Up to ${formatPrice(ceiling)}`,
-  }));
-  const fuels = [...new Set(available.map((vehicle) => vehicle.fuel))].sort();
-  const transmissions = [
-    ...new Set(available.map((vehicle) => vehicle.transmission)),
-  ].sort();
 
   return (
     <section
@@ -44,7 +42,10 @@ export async function Hero() {
         aria-hidden
         width={800}
         height={105}
-        priority
+        // Decorative at 4.5% opacity: never worth a preload or high priority.
+        loading="eager"
+        fetchPriority="low"
+        sizes="(min-width: 768px) 78vw, 135vw"
         className="pointer-events-none absolute -right-[18%] top-[16%] w-[135%] max-w-none opacity-[0.045] md:-right-[6%] md:top-[22%] md:w-[78%]"
       />
 
@@ -62,35 +63,48 @@ export async function Hero() {
             {hasStock ? (
               <>
                 {marques.length} {marques.length === 1 ? "marque" : "marques"} on
-                the floor in Stratford, from {formatPrice(Math.min(...prices))}.{" "}
+                the floor
+                {prices.length ? <>, from {formatPrice(Math.min(...prices))}</> : null}.{" "}
               </>
             ) : null}
-            Take your time and ask us anything. Every enquiry is handled
-            personally.
+            A small family-owned showroom on Romford Road, Stratford. Take your
+            time, ask us anything — every enquiry is handled personally.
           </p>
 
           <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
             <ButtonLink href="/vehicles" size="lg" className="w-full sm:w-auto">
-              View stock
+              View cars
             </ButtonLink>
             <ButtonLink
-              href="/finance"
+              href="/contact#book-a-viewing"
               variant="outline"
               size="lg"
               className="w-full sm:w-auto"
             >
-              Car finance
+              Book a viewing
             </ButtonLink>
-            <ButtonLink
-              href="/part-exchange"
-              variant="outline"
+            <ExternalButtonLink
+              href={whatsappLinks.browsing}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="whatsapp"
               size="lg"
               className="w-full sm:w-auto"
             >
-              Part exchange
-            </ButtonLink>
+              <WhatsAppIcon className="size-4" />
+              WhatsApp us
+            </ExternalButtonLink>
           </div>
         </div>
+
+        <dl className="mt-14 grid grid-cols-2 gap-px border border-bone/12 bg-bone/12 md:mt-20 lg:grid-cols-4">
+          {heroFacts.map((fact) => (
+            <div key={fact.term} className="bg-ink-950 px-4 py-5 md:px-6 md:py-6">
+              <dt className="font-display text-base leading-snug text-bone md:text-lg">{fact.term}</dt>
+              <dd className="mt-1 text-xs text-bone/55 md:text-sm">{fact.detail}</dd>
+            </div>
+          ))}
+        </dl>
       </Container>
 
       {/* Search sits on the seam between the hero and the page below it. */}
@@ -114,13 +128,7 @@ export async function Hero() {
               </ExternalButtonLink>
             </div>
 
-            <StockSearch
-              makeModels={makeModels}
-              priceBands={priceBands}
-              fuels={fuels}
-              transmissions={transmissions}
-              className="p-4 md:p-5"
-            />
+            <StockSearch makeModels={makeModels} className="p-4 md:p-5" />
           </div>
         </Container>
       ) : null}

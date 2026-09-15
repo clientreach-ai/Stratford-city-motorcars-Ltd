@@ -60,7 +60,9 @@ export function UnavailablePanel({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="border border-[var(--destructive)]/40 bg-[var(--destructive)]/5 p-6"
+      tabIndex={-1}
+      data-feedback="unavailable"
+      className="border border-[var(--destructive)]/40 bg-[var(--destructive)]/5 p-6 focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <div className="flex gap-3.5">
         <AlertTriangle

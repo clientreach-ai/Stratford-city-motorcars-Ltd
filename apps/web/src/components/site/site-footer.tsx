@@ -3,15 +3,15 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { getAllVehicles } from "@/lib/inventory/repository";
-import type { VehicleView } from "@/lib/inventory/types";
+import { getAvailableVehicles } from "@/lib/inventory/repository";
+import type { PublicVehicle } from "@/lib/inventory/types";
 import { mapLinks, site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 type FooterHref = React.ComponentProps<typeof Link>["href"];
 
 /** The most common values of a field across published stock, most frequent first. */
-function topValues(vehicles: VehicleView[], pick: (vehicle: VehicleView) => string, limit: number) {
+function topValues(vehicles: PublicVehicle[], pick: (vehicle: PublicVehicle) => string, limit: number) {
   const counts = new Map<string, number>();
   for (const vehicle of vehicles) counts.set(pick(vehicle), (counts.get(pick(vehicle)) ?? 0) + 1);
   return [...counts.entries()]
@@ -21,23 +21,20 @@ function topValues(vehicles: VehicleView[], pick: (vehicle: VehicleView) => stri
 }
 
 /**
- * Stock shortcuts are derived from what is actually published, so the footer
- * never links to a make or body type with nothing behind it. With no published
- * stock only "All vehicles" remains.
+ * Stock shortcuts are derived from the cars actually for sale, so the footer
+ * never links to a make with nothing behind it. With no stock only
+ * "All vehicles" and "Book a viewing" remain.
  */
 async function getStockLinks(): Promise<{ href: FooterHref; label: string }[]> {
-  const vehicles = (await getAllVehicles()).filter((vehicle) => vehicle.status !== "sold");
+  const vehicles = await getAvailableVehicles();
 
   return [
     { href: "/vehicles", label: "All vehicles" },
-    ...topValues(vehicles, (vehicle) => vehicle.make, 2).map((make) => ({
+    ...topValues(vehicles, (vehicle) => vehicle.make, 4).map((make) => ({
       href: { pathname: "/vehicles", query: { make } },
       label: make,
     })),
-    ...topValues(vehicles, (vehicle) => vehicle.bodyType, 2).map((bodyType) => ({
-      href: { pathname: "/vehicles", query: { bodyType } },
-      label: bodyType,
-    })),
+    { href: "/contact#book-a-viewing", label: "Book a viewing" },
   ];
 }
 
@@ -61,7 +58,7 @@ export async function SiteFooter() {
               alt={site.name}
               width={900}
               height={269}
-              sizes="200px"
+              sizes="148px"
               className="h-11 w-auto"
             />
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-bone/55">
@@ -72,7 +69,7 @@ export async function SiteFooter() {
             <div className="mt-7 flex flex-wrap gap-2">
               <a
                 href={site.phone.href}
-                className="flex items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-bone hover:bg-bone hover:text-ink-950"
+                className="flex min-h-11 items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-bone hover:bg-bone hover:text-ink-950"
               >
                 <Phone className="size-3.5" />
                 {site.phone.display}
@@ -81,7 +78,7 @@ export async function SiteFooter() {
                 href={whatsappLinks.general}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
+                className="flex min-h-11 items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
               >
                 <WhatsAppIcon className="size-3.5" />
                 WhatsApp
@@ -112,18 +109,18 @@ export async function SiteFooter() {
                 href={mapLinks.place}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="not-italic transition-colors hover:text-bone"
+                className="inline-block py-1 not-italic transition-colors hover:text-bone"
               >
                 {site.address.street}
                 <br />
-                {site.address.locality}, {site.address.region} {site.address.postcode}
+                {site.address.locality} {site.address.postcode}
               </a>
             </li>
             <li className="flex gap-3 text-sm text-bone/60">
               <Mail className="mt-0.5 size-4 shrink-0 text-brass" />
               <a
                 href={`mailto:${site.email}`}
-                className="break-all transition-colors hover:text-bone"
+                className="inline-block break-all py-1 transition-colors hover:text-bone"
               >
                 {site.email}
               </a>
@@ -142,10 +139,16 @@ export async function SiteFooter() {
         </div>
 
         <div className="mt-14 border-t border-bone/10 pt-8">
-          <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-center">
-            <p>
-              © {new Date().getFullYear()} {site.name}. All rights reserved.
-            </p>
+          <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-end">
+            <div className="space-y-1.5">
+              <p>
+                © {new Date().getFullYear()} {site.name}. All rights reserved.
+              </p>
+              <p className="max-w-xl leading-relaxed">
+                {site.company.legalName}. Registered in {site.company.registeredIn}, company number{" "}
+                {site.company.number}. Registered office: {site.company.registeredOffice}.
+              </p>
+            </div>
             <nav aria-label="Legal">
               <ul className="flex flex-wrap gap-x-6 gap-y-2">
                 <li>
@@ -200,7 +203,7 @@ function FooterLink({
     <li>
       <Link
         href={href}
-        className="text-sm text-bone/60 transition-colors duration-200 hover:text-bone"
+        className="inline-block py-1 text-sm text-bone/60 transition-colors duration-200 hover:text-bone"
       >
         {children}
       </Link>

@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { VehicleImage } from "@/lib/inventory/types";
-import { PhotoPlate } from "./photo-plate";
 
 /**
  * Vehicle gallery.
@@ -18,24 +18,20 @@ import { PhotoPlate } from "./photo-plate";
  * A single track matters for more than tidiness: rendering separate mobile and
  * desktop galleries put both in the DOM at once, and the browser downloaded
  * every photograph twice at two different widths.
+ *
+ * Loading: only the first photograph is fetched eagerly with high priority —
+ * it is the page's LCP element. Every other slide and every thumbnail is lazy,
+ * and the lightbox requests its full-screen image only when opened. `sizes`
+ * matches the rendered column so phones never download desktop widths.
+ *
+ * Public galleries only ever receive the dealership's own photographs (the
+ * publishing rules require them), so there is no placeholder state here.
  */
-export function VehicleGallery({
-  images,
-  make,
-  year,
-  title,
-  isLibrary,
-}: {
-  images: VehicleImage[];
-  make: string;
-  year: number;
-  title: string;
-  /** True when these are stand-ins rather than photographs of this car. */
-  isLibrary: boolean;
-}) {
+export function VehicleGallery({ images, title }: { images: VehicleImage[]; title: string }) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+  const closeLightbox = useCallback(() => setLightbox(false), []);
 
   const count = images.length;
 
@@ -71,29 +67,19 @@ export function VehicleGallery({
     };
   }, [count]);
 
+  // Arrow keys move through photographs while the viewer is open; focus,
+  // Escape and scroll locking are handled inside the viewer.
   useEffect(() => {
     if (!lightbox) return;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLightbox(false);
       if (event.key === "ArrowRight") go(active + 1);
       if (event.key === "ArrowLeft") go(active - 1);
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-    };
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [lightbox, active, go]);
 
-  if (count === 0) {
-    return (
-      <div className="aspect-[4/3] w-full md:aspect-[16/10]">
-        <PhotoPlate make={make} year={year} />
-      </div>
-    );
-  }
+  if (count === 0) return null;
 
   return (
     <div>
@@ -113,17 +99,21 @@ export function VehicleGallery({
                 setActive(index);
                 setLightbox(true);
               }}
-              aria-label={`View photograph ${index + 1} of ${count} fullscreen`}
+              // The accessible name starts with what is visible (the photograph's
+              // description), then says what the button does.
+              aria-label={`${image.alt}. Photograph ${index + 1} of ${count}, view full screen`}
               className="relative aspect-[4/3] w-full shrink-0 snap-center cursor-zoom-in bg-ink-950 md:aspect-[16/10]"
             >
               <Image
                 src={image.src}
                 alt={image.alt}
                 fill
-                // Only the first photograph is worth blocking the LCP for.
-                priority={index === 0}
-                loading={index === 0 ? undefined : "lazy"}
-                sizes="(min-width: 1280px) 62vw, (min-width: 1024px) 58vw, 100vw"
+                // Only the first photograph is the LCP element.
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : "auto"}
+                // Content column: ~61% of the 88rem container on desktop, full
+                // width (minus gutters) below lg.
+                sizes="(min-width: 1408px) 800px, (min-width: 1024px) 58vw, 100vw"
                 className="object-cover"
               />
             </button>
@@ -162,7 +152,7 @@ export function VehicleGallery({
 
       {/* Dots on phones, thumbnails from md — same track either way. */}
       {count > 1 ? (
-        <div className="mt-3 flex justify-center gap-1.5 md:hidden">
+        <div className="mt-1 flex flex-wrap justify-center md:hidden">
           {images.map((image, index) => (
             <button
               key={image.src}
@@ -170,13 +160,17 @@ export function VehicleGallery({
               onClick={() => go(index)}
               aria-label={`Go to photograph ${index + 1}`}
               aria-current={index === active}
-              className={cn(
-                "h-1 w-6 transition-colors duration-200",
-                index === active
-                  ? "bg-[var(--foreground)]"
-                  : "bg-[var(--border-strong)]",
-              )}
-            />
+              // A 44px tap target around a small bar.
+              className="group flex h-11 w-9 items-center justify-center"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "h-1 w-6 transition-colors duration-200",
+                  index === active ? "bg-[var(--foreground)]" : "bg-[var(--border-strong)]",
+                )}
+              />
+            </button>
           ))}
         </div>
       ) : null}
@@ -202,7 +196,8 @@ export function VehicleGallery({
                   alt=""
                   fill
                   loading="lazy"
-                  sizes="160px"
+                  // Thumbnail rail: 5 columns from md, 6 from lg, inside the gallery column.
+                  sizes="(min-width: 1408px) 124px, (min-width: 1024px) 9vw, 18vw"
                   className="object-cover"
                 />
               </button>
@@ -211,34 +206,12 @@ export function VehicleGallery({
         </ul>
       ) : null}
 
-      {isLibrary ? (
-        <p className="mt-4 border-l border-[var(--rule)] pl-3.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-          Library image of the same model, shown while our own photography of
-          this car is prepared.{" "}
-          {images[active]?.credit ? (
-            <>
-              Photograph by {images[active]!.credit!.author},{" "}
-              <a
-                href={images[active]!.credit!.licenseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2"
-              >
-                {images[active]!.credit!.license}
-              </a>
-              .{" "}
-            </>
-          ) : null}
-          Call us for photographs of the actual vehicle.
-        </p>
-      ) : null}
-
       {lightbox ? (
         <Lightbox
           images={images}
           active={active}
           title={title}
-          onClose={() => setLightbox(false)}
+          onClose={closeLightbox}
           onGo={go}
         />
       ) : null}
@@ -290,22 +263,26 @@ function Lightbox({
   onGo: (index: number) => void;
 }) {
   const image = images[active]!;
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus({ open: true, containerRef: dialogRef, initialFocusRef: closeRef, onClose });
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`${title} — photograph ${active + 1} of ${images.length}`}
       className="fixed inset-0 z-100 flex flex-col bg-ink-950/97"
     >
       <div className="flex shrink-0 items-center justify-between px-5 py-4">
-        <span data-numeric className="text-xs tracking-wide text-bone/60">
+        <span data-numeric aria-live="polite" className="text-xs tracking-wide text-bone/60">
           {active + 1} / {images.length}
         </span>
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
-          autoFocus
           aria-label="Close viewer"
           className="flex size-11 items-center justify-center border border-bone/25 text-bone transition-colors hover:border-bone hover:bg-bone hover:text-ink-950"
         >

@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Check, Phone } from "lucide-react";
 
-import { PartExchangeForm } from "@/components/forms/part-exchange-form";
+import { PartExchangeForm, PartExchangeFormFromLink } from "@/components/forms/part-exchange-form";
+import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
+import { faqsByCategory } from "@/lib/content/faqs";
 import { partExchangeChecklist, partExchangeSteps } from "@/lib/content/services";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Part Exchange — Value Your Car",
+  title: "Part Exchange Your Car — Stratford, East London",
   description:
-    "Put your current car towards your next one. Tell us about it and we'll come back to you with an initial valuation, confirmed on inspection.",
+    "Put your current car towards your next one. Tell us about it and we'll usually come back within 24 hours on weekdays with an initial valuation, confirmed on inspection.",
   path: "/part-exchange",
 });
 
@@ -32,7 +35,7 @@ export default function PartExchangePage() {
       <PageHero
         eyebrow="Part exchange"
         title="Your current car can do most of the work"
-        lede="Tell us what you're driving and we'll come back to you personally with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
+        lede="Put the car you're driving now towards your next one. Send us its details and we'll usually come back within 24 hours on weekdays with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
         crumbs={crumbs}
       />
 
@@ -42,6 +45,7 @@ export default function PartExchangePage() {
           <SectionHeading
             eyebrow="How it works"
             title="Four steps from your car to ours"
+            lede="You're under no obligation at any point. If the figure isn't right for you, that's the end of it."
           />
 
           <ol className="mt-14 grid gap-px bg-[var(--border)] md:grid-cols-2 xl:grid-cols-4">
@@ -76,7 +80,7 @@ export default function PartExchangePage() {
             <div className="lg:sticky lg:top-28 lg:self-start">
               <Eyebrow>What we need</Eyebrow>
               <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
-                Six things, two minutes
+                What we need to value it
               </h2>
 
               <ul className="mt-8 space-y-3.5">
@@ -115,7 +119,9 @@ export default function PartExchangePage() {
             </div>
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
-              <PartExchangeForm />
+              <Suspense fallback={<PartExchangeForm />}>
+                <PartExchangeFormFromLink />
+              </Suspense>
             </div>
           </div>
         </Container>
@@ -132,7 +138,7 @@ export default function PartExchangePage() {
 
             <div className="mt-10 space-y-8">
               <NextStep
-                title="An initial figure"
+                title="Usually within 24 hours on weekdays"
                 detail="We come back to you by phone or email with an initial figure based on what you've told us."
               />
               <NextStep
@@ -150,13 +156,22 @@ export default function PartExchangePage() {
             </div>
 
             <p className="mt-12 border-l border-brass pl-5 text-xs leading-relaxed text-bone/55">
-              {site.compliance.partExchangeSubjectToInspection} Vehicles must have
-              a valid MOT and be roadworthy. Outstanding finance must be disclosed
-              and settled. We reserve the right to decline a part exchange.
+              {site.compliance.partExchangeSubjectToInspection} Outstanding finance
+              must be disclosed and settled before a part exchange completes.
             </p>
           </div>
         </Container>
       </Section>
+
+      <FaqSection
+        // "Do you accept part exchange?" is what this whole page answers.
+        faqs={[...faqsByCategory("Part exchange"), ...faqsByCategory("Finance")].filter(
+          (faq) => faq.id !== "part-exchange" && faq.id !== "finance" && faq.id !== "finance-credit-check",
+        )}
+        eyebrow="Part-exchange questions"
+        title="Good to know"
+        lede="Anything else about your car, just ask — photos and questions are easiest on WhatsApp."
+      />
     </>
   );
 }

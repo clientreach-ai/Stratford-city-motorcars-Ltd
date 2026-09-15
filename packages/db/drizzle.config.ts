@@ -1,9 +1,9 @@
 import dotenv from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
-dotenv.config({
-  path: "../../apps/server/.env",
-});
+// The web app hosts the dashboard and auth; the Hono server is optional.
+dotenv.config({ path: "../../apps/web/.env" });
+dotenv.config({ path: "../../apps/server/.env" });
 
 export default defineConfig({
   schema: "./src/schema",

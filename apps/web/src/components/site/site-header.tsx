@@ -60,8 +60,11 @@ export function SiteHeader() {
               alt={site.name}
               width={900}
               height={269}
-              sizes="200px"
-              priority
+              // Rendered 36px tall (≈121px wide) on phones and 44px (≈147px) from md.
+              sizes="(min-width: 768px) 148px, 121px"
+              // Above the fold but tiny and never the LCP element: load it
+              // straight away without a preload competing with the headline.
+              loading="eager"
               className="h-9 w-auto md:h-11"
             />
           </Link>
@@ -129,7 +132,11 @@ export function SiteHeader() {
 /** Thin ink strip above the header — phone, hours and WhatsApp, always visible. */
 function UtilityStrip() {
   return (
-    <div data-surface="dark" className="hidden bg-ink-950 text-bone md:block">
+    <aside
+      aria-label="Showroom address and contact"
+      data-surface="dark"
+      className="hidden bg-ink-950 text-bone md:block"
+    >
       <div className="container-page flex h-10 items-center justify-between text-[0.6875rem]">
         <p className="font-roman uppercase tracking-[0.2em] text-bone/55">
           {site.address.street}, {site.address.locality} {site.address.postcode}
@@ -158,7 +165,7 @@ function UtilityStrip() {
           </a>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -239,7 +246,7 @@ function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
             alt={site.name}
             width={900}
             height={269}
-            sizes="200px"
+            sizes="121px"
             className="h-9 w-auto"
           />
           <button
