@@ -6,7 +6,6 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
 import { whatsappForVehicle } from "@/lib/whatsapp";
 import type { PublicVehicle } from "@/lib/inventory/types";
-import { PhotoPlate } from "./photo-plate";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
 /**
@@ -20,11 +19,14 @@ import { WhatsAppIcon } from "@/components/ui/icons";
 export function VehicleCard({
   vehicle,
   priority = false,
+  sizes = "(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 92vw",
   className,
 }: {
   vehicle: PublicVehicle;
-  /** Set on the first card or two so the LCP image is not lazy-loaded. */
+  /** Set on the first card or two so the likely LCP image loads eagerly. */
   priority?: boolean;
+  /** Rendered width of the card image; the grid that places the card knows it best. */
+  sizes?: string;
   className?: string;
 }) {
   const { cover, isSold } = vehicle;
@@ -39,19 +41,15 @@ export function VehicleCard({
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-ink-950">
-        {cover ? (
-          <Image
-            src={cover.src}
-            alt={cover.alt}
-            fill
-            priority={priority}
-            loading={priority ? undefined : "lazy"}
-            sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 92vw"
-            className="object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-[1.035]"
-          />
-        ) : (
-          <PhotoPlate make={vehicle.make} year={vehicle.year} compact />
-        )}
+        <Image
+          src={cover.src}
+          alt={cover.alt}
+          fill
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
+          sizes={sizes}
+          className="object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-[1.035]"
+        />
 
         <VehicleBadges vehicle={vehicle} />
       </div>
@@ -127,9 +125,8 @@ function Dot() {
 }
 
 /**
- * Badges render only when the data warrants one. No vehicle currently carries
- * a "new arrival" badge because all seven were listed in May — that is correct
- * behaviour, not a bug.
+ * Badges render only when the data warrants one: sold, reserved, a new arrival
+ * (listed in the last 30 days), or hand-picked for the homepage.
  */
 function VehicleBadges({ vehicle }: { vehicle: PublicVehicle }) {
   const badges: { label: string; tone: "sold" | "reserved" | "new" | "featured" }[] = [];

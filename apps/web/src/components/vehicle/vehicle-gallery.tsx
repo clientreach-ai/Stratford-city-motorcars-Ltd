@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import type { VehicleImage } from "@/lib/inventory/types";
-import { PhotoPlate } from "./photo-plate";
 
 /**
  * Vehicle gallery.
@@ -18,21 +17,16 @@ import { PhotoPlate } from "./photo-plate";
  * A single track matters for more than tidiness: rendering separate mobile and
  * desktop galleries put both in the DOM at once, and the browser downloaded
  * every photograph twice at two different widths.
+ *
+ * Loading: only the first photograph is fetched eagerly with high priority —
+ * it is the page's LCP element. Every other slide and every thumbnail is lazy,
+ * and the lightbox requests its full-screen image only when opened. `sizes`
+ * matches the rendered column so phones never download desktop widths.
+ *
+ * Public galleries only ever receive the dealership's own photographs (the
+ * publishing rules require them), so there is no placeholder state here.
  */
-export function VehicleGallery({
-  images,
-  make,
-  year,
-  title,
-  isLibrary,
-}: {
-  images: VehicleImage[];
-  make: string;
-  year: number;
-  title: string;
-  /** True when these are stand-ins rather than photographs of this car. */
-  isLibrary: boolean;
-}) {
+export function VehicleGallery({ images, title }: { images: VehicleImage[]; title: string }) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -87,13 +81,7 @@ export function VehicleGallery({
     };
   }, [lightbox, active, go]);
 
-  if (count === 0) {
-    return (
-      <div className="aspect-[4/3] w-full md:aspect-[16/10]">
-        <PhotoPlate make={make} year={year} />
-      </div>
-    );
-  }
+  if (count === 0) return null;
 
   return (
     <div>
@@ -120,10 +108,12 @@ export function VehicleGallery({
                 src={image.src}
                 alt={image.alt}
                 fill
-                // Only the first photograph is worth blocking the LCP for.
-                priority={index === 0}
-                loading={index === 0 ? undefined : "lazy"}
-                sizes="(min-width: 1280px) 62vw, (min-width: 1024px) 58vw, 100vw"
+                // Only the first photograph is the LCP element.
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : "auto"}
+                // Content column: ~61% of the 88rem container on desktop, full
+                // width (minus gutters) below lg.
+                sizes="(min-width: 1408px) 800px, (min-width: 1024px) 58vw, 100vw"
                 className="object-cover"
               />
             </button>
@@ -209,28 +199,6 @@ export function VehicleGallery({
             </li>
           ))}
         </ul>
-      ) : null}
-
-      {isLibrary ? (
-        <p className="mt-4 border-l border-[var(--rule)] pl-3.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-          Library image of the same model, shown while our own photography of
-          this car is prepared.{" "}
-          {images[active]?.credit ? (
-            <>
-              Photograph by {images[active]!.credit!.author},{" "}
-              <a
-                href={images[active]!.credit!.licenseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2"
-              >
-                {images[active]!.credit!.license}
-              </a>
-              .{" "}
-            </>
-          ) : null}
-          Call us for photographs of the actual vehicle.
-        </p>
       ) : null}
 
       {lightbox ? (

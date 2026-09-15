@@ -16,6 +16,7 @@ import { ActiveFilterChips, VehicleSort } from "@/components/vehicle/vehicle-sor
 import {
   countActiveFilters,
   describeQuery,
+  isNonCanonicalQuery,
   parseSearchParams,
 } from "@/lib/inventory/query-params";
 import { searchVehicles } from "@/lib/inventory/repository";
@@ -33,7 +34,9 @@ export async function generateMetadata(
   props: PageProps<"/vehicles">,
 ): Promise<Metadata> {
   const searchParams = await props.searchParams;
-  const filtered = countActiveFilters(parseSearchParams(searchParams)) > 0;
+  // Any query string — filters, sort, or a stale parameter from the old site —
+  // is a variation of the stock page: kept out of the index, canonical /vehicles.
+  const filtered = isNonCanonicalQuery(searchParams);
 
   return {
     ...pageMetadata({
@@ -137,6 +140,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                       key={vehicle.id}
                       vehicle={vehicle}
                       priority={index < 2}
+                      sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
                       className="reveal border-0"
                     />
                   ))}

@@ -12,6 +12,8 @@ interface PageMetaInput {
   /** Route path beginning with a slash — drives the canonical URL. */
   path: string;
   image?: string;
+  /** Describes the share image; defaults to the business name. */
+  imageAlt?: string;
   noIndex?: boolean;
   type?: "website" | "article";
 }
@@ -26,6 +28,7 @@ export function pageMetadata({
   description,
   path,
   image = DEFAULT_OG,
+  imageAlt = site.name,
   noIndex = false,
   type = "website",
 }: PageMetaInput): Metadata {
@@ -42,7 +45,7 @@ export function pageMetadata({
       siteName: site.name,
       locale: "en_GB",
       type,
-      images: [{ url: image, width: 1200, height: 630, alt: site.name }],
+      images: [{ url: image, alt: imageAlt, ...(image === DEFAULT_OG ? { width: 1200, height: 630 } : {}) }],
     },
     twitter: {
       card: "summary_large_image",
