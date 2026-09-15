@@ -1,3 +1,5 @@
+import { site } from "../site";
+
 /**
  * Editorial content for the finance and part-exchange sections.
  *
@@ -10,7 +12,13 @@
  *
  * The previous "six commitments" trust list was removed: four of its points
  * (HPI on every car, multi-point inspection, AA warranty, broker/lender panel)
- * contradicted the intake. The client's rewritten promises are pending.
+ * contradicted the intake. The client confirmed the three promises (trust and
+ * transparency, quality standards, personal service) are right but wants them
+ * reordered and rewritten to sound less clichéd — pending their wording.
+ *
+ * Part-exchange turnaround: the client confirmed the four-step process and
+ * that a valuation usually comes back within 24 hours on weekdays. The
+ * qualifier is part of the fact and must stay with it.
  *
  * Vehicle hire is intentionally absent: the client confirmed hire is not part
  * of this business (City Chauffeurs handles it).
@@ -92,7 +100,7 @@ export const partExchangeSteps: Step[] = [
   {
     title: "Receive an initial valuation",
     detail:
-      "We come back to you personally with an initial figure based on what you've told us.",
+      "We usually come back within 24 hours on weekdays with an initial figure based on what you've told us.",
   },
   {
     title: "Bring it in for inspection",
@@ -106,11 +114,38 @@ export const partExchangeSteps: Step[] = [
   },
 ];
 
+/** What the dealership needs to value a part exchange (client intake). */
 export const partExchangeChecklist: string[] = [
+  "Registration number",
   "Make, model and year",
-  "Current mileage",
+  "Mileage",
   "Service history",
-  "General condition, including any damage",
-  "Any modifications",
+  "MOT status",
+  "Number of keys",
+  "Condition notes, including any damage",
   "Outstanding finance, if there is any",
+  "Photos — easiest sent on WhatsApp",
+];
+
+/**
+ * Practical facts about buying, each confirmed in the client intake: viewings
+ * by appointment outside weekday hours, nationwide delivery, and the payment
+ * methods the business accepts.
+ */
+export const buyingFacts: Step[] = [
+  {
+    title: "Viewings that suit you",
+    // Derived from the single hours model in site.ts, never retyped.
+    detail: `${site.hours.sentence} ${site.hours.outOfHours}`,
+  },
+  {
+    title: "Delivered nationwide",
+    detail:
+      "People travel for the right car, and we can bring it to you instead. Ask us about delivery for the car you're interested in.",
+  },
+  {
+    title: "Pay the way that suits you",
+    detail:
+      "Bank transfer, debit or credit card, cash, finance, or your part exchange plus the balance.",
+  },
 ];

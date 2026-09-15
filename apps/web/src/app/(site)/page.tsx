@@ -7,7 +7,7 @@ import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
-import { financeProducts, partExchangeSteps } from "@/lib/content/services";
+import { buyingFacts, financeProducts, partExchangeSteps } from "@/lib/content/services";
 import { getFeaturedVehicles } from "@/lib/inventory/repository";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
@@ -45,6 +45,7 @@ export default async function HomePage() {
                     key={vehicle.id}
                     vehicle={vehicle}
                     priority={index < 2}
+                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 92vw"
                     className="reveal border-0"
                   />
                 ))}
@@ -68,6 +69,21 @@ export default async function HomePage() {
             </a>{" "}
             and we&rsquo;ll let you know when something lands.
           </p>
+        </Container>
+      </Section>
+
+      {/* ---- Buying from us ------------------------------------------------ */}
+      <Section size="sm" className="border-t border-[var(--border)]">
+        <Container>
+          <h2 className="sr-only">Buying from us</h2>
+          <ul className="grid gap-10 md:grid-cols-3 md:gap-12">
+            {buyingFacts.map((fact) => (
+              <li key={fact.title} className="reveal">
+                <h3 className="font-display text-xl leading-snug">{fact.title}</h3>
+                <p className="mt-2.5 text-sm leading-relaxed text-[var(--muted-foreground)]">{fact.detail}</p>
+              </li>
+            ))}
+          </ul>
         </Container>
       </Section>
 
@@ -132,7 +148,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Part exchange"
             title="Your current car can do most of the work"
-            lede="Tell us about it and we'll come back to you personally with an initial figure, confirmed once we've seen the car."
+            lede="Tell us about it and we'll usually come back within 24 hours on weekdays with an initial figure, confirmed once we've seen the car."
             action={
               <ButtonLink href="/part-exchange" size="md">
                 Value your car
