@@ -90,7 +90,7 @@ export default async function AboutPage() {
                 </div>
 
                 <dl className="divide-y divide-[var(--border)]">
-                  <Fact term="Where" value={`${site.address.street}, ${site.address.locality} ${site.address.postcode}`} />
+                  <Fact term="Where" value={site.address.full} />
                   <Fact term="Business" value="Family owned" />
                   <Fact term="Trading in" value="Sports and luxury cars" />
                   {marques.length > 0 ? (

@@ -63,7 +63,6 @@ const postalAddress = {
   "@type": "PostalAddress",
   streetAddress: site.address.street,
   addressLocality: site.address.locality,
-  addressRegion: site.address.region,
   postalCode: site.address.postcode,
   addressCountry: site.address.country,
 };

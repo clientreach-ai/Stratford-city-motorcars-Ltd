@@ -16,9 +16,9 @@ const RAW_PHONE = "+447722116355";
 
 // ---- Opening hours ----------------------------------------------------------
 //
-// Confirmed by the client: Monday to Friday 12pm–5pm; weekends and bank
-// holidays by appointment only; out-of-hours viewings arranged by WhatsApp or
-// text. These three constants are the only place hours are defined — every
+// Confirmed by the client: Monday to Friday 12–5pm; Saturday and Sunday by
+// appointment only; bank holidays and closures, viewings by appointment;
+// out-of-hours viewings arranged by WhatsApp or text. These three constants are the only place hours are defined — every
 // string below and the structured data in `seo.ts` derive from them, so the
 // header, footer, contact page and schema cannot disagree again.
 
@@ -26,17 +26,10 @@ const OPEN_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as co
 const OPENS = "12:00";
 const CLOSES = "17:00";
 
-/** "12:00" → "12pm", "17:30" → "5:30pm". */
-function clock(time: string): string {
-  const hours = Number(time.slice(0, 2));
-  const minutes = time.slice(3, 5);
-  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-  return `${hour12}${minutes === "00" ? "" : `:${minutes}`}${hours >= 12 ? "pm" : "am"}`;
-}
-
 const firstDay = OPEN_DAYS[0];
 const lastDay = OPEN_DAYS[OPEN_DAYS.length - 1];
-const openTimes = `${clock(OPENS)}–${clock(CLOSES)}`;
+/** 24-hour clock, as the showroom states its hours: "12:00–17:00". */
+const openTimes = `${OPENS}–${CLOSES}`;
 
 export const site = {
   /** Brand name as it is set in the logo ("MOTORCARS", one word). */
@@ -71,14 +64,16 @@ export const site = {
 
   email: "stratfordcitymotorcars@gmail.com",
 
+  /** Exactly as the client gave it: 21–25 Romford Road, London, E15 4LJ. */
   address: {
-    street: "21-25 Romford Road",
-    locality: "Stratford",
-    region: "London",
+    street: "21–25 Romford Road",
+    locality: "London",
     postcode: "E15 4LJ",
     country: "GB",
     /** Single-line form for links, map queries and schema. */
-    full: "21-25 Romford Road, Stratford, London E15 4LJ",
+    full: "21–25 Romford Road, London E15 4LJ",
+    /** The area, for running copy ("in Stratford, East London"). */
+    area: "Stratford, East London",
   },
 
   geo: {
@@ -96,18 +91,18 @@ export const site = {
     /** Rows for the footer and the showroom panel. */
     summary: [
       { label: `${firstDay} – ${lastDay}`, value: openTimes },
-      { label: "Saturday & Sunday", value: "By appointment" },
-      { label: "Bank holidays", value: "By appointment" },
+      { label: "Saturday – Sunday", value: "Appointment only" },
+      { label: "Bank holidays & closures", value: "By appointment" },
     ],
 
     /** One line for tight spaces: header strip, mobile drawer, contact card. */
-    compact: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes} · Weekends & bank holidays by appointment`,
+    compact: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes} · Weekends by appointment`,
 
     /** Weekday hours only, for the header strip where `compact` would wrap. */
     short: `${firstDay.slice(0, 3)}–${lastDay.slice(0, 3)} ${openTimes}`,
 
     /** Full sentence for metadata and running copy. */
-    sentence: `We're open ${firstDay} to ${lastDay}, ${openTimes}, and by appointment at weekends and on bank holidays.`,
+    sentence: `We're open ${firstDay} to ${lastDay}, ${openTimes}. Weekends are by appointment only, and on bank holidays and closure days viewings can still be arranged by appointment.`,
 
     outOfHours: "To arrange a viewing outside these hours, message us on WhatsApp or send a text.",
   },
@@ -121,7 +116,7 @@ export const site = {
    */
   directions: {
     satNav:
-      "Use E15 4LJ. Some sat navs finish a little before or after the showroom, so look for numbers 21–25 Romford Road.",
+      "Use E15 4LJ. Some sat navs finish a little before or after the showroom, so look out for numbers 21–25 Romford Road.",
     onFoot: "From Stratford station, walk to The Broadway and continue east onto Romford Road.",
     byCar: "Romford Road is the A118, reached from the A11 and A12. There's free parking on site.",
   },
@@ -160,7 +155,7 @@ export const site = {
     legalName: "Stratford City Motorcars Ltd",
     number: "15481206",
     registeredIn: "England and Wales",
-    registeredOffice: "21-25 Romford Road, London, E15 4LJ",
+    registeredOffice: "21–25 Romford Road, London, E15 4LJ",
   },
 
   /**

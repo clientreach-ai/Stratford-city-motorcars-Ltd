@@ -112,7 +112,7 @@ export async function SiteFooter() {
               >
                 {site.address.street}
                 <br />
-                {site.address.locality}, {site.address.region} {site.address.postcode}
+                {site.address.locality} {site.address.postcode}
               </a>
             </li>
             <li className="flex gap-3 text-sm text-bone/60">
