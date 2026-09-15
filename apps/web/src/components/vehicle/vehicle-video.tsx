@@ -39,8 +39,8 @@ export function VehicleVideo({ video, vehicleName }: { video: Video; vehicleName
 
 function EmbedFacade({ video, label }: { video: Video; label: string }) {
   const [active, setActive] = useState(false);
-  // YouTube only generates the 1280px thumbnail for HD uploads; fall back to the
-  // 480px one if it is missing (the host answers 404).
+  // The 640px thumbnail suits the ~750px frame (its letterbox bars crop away in
+  // 16:9); YouTube does not make it for every upload, so fall back to 480px.
   const [posterFailed, setPosterFailed] = useState(false);
   const source = video.source;
   if (source.type === "file") return null;
@@ -53,7 +53,7 @@ function EmbedFacade({ video, label }: { video: Video; label: string }) {
   const poster =
     video.poster ??
     (source.type === "youtube"
-      ? `https://i.ytimg.com/vi/${source.videoId}/${posterFailed ? "hqdefault" : "maxresdefault"}.jpg`
+      ? `https://i.ytimg.com/vi/${source.videoId}/${posterFailed ? "hqdefault" : "sddefault"}.jpg`
       : undefined);
 
   return (

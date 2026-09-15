@@ -7,9 +7,46 @@ import type { NextConfig } from "next";
  */
 const mediaPublicBase = process.env.MEDIA_PUBLIC_BASE_URL?.trim();
 
+/**
+ * Baseline security headers for every response. The Content-Security-Policy
+ * sets only directives that cannot break the app — no framing by other sites,
+ * no <base> or plugin injection, forms may only post back to this site — rather
+ * than a script policy, which would need per-request nonces and give up static
+ * rendering.
+ */
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "X-Frame-Options", value: "DENY" },
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+  },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+  // Browsers ignore HSTS over plain HTTP, so this is inert in local development.
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+];
+
+/** Staff and API responses are private: never cached by a CDN, never indexed. */
+const privateHeaders = [
+  { key: "Cache-Control", value: "private, no-store" },
+  { key: "X-Robots-Tag", value: "noindex, nofollow" },
+];
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
+  poweredByHeader: false,
+
+  async headers() {
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/dashboard/:path*", headers: privateHeaders },
+      { source: "/dashboard", headers: privateHeaders },
+      { source: "/login", headers: privateHeaders },
+      { source: "/api/:path*", headers: privateHeaders },
+    ];
+  },
 
   /**
    * Legacy URLs from the previous site (see docs/STRATFORD_MIGRATION_AUDIT.md).
