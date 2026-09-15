@@ -58,6 +58,26 @@ Everything under **Completed** was exercised against a production build
 - Representative finance example and "reserve this car" are built but switched
   off until the client and providers are confirmed (`site.ts`).
 
+### Public content (content population)
+
+- Homepage: hero with View cars / Book a viewing / WhatsApp and four confirmed
+  facts; a deliberate current-stock panel when nothing is listed; why buy from
+  us; the browse → enquire → view → buy journey with ways to pay; finance
+  products and terms; part exchange; an About band with the client's verbatim
+  line; the showroom; a homepage FAQ; closing CTA.
+- Stock page: empty-state panel, viewing/finance/part-exchange next steps and
+  buying FAQs. Car pages: a "Buying this car" section.
+- Finance: comparison, terms explained without figures, how a finance enquiry
+  works, other ways to pay, finance FAQs.
+- Part exchange: confirmed four-step process, part-exchange FAQs.
+- About: rewritten around the client's positioning, how we work, where the
+  cars come from, buying journey, showroom.
+- Contact: Book a viewing section with hours, directions and visiting FAQs.
+- Address shown as the client gives it (21–25 Romford Road, London E15 4LJ);
+  hours Monday–Friday 12:00–17:00, Saturday–Sunday appointment only, bank
+  holidays and closures by appointment.
+- Content decisions are recorded in section 10 of the migration audit.
+
 ### Media (Phase 4)
 
 - Media model on each car: photo categories, alt text, cover, dealer vs
@@ -134,6 +154,15 @@ register in the migration audit.
     outside it.
 20. Per-car HPI status, service history, MOT history and V5C details — entered
     only from the client's records.
+21. Test drives: how they are arranged (insurance, licence checks) — the site
+    only says requests are confirmed individually.
+22. Finance figures removed from the product descriptions ("deposit from 10%",
+    "terms up to 5 years", "fixed interest rates"): restore only with the chosen
+    lender's terms.
+23. Part-exchange conditions from the old terms ("valid MOT and roadworthy",
+    "we reserve the right to decline"): removed pending confirmation.
+24. "No obligation" and "competitive prices set from the market" wording on the
+    part-exchange, homepage and About pages.
 
 ## External setup required
 

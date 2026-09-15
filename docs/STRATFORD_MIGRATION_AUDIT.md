@@ -320,3 +320,46 @@ Nothing in this list is published until confirmed.
 15. Instagram and TikTok handles, if they should be linked.
 16. Contact form enquiry types ("Not sure").
 17. The canonical domain (`www.stratfordcitymotorcars.com`) and who holds the registrar/DNS login ("the developer has it").
+
+## 10. Content population (public website)
+
+The public site was populated from the intake, reusing old-site content only
+where it survived the client-truth check.
+
+**Reused (KEEP / REWRITE):**
+
+- "We're a small, independent showroom and we like it that way…" — verbatim
+  (homepage About band, About page).
+- The About page's take-your-time story — rewritten, spirit kept ("rather you
+  left feeling good than rushed a decision").
+- HP, PCP and personal loan descriptions — kept, minus lender-dependent figures.
+- Part-exchange four steps and "subject to physical inspection" — rewritten
+  with the confirmed "usually within 24 hours on weekdays" qualifier.
+- "We always have more stock than we can list online…" — kept (true: 30 cars,
+  few listed).
+- "Give us a quick call before you visit…" — rewritten as "call ahead and
+  we'll have the car ready".
+- Free on-site parking; Stratford station, bus routes and A11/A12 access —
+  kept without walking or journey times.
+- Out-of-hours viewings on request — kept, arranged by WhatsApp or text.
+- Old FAQ topics (warranty, part exchange, out-of-hours, delivery) — rewritten
+  from the intake; new questions added for viewings, test drives, finance,
+  reservation, history checks, payment and parking.
+
+**New, from the intake:** why buy from us (welcoming showroom, pride in stock,
+competitive prices from market analysis, handled personally, nationwide
+buyers), the enquiry-to-sale journey, payment methods, stock sources (private
+purchases, trade auctions, main dealer disposals), viewing and test-drive
+requests confirmed by the business.
+
+**Rejected (DELETE):** "Stratford's Premier Motor Group", "Prestige & Classic
+Cars", "East London's Prestige Specialists", "Local Expertise", the six
+testimonials and review section, HPI-clear and "fully inspected" claims, AA
+warranty and "up to 12 months", "quick decisions / same-day approvals",
+"competitive rates", credit broker and FCA-partner statements, "deposit from
+10%" and "terms up to 5 years", "no hidden fees / all charges included",
+"5-minute response" and "within 24 hours" for general enquiries, "5-minute walk
+from station", "15 minutes by rail / 25 minutes by car", sat nav E15 2BX, old
+hours, "Reserve for £99", hybrid/EV sourcing, community/mission copy, all hire
+content, and the old part-exchange terms "valid MOT and roadworthy" and "we
+reserve the right to refuse" (CLIENT CONFIRMATION REQUIRED).
