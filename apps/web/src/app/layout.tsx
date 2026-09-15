@@ -59,9 +59,6 @@ export const metadata: Metadata = {
     siteName: site.name,
     url: site.url,
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
 };
 
 export const viewport: Viewport = {
