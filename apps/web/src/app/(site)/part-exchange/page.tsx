@@ -164,7 +164,10 @@ export default function PartExchangePage() {
       </Section>
 
       <FaqSection
-        faqs={faqsByCategory("Part exchange")}
+        // "Do you accept part exchange?" is what this whole page answers.
+        faqs={[...faqsByCategory("Part exchange"), ...faqsByCategory("Finance")].filter(
+          (faq) => faq.id !== "part-exchange" && faq.id !== "finance" && faq.id !== "finance-credit-check",
+        )}
         eyebrow="Part-exchange questions"
         title="Good to know"
         lede="Anything else about your car, just ask — photos and questions are easiest on WhatsApp."

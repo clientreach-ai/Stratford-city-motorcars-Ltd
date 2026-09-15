@@ -23,7 +23,7 @@ function topValues(vehicles: PublicVehicle[], pick: (vehicle: PublicVehicle) => 
 /**
  * Stock shortcuts are derived from the cars actually for sale, so the footer
  * never links to a make with nothing behind it. With no stock only
- * "All vehicles" remains.
+ * "All vehicles" and "Book a viewing" remain.
  */
 async function getStockLinks(): Promise<{ href: FooterHref; label: string }[]> {
   const vehicles = await getAvailableVehicles();
@@ -34,6 +34,7 @@ async function getStockLinks(): Promise<{ href: FooterHref; label: string }[]> {
       href: { pathname: "/vehicles", query: { make } },
       label: make,
     })),
+    { href: "/contact#book-a-viewing", label: "Book a viewing" },
   ];
 }
 
