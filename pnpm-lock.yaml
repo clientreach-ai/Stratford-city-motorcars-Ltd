@@ -115,9 +115,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@Stratford-city-motorcars-Ltd/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
       '@Stratford-city-motorcars-Ltd/db':
         specifier: workspace:*
         version: link:../../packages/db

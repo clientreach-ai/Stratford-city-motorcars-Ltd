@@ -9,11 +9,9 @@
     "check-content": "node scripts/check-content.mjs",
     "check-inventory": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-inventory.mjs",
     "start": "next start",
-    "inventory:import-seed": "bun scripts/import-seed.ts",
-    "create-owner": "bun scripts/create-owner.ts"
+    "inventory:import-seed": "bun scripts/import-seed.ts"
   },
   "dependencies": {
-    "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
     "@Stratford-city-motorcars-Ltd/db": "workspace:*",
     "@Stratford-city-motorcars-Ltd/env": "workspace:*",
     "@Stratford-city-motorcars-Ltd/ui": "workspace:*",

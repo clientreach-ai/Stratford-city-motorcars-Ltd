@@ -141,7 +141,7 @@ confirmation required before anything is published.
 | Google Business Profile | None | No profile; "my company does not come up" on maps | Listed as a client item | **External**. Highest-impact local SEO action. |
 | Social | None linked | Instagram and TikTok, dormant; handles not supplied | None | **CONFIRM** handles before adding `sameAs` or links. |
 | AutoTrader | Not referenced | Used to be listed (~£1,200/month); HPI via Autotrader portal | Not referenced | No change. |
-| Admin | `/admin` pages in SPA | Client will update stock themselves and wants training | Better-Auth scaffolding, open sign-up | **REPLACE** with an authenticated dealership dashboard; sign-up disabled (Phase 9). |
+| Admin | `/admin` pages in SPA | Client will update stock themselves and wants training | Better-Auth scaffolding, open sign-up | **REPLACE** with an authenticated dealership dashboard; sign-up disabled. *(Built in Phase 9, then removed to be rebuilt.)* |
 
 ---
 
@@ -200,7 +200,7 @@ because people bookmark and share links.
 | `/about`, `/finance`, `/contact`, `/privacy`, `/terms`, `/cookies` | Same topics | Same paths | Kept. |
 | `/finance#part-exchange` (footer "Part Exchange") | PX section | `/part-exchange` exists; `/finance` stays finance | No redirect needed (fragment). |
 | `/hire`, `/hire/*` | Client-side 404 (hire only advertised in meta/JSON-LD) | **404** (not redirected) | No equivalent. Pointing hire traffic at a sales page would be a soft 404 and misleading; the not-found page offers stock and contact routes. |
-| `/admin`, `/admin/dashboard`, `/admin/add-vehicle`, `/admin/edit-vehicle/:id` | Legacy staff area | **308 → `/login`** (noindex, disallowed in robots) | Staff who bookmarked the old admin land on the new sign-in. |
+| `/admin`, `/admin/dashboard`, `/admin/add-vehicle`, `/admin/edit-vehicle/:id` | Legacy staff area | **404** for now | The planned 308 → `/login` was removed with the dashboard; restore it when a sign-in page exists again. |
 | `/robots.txt`, `/sitemap.xml` | SPA shell | Real files | New. |
 | `/og-image.jpg`, `/logo.png` | SPA shell (broken refs) | 404 | Never real files. |
 

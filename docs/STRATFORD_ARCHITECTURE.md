@@ -1,6 +1,7 @@
 # Stratford City Motorcars — architecture
 
-How the website and the staff dashboard fit together. For what is finished,
+How the public website works. The staff dashboard and staff authentication
+have been removed and are to be rebuilt; nothing here depends on them. For what is finished,
 what is waiting on the client and what must be set up before launch, see
 [STRATFORD_BUILD_STATUS.md](./STRATFORD_BUILD_STATUS.md). For how the legacy
 site and the client intake shaped the content, see
@@ -9,26 +10,25 @@ site and the client intake shaped the content, see
 ## Shape of the system
 
 ```text
-apps/web            Next.js 16 (App Router). Public site, staff dashboard,
-                    staff authentication, media delivery, enquiry handling.
-apps/server         Hono. Legacy Better-T-Stack API; serves /api/auth only.
-                    Not needed by the website — auth is served by apps/web.
+apps/web            Next.js 16 (App Router). Public site, media delivery,
+                    enquiry handling.
+apps/server         Hono. Better-T-Stack template API (/api/auth). Not used by
+                    the website.
 packages/db         Drizzle schema + migrations: vehicle, lead, auth tables.
-packages/auth       Better Auth configuration (sign-up disabled, owner script).
+packages/auth       Better-T-Stack template auth config, used only by apps/server.
 packages/env        Typed environment validation.
 packages/ui         Design tokens and shared primitives.
 ```
 
-One Next.js app serves everything a visitor or a member of staff touches.
-There is one source of truth for stock — the `vehicle` table — read by the
-public pages and written by the dashboard.
+One Next.js app serves everything a visitor touches. There is one source of
+truth for stock — the `vehicle` table — read by the public pages. The store
+interface can write, ready for a rebuilt dashboard.
 
 ### Two runtime modes
 
 | | `DATABASE_URL` set | `DATABASE_URL` unset |
 | --- | --- | --- |
 | Inventory source | Postgres (`vehicle` table) | Read-only seed records in `src/lib/inventory/data.ts` |
-| Dashboard | Available once `BETTER_AUTH_SECRET` (32+ chars) and `BETTER_AUTH_URL` are set | `/login` shows a setup notice; `/api/auth/*` returns 503 |
 | Enquiries | Stored in `lead`, plus webhook if configured | Webhook only; with no webhook the form says it could not send |
 
 Build and runtime must use the same `DATABASE_URL`: vehicle pages are
@@ -64,10 +64,8 @@ A car is on the website only when **all** of these hold:
    description and a valid web address (slug) are filled in.
 
 `publicationIssues(record)` returns every unmet rule as `{code, section,
-message}`. The dashboard shows those messages verbatim next to the relevant
-editor section; the publish action re-checks them on the server and refuses
-with the same reasons. A car marked published but failing a rule (possible only
-if data is edited outside the dashboard) is withheld and logged once:
+message}` in plain English, ready to show to whoever edits stock. A car marked
+published but failing a rule is withheld and logged once:
 `[inventory] t4 (…) is published but withheld: missing-interior-photography`.
 
 `listingRecommendations(record)` lists advice that does **not** block
@@ -99,18 +97,15 @@ text, no walkaround video, and similar.
 
 - `store.ts` defines `InventoryStore`. `stores/postgres.ts` keeps each record as
   validated JSON in `vehicle.record`, with `slug` (unique), `status`
-  (indexed) and `featured` as columns. A slug clash raises `SlugConflictError`, which
-  the editor shows against the web-address field. `stores/seed.ts` is read-only
+  (indexed) and `featured` as columns. A slug clash raises `SlugConflictError`.
+  `stores/seed.ts` is read-only
   and throws `StoreNotWritableError` on writes.
 - `repository.ts` is the only read path for public pages. Records are loaded
-  through `unstable_cache` (tag `inventory`, 5 minute revalidate). Every
-  dashboard write calls `revalidateTag("inventory", { expire: 0 })`, so a change
-  is visible on the next request.
+  through `unstable_cache` (tag `inventory`, 5 minute revalidate). Anything that
+  writes stock must call `revalidateTag("inventory", { expire: 0 })` so the
+  change is visible on the next request.
 - Vehicle pages are prerendered for public cars at build time; a car published
   later is rendered on its first request.
-- Saves carry the `updatedAt` the editor loaded. If the record changed since,
-  the save is refused ("This car was changed somewhere else since you opened
-  it") instead of overwriting.
 
 ### Seed and import
 
@@ -121,26 +116,16 @@ existing ids are left alone).
 
 ## Media
 
-Code: `apps/web/src/lib/media/`, `src/app/api/dashboard/media/route.ts`,
-`src/app/media/[...path]/route.ts`, `src/components/dashboard/media-manager.tsx`.
+Code: `apps/web/src/lib/media/storage.ts`, `src/app/media/[...path]/route.ts`.
 
-- **Upload** (`POST /api/dashboard/media`): staff session required (401
-  otherwise), same-origin check, per-file results so one bad file does not sink
-  a batch. The record is re-read immediately before saving so concurrent edits
-  are not lost.
-- **Photographs** (`process.ts`): format detected from content (JPEG, PNG, WebP,
-  AVIF, HEIF, TIFF), EXIF-rotated, **all metadata stripped (including GPS)**,
-  scaled to at most 2560px on the long edge, re-encoded as WebP q82. Anything
-  under 800px on the long edge, or over 25 MB, is refused with a plain reason.
-  Each photo carries a category (exterior, interior, detail, documents), alt
-  text, `provenance: "dealer"`, and an optional credit.
-- **Video**: MP4/WebM/QuickTime detected from the file signature, up to 200 MB,
-  stored as uploaded (no transcoding). YouTube and Vimeo links are accepted as
-  an alternative; YouTube renders as a lightweight facade using
-  `youtube-nocookie.com`. 360° spins are stored as links.
-- **Management**: reorder, choose cover, set category and alt text, remove
-  (the file is deleted from storage). Removing the last interior photo
-  immediately shows the missing-photo reason and blocks publishing.
+There is no upload tool: it was part of the removed dashboard. Media is
+described on each record's `media` array.
+
+- **Photographs**: each carries a category (exterior, interior, detail,
+  documents), width and height, alt text, `provenance` (`dealer` or `library`)
+  and an optional credit.
+- **Video**: a stored file, or a YouTube/Vimeo link. YouTube renders as a
+  lightweight facade using `youtube-nocookie.com`. 360° spins are links.
 - **Storage** (`storage.ts`): `MediaStorage` interface with a local-disk
   implementation under `MEDIA_ROOT` (default `apps/web/.data/media`,
   gitignored). Keys are validated against a strict pattern; path traversal
@@ -181,42 +166,9 @@ form → server action → Zod validation → spam checks → deliverLead()
   none is wired. The webhook (`LEADS_WEBHOOK_URL`, optional bearer
   `LEADS_WEBHOOK_TOKEN`) can be pointed at Zapier/Make/n8n today. A new channel
   is a `LeadNotifier` added to `configuredNotifiers()` in `notify.ts`.
-- **Dashboard**: stored enquiries appear under Enquiries with contact details,
-  the car they concern and a status (new, contacted, closed).
-
-## Staff authentication and dashboard
-
-Code: `packages/auth`, `apps/web/src/lib/server/staff.ts`,
-`apps/web/src/app/(admin)/`, `apps/web/src/lib/dashboard/`,
-`apps/web/src/components/dashboard/`.
-
-- Better Auth runs inside the web app at `/api/auth/*`. **Public sign-up is
-  disabled.** Owner accounts are created from the command line with
-  `pnpm --filter web create-owner` (password from `OWNER_PASSWORD` or a prompt,
-  minimum 12 characters).
-- Sessions last 12 hours; cookies are `SameSite=Lax`, `Secure` on HTTPS; Better
-  Auth's own sign-in rate limiting is on.
-- `requireStaff()` is called at the top of **every** dashboard page, every
-  server action and the upload route. Server actions do not rely on the page
-  having checked. Replaying an action without a session redirects to `/login`
-  and changes nothing.
-- `/login`, `/dashboard/*` and `/api/*` send `Cache-Control: private, no-store`
-  and `X-Robots-Tag: noindex, nofollow`, and are disallowed in `robots.txt`.
-  `/admin` redirects to `/login`.
-
-Dashboard areas:
-
-| Area | What it does |
-| --- | --- |
-| Overview | Counts (on the website, drafts, sold, stock for sale), photography and listing quality, recent enquiries, featured cars, drafts that are ready to publish |
-| Inventory | Tabs by status, search, sort, thumbnail and blockers per car; per-row publish, feature, mark sold, archive, restore, duplicate (with confirmation for destructive steps) |
-| Vehicle editor | Sections for basics, price, specification, history and checks, description and features, photos and video, search appearance. Live list of what blocks publishing, each linked to its section; field-level error messages; save, publish, unpublish, mark sold, reserve, feature |
-| Media | Upload with progress, per-file refusals, categories, alt text, cover, reorder, remove, video file or YouTube/Vimeo link, 360° link |
-| Enquiries | Stored enquiries with contact details and status changes |
-
-`editor-values.ts` keeps every input as the string typed, so a half-typed
-number never becomes `NaN`; the server validates the converted record and maps
-Zod errors back to plain field names.
+- **Reading stored enquiries**: there is no screen for them yet (the dashboard
+  was removed). They are in the `lead` table with a `status` column defaulting
+  to `new`.
 
 ## SEO
 
@@ -236,7 +188,7 @@ Code: `apps/web/src/lib/seo.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`,
   entries and `lastModified`. Legal placeholders, sold, draft and archived cars
   are excluded.
 - Legacy URLs: `/sales` and `/used-cars-stratford` → `/vehicles`, `/mission` →
-  `/about`, `/admin*` → `/login` (permanent). `/sales/<slug>` → the car's
+  `/about` (permanent). `/sales/<slug>` → the car's
   current page when it is public, otherwise `/vehicles` (308). `/hire` stays a
   404 — hire is not part of the business.
 - Real 404 status with one `<title>` and `noindex`.

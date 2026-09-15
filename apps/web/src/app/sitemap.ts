@@ -13,7 +13,7 @@ import { site } from "@/lib/site";
  * Vehicles use their real `updatedAt` and list their photographs.
  *
  * Excluded: the interim noindex legal pages, sold cars (their pages stay up
- * but are not submitted), hidden or draft stock, and the staff area.
+ * but are not submitted), and hidden or draft stock.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const vehicles = await getSitemapVehicles();
