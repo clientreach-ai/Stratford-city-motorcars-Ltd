@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Check, Phone } from "lucide-react";
 
-import { PartExchangeForm } from "@/components/forms/part-exchange-form";
+import { PartExchangeForm, PartExchangeFormFromLink } from "@/components/forms/part-exchange-form";
 import { PageHero } from "@/components/site/page-hero";
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -115,7 +116,9 @@ export default function PartExchangePage() {
             </div>
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
-              <PartExchangeForm />
+              <Suspense fallback={<PartExchangeForm />}>
+                <PartExchangeFormFromLink />
+              </Suspense>
             </div>
           </div>
         </Container>
