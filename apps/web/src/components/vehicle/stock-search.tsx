@@ -14,19 +14,14 @@ import { Label, Select } from "@/components/ui/field";
  *
  * `next/form` upgrades submission to a client-side navigation and prefetches
  * the stock page, so the result feels instant without us writing a router
- * call. The only state here is the make → model dependency.
+ * call. Make and model are the two filters the client asked for; the only state
+ * here is the make → model dependency.
  */
 export function StockSearch({
   makeModels,
-  priceBands,
-  fuels,
-  transmissions,
   className,
 }: {
   makeModels: Record<string, string[]>;
-  priceBands: { value: string; label: string }[];
-  fuels: string[];
-  transmissions: string[];
   className?: string;
 }) {
   const [make, setMake] = useState("");
@@ -34,7 +29,7 @@ export function StockSearch({
 
   return (
     <Form action="/vehicles" className={className}>
-      <div className="grid grid-cols-2 gap-px bg-[var(--border)] lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-px bg-[var(--border)] sm:grid-cols-2">
         <SearchCell label="Make" htmlFor="search-make">
           <Select
             id="search-make"
@@ -68,50 +63,6 @@ export function StockSearch({
           </Select>
         </SearchCell>
 
-        <SearchCell label="Max price" htmlFor="search-price">
-          <Select
-            id="search-price"
-            name="maxPrice"
-            className="h-12 truncate border-0 bg-transparent px-0 pr-8 text-[0.9375rem] focus-visible:outline-offset-4"
-          >
-            <option value="">No maximum</option>
-            {priceBands.map((band) => (
-              <option key={band.value} value={band.value}>
-                {band.label}
-              </option>
-            ))}
-          </Select>
-        </SearchCell>
-
-        <SearchCell label="Fuel" htmlFor="search-fuel">
-          <Select
-            id="search-fuel"
-            name="fuel"
-            className="h-12 truncate border-0 bg-transparent px-0 pr-8 text-[0.9375rem] focus-visible:outline-offset-4"
-          >
-            <option value="">Any fuel</option>
-            {fuels.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
-        </SearchCell>
-
-        <SearchCell label="Gearbox" htmlFor="search-transmission" className="col-span-2 lg:col-span-1">
-          <Select
-            id="search-transmission"
-            name="transmission"
-            className="h-12 truncate border-0 bg-transparent px-0 pr-8 text-[0.9375rem] focus-visible:outline-offset-4"
-          >
-            <option value="">Any gearbox</option>
-            {transmissions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
-        </SearchCell>
       </div>
 
       <Button type="submit" size="lg" variant="brass" className="mt-px w-full">

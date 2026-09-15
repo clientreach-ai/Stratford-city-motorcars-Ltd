@@ -1,6 +1,8 @@
-import { formatMileage, formatPrice } from "./format";
+import { formatMileage, formatVehiclePrice } from "./format";
 import { site } from "./site";
-import type { Vehicle } from "./inventory/types";
+import type { PublicVehicle } from "./inventory/types";
+
+type VehicleSummary = Pick<PublicVehicle, "year" | "title" | "price" | "priceOnApplication" | "mileage">;
 
 /**
  * WhatsApp is the dealership's strongest conversion channel, so every link is
@@ -44,26 +46,26 @@ export const whatsappLinks = {
  * Vehicle-specific message. Includes year, make, model, price and mileage so
  * the dealer can answer without asking which listing the buyer means.
  */
-export function whatsappForVehicle(vehicle: Vehicle): string {
+export function whatsappForVehicle(vehicle: VehicleSummary): string {
   return build(
     [
       `Hi ${site.name}, I'm interested in the ${vehicle.year} ${vehicle.title}`,
-      `(${formatPrice(vehicle.price)}, ${formatMileage(vehicle.mileage)}).`,
+      `(${formatVehiclePrice(vehicle)}, ${formatMileage(vehicle.mileage)}).`,
       `Is it still available?`,
     ].join(" "),
   );
 }
 
 /** "I have a car to part exchange" from a specific listing. */
-export function whatsappPartExchangeForVehicle(vehicle: Vehicle): string {
+export function whatsappPartExchangeForVehicle(vehicle: VehicleSummary): string {
   return build(
     `Hi ${site.name}, I'm interested in the ${vehicle.year} ${vehicle.title} and I have a car to part exchange. Could you give me a valuation?`,
   );
 }
 
 /** "Tell me about finance" from a specific listing. */
-export function whatsappFinanceForVehicle(vehicle: Vehicle): string {
+export function whatsappFinanceForVehicle(vehicle: VehicleSummary): string {
   return build(
-    `Hi ${site.name}, I'd like to know about finance options on the ${vehicle.year} ${vehicle.title} (${formatPrice(vehicle.price)}).`,
+    `Hi ${site.name}, I'd like to know about finance options on the ${vehicle.year} ${vehicle.title} (${formatVehiclePrice(vehicle)}).`,
   );
 }

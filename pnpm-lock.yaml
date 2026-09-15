@@ -115,6 +115,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@Stratford-city-motorcars-Ltd/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@Stratford-city-motorcars-Ltd/env':
         specifier: workspace:*
         version: link:../../packages/env
@@ -136,6 +139,9 @@ importers:
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(bun-types@1.4.2)(kysely@0.29.5)(pg@8.23.0)
       lucide-react:
         specifier: 'catalog:'
         version: 1.43.0(react@19.2.8)

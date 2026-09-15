@@ -11,6 +11,12 @@ export function formatPrice(value: number): string {
   return gbp.format(value);
 }
 
+/** "£40,000", or "POA" for a car whose price is on application. */
+export function formatVehiclePrice(vehicle: { price: number | null; priceOnApplication: boolean }): string {
+  if (vehicle.priceOnApplication || vehicle.price === null) return "POA";
+  return formatPrice(vehicle.price);
+}
+
 /** 38,000 miles */
 export function formatMileage(value: number): string {
   return `${decimal.format(value)} miles`;

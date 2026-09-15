@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { getAllVehicles } from "@/lib/inventory/repository";
+import { getSitemapVehicles } from "@/lib/inventory/repository";
 import { site } from "@/lib/site";
 
 /**
@@ -10,7 +10,7 @@ import { site } from "@/lib/site";
  * Admin routes are excluded here and disallowed in robots.ts.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const vehicles = await getAllVehicles();
+  const vehicles = await getSitemapVehicles();
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = (
@@ -26,15 +26,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ] as const
   ).map((entry) => ({ ...entry, lastModified: now }));
 
-  const vehicleRoutes: MetadataRoute.Sitemap = vehicles
-    // A sold car keeps its page but should not be pushed at crawlers.
-    .filter((vehicle) => vehicle.status !== "sold")
-    .map((vehicle) => ({
-      url: `${site.url}/vehicles/${vehicle.slug}`,
-      lastModified: new Date(vehicle.listedAt),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    }));
+  // Cars for sale only. A sold car keeps its page but is not submitted.
+  const vehicleRoutes: MetadataRoute.Sitemap = vehicles.map((vehicle) => ({
+    url: `${site.url}/vehicles/${vehicle.slug}`,
+    lastModified: new Date(vehicle.updatedAt),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
 
   return [...staticRoutes, ...vehicleRoutes];
 }

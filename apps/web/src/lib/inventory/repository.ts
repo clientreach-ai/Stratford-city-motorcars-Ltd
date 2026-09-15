@@ -1,295 +1,206 @@
-import { vehicles as staticVehicles } from "./data";
+import "server-only";
+
+import { unstable_cache } from "next/cache";
+
+import { getInventoryStore } from "./store";
 import {
   DEFAULT_SORT,
   type FacetValue,
-  type NumericRange,
+  type PublicVehicle,
   type SortOption,
-  type Vehicle,
   type VehicleFacets,
   type VehicleQuery,
-  type VehicleView,
+  type VehicleRecord,
 } from "./types";
-import { publicationBlockers, selectFeatured } from "./visibility";
+import { publicBlockers, selectFeatured, toPublicVehicle } from "./visibility";
 
 /**
- * ============================================================================
- * INTEGRATION POINT — swap the data source here.
- * ============================================================================
+ * Public inventory API. Every page, the sitemap and structured data read stock
+ * through here and nowhere else.
  *
- * Every function below is async and returns plain objects, so replacing the
- * static array with a real source is a change to `loadVehicles()` alone. The
- * rest of the application, including all filtering and sorting, keeps working.
+ * Visibility is applied once, in `loadPublicVehicles()`: a record reaches the
+ * public site only through `toPublicVehicle()`, which enforces the publishing
+ * rules (published or sold, complete details, price in range or POA, dealer
+ * exterior and interior photography) and strips library media. Listings,
+ * filters, featured and related cars additionally exclude sold cars; a sold
+ * car keeps its own page, marked SOLD.
  *
- * Postgres via the workspace `@Stratford-city-motorcars-Ltd/db` package:
- *
- *     import { db } from "@Stratford-city-motorcars-Ltd/db";
- *     async function loadVehicles(): Promise<Vehicle[]> {
- *       return db.query.vehicles.findMany({ where: isNull(vehicles.deletedAt) });
- *     }
- *
- * Or the existing Hono API:
- *
- *     async function loadVehicles(): Promise<Vehicle[]> {
- *       const res = await fetch(`${process.env.INVENTORY_API_URL}/vehicles`, {
- *         next: { revalidate: 300, tags: ["vehicles"] },
- *       });
- *       if (!res.ok) throw new Error(`Inventory API ${res.status}`);
- *       return res.json();
- *     }
- *
- * Filtering happens in memory because the stock list is small (tens, not
- * thousands). If the inventory grows past a few hundred vehicles, push
- * `searchVehicles` down into SQL and keep the same signature.
- *
- * Visibility: vehicles that fail the publishing rules in `visibility.ts` (not
- * published, price outside the normal stock range, or missing the required
- * dealer photography) are removed here, and only here. Every public function
- * below — listings, featured, related, facets, the make/model index, static
- * params, the sitemap and single-vehicle lookups (so a hidden car's URL 404s)
- * — reads through `loadVehicles()`, so a hidden car cannot leak through any of
- * them. Any replacement source must keep this filter.
- *
- * Every consumer must also cope with this returning an empty array.
+ * Records are cached under the `inventory` tag. The dashboard revalidates the
+ * tag after every change, and the cache also expires on its own every five
+ * minutes as a safety net.
  */
-async function loadVehicles(): Promise<Vehicle[]> {
-  return staticVehicles.filter((vehicle) => {
-    const blockers = publicationBlockers(vehicle);
-    if (vehicle.published && blockers.length > 0) warnWithheld(vehicle, blockers);
-    return blockers.length === 0;
-  });
-}
+
+export const INVENTORY_CACHE_TAG = "inventory";
+
+const loadRecords = unstable_cache(
+  async (): Promise<VehicleRecord[]> => {
+    const store = await getInventoryStore();
+    return store.list();
+  },
+  ["inventory-records"],
+  { tags: [INVENTORY_CACHE_TAG], revalidate: 300 },
+);
 
 const warned = new Set<string>();
 
 /**
- * A car marked published but withheld by a rule is logged once per process,
- * so setting the flag never fails silently. Unpublished cars are expected and
- * not logged.
+ * A car marked published but withheld by a rule is logged once per process —
+ * id, slug and rule codes only — so publishing never fails silently.
  */
-function warnWithheld(vehicle: Vehicle, blockers: string[]): void {
-  if (warned.has(vehicle.id)) return;
-  warned.add(vehicle.id);
-  console.warn(
-    `[inventory] ${vehicle.id} (${vehicle.slug}) is published but withheld: ${blockers.join(", ")}`,
+function warnWithheld(record: VehicleRecord): void {
+  const key = `${record.id}:${record.updatedAt}`;
+  if (warned.has(key)) return;
+  warned.add(key);
+  const codes = publicBlockers(record).map((issue) => issue.code);
+  console.warn(`[inventory] ${record.id} (${record.slug}) is ${record.status} but withheld: ${codes.join(", ")}`);
+}
+
+async function loadPublicVehicles(): Promise<PublicVehicle[]> {
+  const records = await loadRecords();
+  const now = Date.now();
+  const visible: PublicVehicle[] = [];
+
+  for (const record of records) {
+    const vehicle = toPublicVehicle(record, now);
+    if (vehicle) visible.push(vehicle);
+    else if (record.status === "published" || record.status === "sold") warnWithheld(record);
+  }
+
+  return visible;
+}
+
+/** Cars currently for sale (published and not sold), in the default order. */
+export async function getAvailableVehicles(): Promise<PublicVehicle[]> {
+  const all = await loadPublicVehicles();
+  return sortVehicles(
+    all.filter((vehicle) => !vehicle.isSold),
+    DEFAULT_SORT,
   );
 }
 
-/** A listing counts as a new arrival for this many days after being listed. */
-const NEW_ARRIVAL_DAYS = 30;
-
-function toView(vehicle: Vehicle): VehicleView {
-  const hasDealerPhotos = vehicle.images.length > 0;
-  const displayImages = hasDealerPhotos ? vehicle.images : vehicle.libraryImages;
-  const ageMs = Date.now() - new Date(vehicle.listedAt).getTime();
-
-  return {
-    ...vehicle,
-    displayImages,
-    awaitingPhotography: displayImages.length === 0,
-    showingLibraryImages: !hasDealerPhotos && vehicle.libraryImages.length > 0,
-    isNewArrival:
-      vehicle.status === "available" && ageMs < NEW_ARRIVAL_DAYS * 24 * 60 * 60 * 1000,
-  };
+/** A single public car, including sold cars (their pages stay up). */
+export async function getVehicleBySlug(slug: string): Promise<PublicVehicle | null> {
+  const all = await loadPublicVehicles();
+  return all.find((vehicle) => vehicle.slug === slug) ?? null;
 }
 
-export async function getAllVehicles(): Promise<VehicleView[]> {
-  const all = await loadVehicles();
-  return all.map(toView);
+/**
+ * Resolves a slug the car used to have — a legacy `/sales/…` slug or one the
+ * dealership has since changed — to the car's current public slug.
+ */
+export async function resolvePreviousSlug(slug: string): Promise<string | null> {
+  const all = await loadPublicVehicles();
+  const match = all.find((vehicle) => vehicle.slug === slug || vehicle.previousSlugs.includes(slug));
+  return match?.slug ?? null;
 }
 
-export async function getVehicleBySlug(slug: string): Promise<VehicleView | null> {
-  const all = await loadVehicles();
-  const match = all.find((vehicle) => vehicle.slug === slug);
-  return match ? toView(match) : null;
-}
-
-/** Slugs for `generateStaticParams`, so every vehicle page prerenders. */
+/** Slugs for `generateStaticParams`, so every public vehicle page prerenders. */
 export async function getVehicleSlugs(): Promise<string[]> {
-  const all = await loadVehicles();
+  const all = await loadPublicVehicles();
   return all.map((vehicle) => vehicle.slug);
 }
 
-/** Hand-picked cars only; may return fewer than `limit`, or none. */
-export async function getFeaturedVehicles(limit = 4): Promise<VehicleView[]> {
-  return selectFeatured(await getAllVehicles(), limit);
+/** For the sitemap: cars for sale only (sold pages stay reachable but are not submitted). */
+export async function getSitemapVehicles(): Promise<PublicVehicle[]> {
+  return getAvailableVehicles();
 }
 
-/** Same make first, then closest on price. Used at the foot of a vehicle page. */
-export async function getRelatedVehicles(slug: string, limit = 3): Promise<VehicleView[]> {
-  const all = await getAllVehicles();
+/** Hand-picked cars only; may return fewer than `limit`, or none. */
+export async function getFeaturedVehicles(limit = 4): Promise<PublicVehicle[]> {
+  return selectFeatured(await loadPublicVehicles(), limit);
+}
+
+/** Same make first, then closest on price. Sold cars and POA-vs-priced distance handled. */
+export async function getRelatedVehicles(slug: string, limit = 3): Promise<PublicVehicle[]> {
+  const all = await loadPublicVehicles();
   const current = all.find((vehicle) => vehicle.slug === slug);
   if (!current) return [];
 
+  const distance = (vehicle: PublicVehicle) =>
+    current.price === null || vehicle.price === null
+      ? Number.MAX_SAFE_INTEGER
+      : Math.abs(vehicle.price - current.price);
+
   return all
-    .filter((vehicle) => vehicle.slug !== slug && vehicle.status !== "sold")
+    .filter((vehicle) => vehicle.slug !== slug && !vehicle.isSold)
     .sort((a, b) => {
-      const makeScore =
-        Number(b.make === current.make) - Number(a.make === current.make);
-      if (makeScore !== 0) return makeScore;
-      return Math.abs(a.price - current.price) - Math.abs(b.price - current.price);
+      const makeScore = Number(b.make === current.make) - Number(a.make === current.make);
+      return makeScore !== 0 ? makeScore : distance(a) - distance(b);
     })
     .slice(0, limit);
 }
 
-// ---- Filtering ------------------------------------------------------------
+// ---- Search -------------------------------------------------------------------
 
 function matchesAny(selected: string[] | undefined, value: string): boolean {
   if (!selected || selected.length === 0) return true;
   return selected.some((entry) => entry.toLowerCase() === value.toLowerCase());
 }
 
-function matchesSearch(vehicle: Vehicle, term: string): boolean {
-  const haystack = [
-    vehicle.title,
-    vehicle.make,
-    vehicle.model,
-    String(vehicle.year),
-    vehicle.colour,
-    vehicle.bodyType,
-    vehicle.fuel,
-    vehicle.transmission,
-    vehicle.engine ?? "",
-    ...vehicle.features,
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  // Every word must appear somewhere, so "black rolls" narrows rather than widens.
-  return term
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((word) => haystack.includes(word));
+function applyFilters(all: PublicVehicle[], query: VehicleQuery): PublicVehicle[] {
+  return all.filter(
+    (vehicle) => matchesAny(query.make, vehicle.make) && matchesAny(query.model, vehicle.model),
+  );
 }
 
-function applyFilters(all: VehicleView[], query: VehicleQuery): VehicleView[] {
-  return all.filter((vehicle) => {
-    if (query.q && !matchesSearch(vehicle, query.q)) return false;
-    if (!matchesAny(query.make, vehicle.make)) return false;
-    if (!matchesAny(query.model, vehicle.model)) return false;
-    if (!matchesAny(query.fuel, vehicle.fuel)) return false;
-    if (!matchesAny(query.transmission, vehicle.transmission)) return false;
-    if (!matchesAny(query.bodyType, vehicle.bodyType)) return false;
-
-    if (query.features?.length) {
-      const owned = vehicle.features.map((feature) => feature.toLowerCase());
-      const allPresent = query.features.every((wanted) =>
-        owned.some((feature) => feature.includes(wanted.toLowerCase())),
-      );
-      if (!allPresent) return false;
-    }
-
-    if (query.minPrice !== undefined && vehicle.price < query.minPrice) return false;
-    if (query.maxPrice !== undefined && vehicle.price > query.maxPrice) return false;
-    if (query.maxMileage !== undefined && vehicle.mileage > query.maxMileage) return false;
-    if (query.minYear !== undefined && vehicle.year < query.minYear) return false;
-    if (query.maxYear !== undefined && vehicle.year > query.maxYear) return false;
-
-    return true;
-  });
+/**
+ * Price sorts place POA cars with the most valuable stock: first when sorting
+ * high to low, last when sorting low to high. The client uses POA for rare
+ * classics whose value moves.
+ */
+function comparePrice(a: PublicVehicle, b: PublicVehicle, direction: 1 | -1): number {
+  if (a.price === null && b.price === null) return 0;
+  if (a.price === null) return direction === -1 ? -1 : 1;
+  if (b.price === null) return direction === -1 ? 1 : -1;
+  return (a.price - b.price) * direction;
 }
 
-const sorters: Record<SortOption, (a: VehicleView, b: VehicleView) => number> = {
-  newest: (a, b) => new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime(),
-  "price-asc": (a, b) => a.price - b.price,
-  "price-desc": (a, b) => b.price - a.price,
+const sorters: Record<SortOption, (a: PublicVehicle, b: PublicVehicle) => number> = {
+  "price-desc": (a, b) => comparePrice(a, b, -1),
+  "price-asc": (a, b) => comparePrice(a, b, 1),
+  newest: (a, b) => new Date(b.listedAt ?? b.createdAt).getTime() - new Date(a.listedAt ?? a.createdAt).getTime(),
   "year-desc": (a, b) => b.year - a.year,
-  "year-asc": (a, b) => a.year - b.year,
   "mileage-asc": (a, b) => a.mileage - b.mileage,
 };
 
+export function sortVehicles(vehicles: PublicVehicle[], sort: SortOption): PublicVehicle[] {
+  // Stable secondary order by title keeps equal prices from reshuffling.
+  return [...vehicles].sort((a, b) => sorters[sort](a, b) || a.title.localeCompare(b.title));
+}
+
 export async function searchVehicles(
   query: VehicleQuery = {},
-): Promise<{ results: VehicleView[]; total: number; facets: VehicleFacets }> {
-  const all = await getAllVehicles();
-  const results = applyFilters(all, query);
-
-  // Sold stock always sinks to the bottom, whatever the chosen sort.
-  const sorted = [...results].sort((a, b) => {
-    const soldScore = Number(a.status === "sold") - Number(b.status === "sold");
-    if (soldScore !== 0) return soldScore;
-    return sorters[query.sort ?? DEFAULT_SORT](a, b);
-  });
-
-  return { results: sorted, total: all.length, facets: buildFacets(all, query) };
+): Promise<{ results: PublicVehicle[]; total: number; facets: VehicleFacets }> {
+  const available = (await loadPublicVehicles()).filter((vehicle) => !vehicle.isSold);
+  const results = sortVehicles(applyFilters(available, query), query.sort ?? DEFAULT_SORT);
+  return { results, total: available.length, facets: buildFacets(available, query) };
 }
-
-// ---- Facets ---------------------------------------------------------------
 
 /**
- * Counts are computed against the results of every *other* active filter, so a
- * facet never offers a value that would return nothing, and selecting a second
- * value within the same group widens rather than narrows.
+ * Counts are computed against the other active filter, so a facet never offers
+ * a value that would return nothing, and choosing a second make widens rather
+ * than narrows. Models are limited to the selected makes.
  */
-function countBy(
-  all: VehicleView[],
-  query: VehicleQuery,
-  group: keyof VehicleQuery,
-  pick: (vehicle: VehicleView) => string | string[],
-): FacetValue[] {
-  const others: VehicleQuery = { ...query, [group]: undefined };
-  const pool = applyFilters(all, others);
-
-  const counts = new Map<string, number>();
-  for (const vehicle of pool) {
-    const raw = pick(vehicle);
-    for (const value of Array.isArray(raw) ? raw : [raw]) {
-      counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-  }
-
-  return [...counts.entries()]
-    .map(([value, count]) => ({ value, label: value, count }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-}
-
-/** Features worth filtering on — the ones buyers actually search for. */
-const FILTERABLE_FEATURES = [
-  "Full Service History",
-  "Leather",
-  "Panoramic Roof",
-  "Heated Seats",
-  "Sat Nav",
-  "Parking Sensors",
-  "Convertible Roof",
-] as const;
-
-/** Min/max of a list, or `null` for an empty list (never ±Infinity). */
-function rangeOf(values: number[]): NumericRange | null {
-  if (values.length === 0) return null;
-  return { min: Math.min(...values), max: Math.max(...values) };
-}
-
-function buildFacets(all: VehicleView[], query: VehicleQuery): VehicleFacets {
-  const featureCounts = FILTERABLE_FEATURES.map((feature) => {
-    const others: VehicleQuery = { ...query, features: undefined };
-    const pool = applyFilters(all, others);
-    const count = pool.filter((vehicle) =>
-      vehicle.features.some((owned) =>
-        owned.toLowerCase().includes(feature.toLowerCase()),
-      ),
-    ).length;
-    return { value: feature, label: feature, count };
-  }).filter((facet) => facet.count > 0);
+function buildFacets(all: PublicVehicle[], query: VehicleQuery): VehicleFacets {
+  const count = (pool: PublicVehicle[], pick: (vehicle: PublicVehicle) => string): FacetValue[] => {
+    const counts = new Map<string, number>();
+    for (const vehicle of pool) counts.set(pick(vehicle), (counts.get(pick(vehicle)) ?? 0) + 1);
+    return [...counts.entries()]
+      .map(([value, total]) => ({ value, label: value, count: total }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  };
 
   return {
-    make: countBy(all, query, "make", (vehicle) => vehicle.make),
-    model: countBy(all, query, "model", (vehicle) => vehicle.model),
-    fuel: countBy(all, query, "fuel", (vehicle) => vehicle.fuel),
-    transmission: countBy(all, query, "transmission", (vehicle) => vehicle.transmission),
-    bodyType: countBy(all, query, "bodyType", (vehicle) => vehicle.bodyType),
-    features: featureCounts,
-    priceRange: rangeOf(all.map((vehicle) => vehicle.price)),
-    yearRange: rangeOf(all.map((vehicle) => vehicle.year)),
-    mileageRange: rangeOf(all.map((vehicle) => vehicle.mileage)),
+    make: count(applyFilters(all, { ...query, make: undefined }), (vehicle) => vehicle.make),
+    model: count(applyFilters(all, { ...query, model: undefined }), (vehicle) => vehicle.model),
   };
 }
 
-/** Make → models, for the dependent selects in the hero search. */
+/** Make → models, for the dependent selects in the hero search. Cars for sale only. */
 export async function getMakeModelIndex(): Promise<Record<string, string[]>> {
-  const all = await loadVehicles();
+  const available = await getAvailableVehicles();
   const index: Record<string, string[]> = {};
-  for (const vehicle of all) {
+  for (const vehicle of available) {
     const models = (index[vehicle.make] ??= []);
     if (!models.includes(vehicle.model)) models.push(vehicle.model);
   }
