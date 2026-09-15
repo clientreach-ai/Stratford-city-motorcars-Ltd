@@ -74,10 +74,10 @@ const postalAddress = {
  */
 export function autoDealerSchema() {
   return {
-    "@context": "https://schema.org",
     "@type": "AutoDealer",
     "@id": `${site.url}/#dealer`,
     name: site.name,
+    legalName: site.company.legalName,
     description: site.tagline,
     url: site.url,
     telephone: site.phone.e164,
@@ -105,10 +105,31 @@ export function autoDealerSchema() {
       { "@type": "City", name: "London" },
       { "@type": "Country", name: "United Kingdom" },
     ],
-    paymentAccepted: "Cash, Bank transfer, Debit card, Credit card, Finance",
+    paymentAccepted: "Cash, Bank transfer, Debit card, Credit card, Finance, Part exchange",
     currenciesAccepted: "GBP",
     priceRange: "££££",
     hasMap: `${site.url.replace(/\/$/, "")}/contact`,
+  };
+}
+
+/**
+ * The dealer plus a WebSite node, emitted once per page from the site layout.
+ * No `sameAs`: the client's Instagram and TikTok handles have not been supplied.
+ */
+export function dealerGraph() {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      autoDealerSchema(),
+      {
+        "@type": "WebSite",
+        "@id": `${site.url}/#website`,
+        name: site.name,
+        url: site.url,
+        inLanguage: "en-GB",
+        publisher: { "@id": `${site.url}/#dealer` },
+      },
+    ],
   };
 }
 
@@ -224,10 +245,12 @@ export function itemListSchema(vehicles: PublicVehicle[]) {
 /** Short, factual summary used in vehicle page descriptions. */
 export function vehicleMetaDescription(vehicle: PublicVehicle): string {
   const parts = [
-    `${vehicle.year} ${vehicle.title} for sale in Stratford, East London.`,
+    vehicle.isSold
+      ? `${vehicle.year} ${vehicle.title}, sold by Stratford City Motorcars in Stratford, East London.`
+      : `${vehicle.year} ${vehicle.title} for sale in Stratford, East London.`,
     `${formatMileage(vehicle.mileage)}, ${vehicle.fuel}, ${vehicle.transmission}.`,
     vehicle.hpiStatus === "clear" ? "History check clear." : "",
-    "Part exchange welcome.",
+    vehicle.isSold ? "" : "Part exchange welcome.",
   ];
   return parts.filter(Boolean).join(" ");
 }

@@ -13,7 +13,7 @@ import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Part Exchange — Value Your Car",
+  title: "Part Exchange Your Car — Stratford, East London",
   description:
     "Put your current car towards your next one. Tell us about it and we'll usually come back within 24 hours on weekdays with an initial valuation, confirmed on inspection.",
   path: "/part-exchange",

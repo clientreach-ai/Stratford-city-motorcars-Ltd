@@ -39,25 +39,29 @@ const archivo = Archivo({
   display: "swap",
 });
 
+/**
+ * Site-wide defaults. Every public page sets its own title, description,
+ * canonical and share image through `pageMetadata()` in `lib/seo.ts`; there is
+ * deliberately no default canonical here, so a page that forgets one (or a
+ * 404) never claims to be the homepage.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} — Sports & Luxury Cars in Stratford, London`,
+    default: `${site.name} — Sports & Luxury Car Sales in East London`,
     template: `%s | ${site.name}`,
   },
   description:
-    "A small family-owned business in Stratford, East London, trading in sports and luxury cars. Every enquiry is handled personally. Part exchange welcome.",
+    "Sports and luxury car sales in Stratford, East London, from a small family-owned business. Part exchange welcome.",
   applicationName: site.name,
   authors: [{ name: site.name, url: site.url }],
   creator: site.name,
   publisher: site.name,
   formatDetection: { telephone: true, address: true, email: true },
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_GB",
     siteName: site.name,
-    url: site.url,
   },
 };
 

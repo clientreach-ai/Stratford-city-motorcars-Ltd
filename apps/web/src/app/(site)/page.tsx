@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
 
@@ -9,8 +10,16 @@ import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/sec
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { buyingFacts, financeProducts, partExchangeSteps } from "@/lib/content/services";
 import { getFeaturedVehicles } from "@/lib/inventory/repository";
+import { pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Sports & Luxury Car Sales in East London",
+  description:
+    "Sports and luxury car sales in Stratford, East London, from a small family-owned business. Browse stock, book a viewing, finance explained, part exchange welcome.",
+  path: "/",
+});
 
 export default async function HomePage() {
   const featured = await getFeaturedVehicles(4);

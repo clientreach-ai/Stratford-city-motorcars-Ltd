@@ -40,9 +40,9 @@ export async function generateMetadata(
 
   return {
     ...pageMetadata({
-      title: "Sports & Luxury Cars for Sale in Stratford, London",
+      title: "Sports & Luxury Cars for Sale in East London",
       description:
-        "Browse sports and luxury cars from a small family-owned business in Stratford, East London. Part exchange welcome.",
+        "Sports and luxury cars for sale from a small family-owned business in Stratford, East London. Every car photographed inside and out. Part exchange welcome.",
       path: "/vehicles",
     }),
     ...(filtered ? { robots: { index: false, follow: true } } : {}),

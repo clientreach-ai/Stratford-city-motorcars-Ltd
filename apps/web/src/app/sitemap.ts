@@ -1,37 +1,38 @@
 import type { MetadataRoute } from "next";
 
 import { getSitemapVehicles } from "@/lib/inventory/repository";
+import { absoluteUrl } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 /**
  * Every indexable route. The previous site had no sitemap at all — it served
- * the SPA shell for /sitemap.xml — so this is new ground for them.
+ * its app shell for /sitemap.xml — so this is new ground for the business.
  *
- * Admin routes are excluded here and disallowed in robots.ts.
+ * Static pages carry no `lastModified`: a build date is not a content date,
+ * and search engines learn to ignore sitemaps that claim false freshness.
+ * Vehicles use their real `updatedAt` and list their photographs.
+ *
+ * Excluded: the interim noindex legal pages, sold cars (their pages stay up
+ * but are not submitted), hidden or draft stock, and the staff area.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const vehicles = await getSitemapVehicles();
-  const now = new Date();
 
-  const staticRoutes: MetadataRoute.Sitemap = (
-    [
-      { url: `${site.url}`, changeFrequency: "weekly", priority: 1 },
-      { url: `${site.url}/vehicles`, changeFrequency: "daily", priority: 0.9 },
-      { url: `${site.url}/finance`, changeFrequency: "monthly", priority: 0.8 },
-      { url: `${site.url}/part-exchange`, changeFrequency: "monthly", priority: 0.8 },
-      { url: `${site.url}/about`, changeFrequency: "monthly", priority: 0.6 },
-      { url: `${site.url}/contact`, changeFrequency: "monthly", priority: 0.7 },
-      // /privacy, /terms and /cookies are interim noindex placeholders and are
-      // deliberately left out until approved documents replace them.
-    ] as const
-  ).map((entry) => ({ ...entry, lastModified: now }));
+  const staticRoutes: MetadataRoute.Sitemap = [
+    { url: site.url, changeFrequency: "weekly", priority: 1 },
+    { url: `${site.url}/vehicles`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${site.url}/finance`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${site.url}/part-exchange`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${site.url}/about`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${site.url}/contact`, changeFrequency: "monthly", priority: 0.7 },
+  ];
 
-  // Cars for sale only. A sold car keeps its page but is not submitted.
   const vehicleRoutes: MetadataRoute.Sitemap = vehicles.map((vehicle) => ({
     url: `${site.url}/vehicles/${vehicle.slug}`,
     lastModified: new Date(vehicle.updatedAt),
-    changeFrequency: "weekly" as const,
+    changeFrequency: "weekly",
     priority: 0.8,
+    images: vehicle.images.slice(0, 20).map((image) => absoluteUrl(image.src)),
   }));
 
   return [...staticRoutes, ...vehicleRoutes];

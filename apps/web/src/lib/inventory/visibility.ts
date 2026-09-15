@@ -206,6 +206,13 @@ export function listingRecommendations(record: VehicleRecord): ListingRecommenda
       message: `${photos.length} of ${LISTING_PHOTO_TARGET}+ photographs. Aim for everything, including detail shots.`,
     });
   }
+  const missingAlt = photos.filter((image) => !image.alt.trim()).length;
+  if (missingAlt) {
+    tips.push({
+      section: "media",
+      message: `${missingAlt} photograph${missingAlt === 1 ? " has" : "s have"} no description. Describe the car and the angle for screen readers and Google Images.`,
+    });
+  }
   if (!photos.some((image) => image.category === "detail")) {
     tips.push({ section: "media", message: "No detail shots yet (badges, wheels, stitching, dials)." });
   }
@@ -246,7 +253,12 @@ export function resolveCover(images: VehicleImage[], coverImageId?: string): Veh
 export function toPublicVehicle(record: VehicleRecord, now: number = Date.now()): PublicVehicle | null {
   if (!isPubliclyVisible(record)) return null;
 
-  const photos = dealerImages(record);
+  const name = [record.year, record.title].filter(Boolean).join(" ");
+  // Every public photograph needs meaningful alt text; if the dealership left
+  // it blank, describe the car and what the photograph shows.
+  const photos = dealerImages(record).map((image) =>
+    image.alt.trim() ? image : { ...image, alt: `${name}, ${CATEGORY_LABEL[image.category]} photograph` },
+  );
   const cover = resolveCover(photos, record.coverImageId);
   if (!cover) return null;
 

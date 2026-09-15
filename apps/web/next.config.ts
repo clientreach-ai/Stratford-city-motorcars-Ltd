@@ -11,6 +11,22 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
 
+  /**
+   * Legacy URLs from the previous site (see docs/STRATFORD_MIGRATION_AUDIT.md).
+   * Only paths with a real equivalent are redirected. Legacy vehicle pages
+   * (`/sales/:slug`) are resolved per car in app/sales/[slug]/route.ts, and
+   * `/hire` deliberately has no redirect: there is no equivalent, so it 404s.
+   */
+  async redirects() {
+    return [
+      { source: "/sales", destination: "/vehicles", permanent: true },
+      { source: "/used-cars-stratford", destination: "/vehicles", permanent: true },
+      { source: "/mission", destination: "/about", permanent: true },
+      { source: "/admin", destination: "/login", permanent: true },
+      { source: "/admin/:path*", destination: "/login", permanent: true },
+    ];
+  },
+
   images: {
     // AVIF first for browsers that accept it (typically 20–30% smaller than
     // WebP for photographs), WebP otherwise.
