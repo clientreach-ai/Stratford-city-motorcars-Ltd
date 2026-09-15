@@ -192,7 +192,8 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
                   alt=""
                   fill
                   loading="lazy"
-                  sizes="160px"
+                  // Thumbnail rail: 5 columns from md, 6 from lg, inside the gallery column.
+                  sizes="(min-width: 1408px) 124px, (min-width: 1024px) 9vw, 18vw"
                   className="object-cover"
                 />
               </button>

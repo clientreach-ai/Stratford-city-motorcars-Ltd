@@ -34,7 +34,10 @@ export async function Hero() {
         aria-hidden
         width={800}
         height={105}
-        priority
+        // Decorative at 4.5% opacity: never worth a preload or high priority.
+        loading="eager"
+        fetchPriority="low"
+        sizes="(min-width: 768px) 78vw, 135vw"
         className="pointer-events-none absolute -right-[18%] top-[16%] w-[135%] max-w-none opacity-[0.045] md:-right-[6%] md:top-[22%] md:w-[78%]"
       />
 

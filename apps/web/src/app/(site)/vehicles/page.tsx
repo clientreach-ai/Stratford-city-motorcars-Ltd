@@ -139,7 +139,8 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                     <VehicleCard
                       key={vehicle.id}
                       vehicle={vehicle}
-                      priority={index < 2}
+                      // Only the first card can be the LCP element on a phone.
+                      priority={index === 0}
                       sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
                       className="reveal border-0"
                     />

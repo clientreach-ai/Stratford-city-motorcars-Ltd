@@ -57,7 +57,7 @@ export async function SiteFooter() {
               alt={site.name}
               width={900}
               height={269}
-              sizes="200px"
+              sizes="148px"
               className="h-11 w-auto"
             />
             <p className="mt-6 max-w-sm text-sm leading-relaxed text-bone/55">

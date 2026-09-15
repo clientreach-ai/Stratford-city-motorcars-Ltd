@@ -39,6 +39,9 @@ export function VehicleVideo({ video, vehicleName }: { video: Video; vehicleName
 
 function EmbedFacade({ video, label }: { video: Video; label: string }) {
   const [active, setActive] = useState(false);
+  // YouTube only generates the 1280px thumbnail for HD uploads; fall back to the
+  // 480px one if it is missing (the host answers 404).
+  const [posterFailed, setPosterFailed] = useState(false);
   const source = video.source;
   if (source.type === "file") return null;
 
@@ -48,7 +51,10 @@ function EmbedFacade({ video, label }: { video: Video; label: string }) {
       : `https://player.vimeo.com/video/${source.videoId}?autoplay=1&dnt=1`;
 
   const poster =
-    video.poster ?? (source.type === "youtube" ? `https://i.ytimg.com/vi/${source.videoId}/hqdefault.jpg` : undefined);
+    video.poster ??
+    (source.type === "youtube"
+      ? `https://i.ytimg.com/vi/${source.videoId}/${posterFailed ? "hqdefault" : "maxresdefault"}.jpg`
+      : undefined);
 
   return (
     <div className="relative aspect-video w-full overflow-hidden bg-ink-950">
@@ -77,6 +83,7 @@ function EmbedFacade({ video, label }: { video: Video; label: string }) {
               alt=""
               loading="lazy"
               decoding="async"
+              onError={() => setPosterFailed(true)}
               className="absolute inset-0 size-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
             />
           ) : null}
