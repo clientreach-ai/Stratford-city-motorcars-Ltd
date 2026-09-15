@@ -35,7 +35,7 @@ export function LegalPlaceholderPage({
                 <dd className="text-sm">
                   <a
                     href={`mailto:${site.email}`}
-                    className="break-all transition-colors hover:text-[var(--foreground)]"
+                    className="inline-block break-all py-1 transition-colors hover:text-[var(--foreground)]"
                   >
                     {site.email}
                   </a>
@@ -46,7 +46,7 @@ export function LegalPlaceholderPage({
                 <dd className="text-sm">
                   <a
                     href={site.phone.href}
-                    className="transition-colors hover:text-[var(--foreground)]"
+                    className="inline-block py-1 transition-colors hover:text-[var(--foreground)]"
                   >
                     {site.phone.display}
                   </a>

@@ -132,7 +132,11 @@ export function SiteHeader() {
 /** Thin ink strip above the header — phone, hours and WhatsApp, always visible. */
 function UtilityStrip() {
   return (
-    <div data-surface="dark" className="hidden bg-ink-950 text-bone md:block">
+    <aside
+      aria-label="Showroom address and contact"
+      data-surface="dark"
+      className="hidden bg-ink-950 text-bone md:block"
+    >
       <div className="container-page flex h-10 items-center justify-between text-[0.6875rem]">
         <p className="font-roman uppercase tracking-[0.2em] text-bone/55">
           {site.address.street}, {site.address.locality} {site.address.postcode}
@@ -161,7 +165,7 @@ function UtilityStrip() {
           </a>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
 

@@ -72,7 +72,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
               ) : (
                 <Link
                   href={crumb.path as Route}
-                  className="text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                  className="inline-block py-1.5 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
                 >
                   {crumb.name}
                 </Link>

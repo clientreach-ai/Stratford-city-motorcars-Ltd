@@ -68,7 +68,7 @@ export async function SiteFooter() {
             <div className="mt-7 flex flex-wrap gap-2">
               <a
                 href={site.phone.href}
-                className="flex items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-bone hover:bg-bone hover:text-ink-950"
+                className="flex min-h-11 items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-bone hover:bg-bone hover:text-ink-950"
               >
                 <Phone className="size-3.5" />
                 {site.phone.display}
@@ -77,7 +77,7 @@ export async function SiteFooter() {
                 href={whatsappLinks.general}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
+                className="flex min-h-11 items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
               >
                 <WhatsAppIcon className="size-3.5" />
                 WhatsApp
@@ -108,7 +108,7 @@ export async function SiteFooter() {
                 href={mapLinks.place}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="not-italic transition-colors hover:text-bone"
+                className="inline-block py-1 not-italic transition-colors hover:text-bone"
               >
                 {site.address.street}
                 <br />
@@ -119,7 +119,7 @@ export async function SiteFooter() {
               <Mail className="mt-0.5 size-4 shrink-0 text-brass" />
               <a
                 href={`mailto:${site.email}`}
-                className="break-all transition-colors hover:text-bone"
+                className="inline-block break-all py-1 transition-colors hover:text-bone"
               >
                 {site.email}
               </a>
@@ -202,7 +202,7 @@ function FooterLink({
     <li>
       <Link
         href={href}
-        className="text-sm text-bone/60 transition-colors duration-200 hover:text-bone"
+        className="inline-block py-1 text-sm text-bone/60 transition-colors duration-200 hover:text-bone"
       >
         {children}
       </Link>

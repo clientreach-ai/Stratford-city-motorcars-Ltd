@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import type { Route } from "next";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/field";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { VehicleFacets } from "@/lib/inventory/types";
 
 /**
@@ -47,6 +48,7 @@ export function VehicleFilterSheet({
   activeCount: number;
 }) {
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
 
   return (
     <>
@@ -72,7 +74,7 @@ export function VehicleFilterSheet({
 
       <MobileSheet
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={close}
         resultCount={resultCount}
       >
         <FilterControls facets={facets} activeCount={activeCount} idPrefix="sheet" />
@@ -269,19 +271,9 @@ function MobileSheet({
   resultCount: number;
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-    };
-  }, [open, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus({ open, containerRef: panelRef, initialFocusRef: closeRef, onClose });
 
   return (
     <div
@@ -307,6 +299,7 @@ function MobileSheet({
       />
 
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal={open || undefined}
         aria-label="Filter stock"
@@ -319,10 +312,11 @@ function MobileSheet({
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-5 py-4">
           <h2 className="font-display text-xl">Filter stock</h2>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close filters"
-            className="flex size-10 items-center justify-center border border-[var(--border-strong)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]"
+            className="flex size-11 items-center justify-center border border-[var(--border-strong)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]"
           >
             <X className="size-4" />
           </button>

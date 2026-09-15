@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { VehicleImage } from "@/lib/inventory/types";
 
 /**
@@ -30,6 +31,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+  const closeLightbox = useCallback(() => setLightbox(false), []);
 
   const count = images.length;
 
@@ -65,20 +67,16 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
     };
   }, [count]);
 
+  // Arrow keys move through photographs while the viewer is open; focus,
+  // Escape and scroll locking are handled inside the viewer.
   useEffect(() => {
     if (!lightbox) return;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLightbox(false);
       if (event.key === "ArrowRight") go(active + 1);
       if (event.key === "ArrowLeft") go(active - 1);
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-    };
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [lightbox, active, go]);
 
   if (count === 0) return null;
@@ -152,7 +150,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
 
       {/* Dots on phones, thumbnails from md — same track either way. */}
       {count > 1 ? (
-        <div className="mt-3 flex justify-center gap-1.5 md:hidden">
+        <div className="mt-1 flex flex-wrap justify-center md:hidden">
           {images.map((image, index) => (
             <button
               key={image.src}
@@ -160,13 +158,17 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
               onClick={() => go(index)}
               aria-label={`Go to photograph ${index + 1}`}
               aria-current={index === active}
-              className={cn(
-                "h-1 w-6 transition-colors duration-200",
-                index === active
-                  ? "bg-[var(--foreground)]"
-                  : "bg-[var(--border-strong)]",
-              )}
-            />
+              // A 44px tap target around a small bar.
+              className="group flex h-11 w-9 items-center justify-center"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "h-1 w-6 transition-colors duration-200",
+                  index === active ? "bg-[var(--foreground)]" : "bg-[var(--border-strong)]",
+                )}
+              />
+            </button>
           ))}
         </div>
       ) : null}
@@ -207,7 +209,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
           images={images}
           active={active}
           title={title}
-          onClose={() => setLightbox(false)}
+          onClose={closeLightbox}
           onGo={go}
         />
       ) : null}
@@ -259,22 +261,26 @@ function Lightbox({
   onGo: (index: number) => void;
 }) {
   const image = images[active]!;
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus({ open: true, containerRef: dialogRef, initialFocusRef: closeRef, onClose });
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`${title} — photograph ${active + 1} of ${images.length}`}
       className="fixed inset-0 z-100 flex flex-col bg-ink-950/97"
     >
       <div className="flex shrink-0 items-center justify-between px-5 py-4">
-        <span data-numeric className="text-xs tracking-wide text-bone/60">
+        <span data-numeric aria-live="polite" className="text-xs tracking-wide text-bone/60">
           {active + 1} / {images.length}
         </span>
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
-          autoFocus
           aria-label="Close viewer"
           className="flex size-11 items-center justify-center border border-bone/25 text-bone transition-colors hover:border-bone hover:bg-bone hover:text-ink-950"
         >

@@ -100,7 +100,7 @@ export function VehicleCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   // Above the stretched link so it stays independently clickable.
-                  className="relative z-10 flex size-10 items-center justify-center border border-[var(--border-strong)] text-[var(--foreground)] transition-colors duration-200 hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
+                  className="relative z-10 flex size-11 items-center justify-center border border-[var(--border-strong)] text-[var(--foreground)] transition-colors duration-200 hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
                   aria-label={`Message us on WhatsApp about the ${vehicle.year} ${vehicle.title}`}
                 >
                   <WhatsAppIcon className="size-[1.05rem]" />
@@ -108,7 +108,7 @@ export function VehicleCard({
               ) : null}
               <span
                 aria-hidden
-                className="flex size-10 items-center justify-center border border-[var(--border-strong)] transition-colors duration-200 group-hover:border-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-[var(--primary-foreground)]"
+                className="flex size-11 items-center justify-center border border-[var(--border-strong)] transition-colors duration-200 group-hover:border-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-[var(--primary-foreground)]"
               >
                 <ArrowUpRight className="size-[1.05rem]" />
               </span>
