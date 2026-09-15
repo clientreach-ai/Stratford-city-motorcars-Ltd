@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
-import { Phone } from "lucide-react";
+import { ArrowRight, Banknote, CalendarCheck, Repeat } from "lucide-react";
 
+import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
-import { ExternalButtonLink } from "@/components/ui/button";
-import { WhatsAppIcon } from "@/components/ui/icons";
 import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Section } from "@/components/ui/section";
+import { StockEmptyState } from "@/components/vehicle/listing-promise";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import {
   VehicleFilterRail,
@@ -19,10 +20,10 @@ import {
   isNonCanonicalQuery,
   parseSearchParams,
 } from "@/lib/inventory/query-params";
+import { faqsByCategory } from "@/lib/content/faqs";
 import { searchVehicles } from "@/lib/inventory/repository";
-import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
+import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
 
 /**
  * Filtered views share one canonical. Every combination of make, price and body
@@ -42,7 +43,7 @@ export async function generateMetadata(
     ...pageMetadata({
       title: "Sports & Luxury Cars for Sale in East London",
       description:
-        "Sports and luxury cars for sale from a small family-owned business in Stratford, East London. Every car photographed inside and out. Part exchange welcome.",
+        "Sports and luxury cars for sale in East London from a small family-owned business in Stratford. Every car photographed inside and out. Finance explained, part exchange welcome, nationwide delivery.",
       path: "/vehicles",
     }),
     ...(filtered ? { robots: { index: false, follow: true } } : {}),
@@ -82,7 +83,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
         lede={
           summary
             ? `Showing the ${results.length === 1 ? "one car" : `${results.length} cars`} that match. Adjust the filters to widen your search.`
-            : "Browse the cars we currently have listed."
+            : "Sports and luxury cars for sale in Stratford, East London. Every car here has been photographed inside and out, and we hold more than we list — so if you don't see it, ask."
         }
         crumbs={crumbs}
       />
@@ -97,21 +98,22 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
             ) : null}
 
             <div className="min-w-0">
-              {/* Results bar: count, filter trigger, sort. */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-5">
-                <p className="text-sm text-[var(--muted-foreground)]">
-                  <span data-numeric className="font-medium text-[var(--foreground)]">
-                    {results.length}
-                  </span>{" "}
-                  {results.length === 1 ? "vehicle" : "vehicles"}
-                  {activeCount > 0 ? (
-                    <> of {total}</>
-                  ) : (
-                    <> available</>
-                  )}
-                </p>
+              {/* Results bar: count, filter trigger, sort. Left out with no stock,
+                  where "0 vehicles available" would read as a broken page. */}
+              {hasStock ? (
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-5">
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    <span data-numeric className="font-medium text-[var(--foreground)]">
+                      {results.length}
+                    </span>{" "}
+                    {results.length === 1 ? "vehicle" : "vehicles"}
+                    {activeCount > 0 ? (
+                      <> of {total}</>
+                    ) : (
+                      <> available</>
+                    )}
+                  </p>
 
-                {hasStock ? (
                   <div className="flex items-center gap-3">
                     <Suspense fallback={null}>
                       <VehicleFilterSheet
@@ -124,10 +126,10 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                       <VehicleSort />
                     </Suspense>
                   </div>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
 
-              <div className="pt-5">
+              <div className={hasStock ? "pt-5" : undefined}>
                 <Suspense fallback={null}>
                   <ActiveFilterChips />
                 </Suspense>
@@ -151,8 +153,10 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                     />
                   ))}
                 </div>
+              ) : hasStock ? (
+                <NoMatches />
               ) : (
-                <EmptyState />
+                <StockEmptyState />
               )}
 
               {results.length > 0 ? (
@@ -164,9 +168,67 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
           </div>
         </Container>
       </Section>
+
+      {/* ---- Next steps ------------------------------------------------------ */}
+      <Section tinted size="sm">
+        <Container>
+          <h2 className="sr-only">Buying from us</h2>
+          <ul className="grid gap-px border border-[var(--border)] bg-[var(--border)] md:grid-cols-3">
+            {nextSteps.map((item) => (
+              <li key={item.title} className="bg-[var(--background)]">
+                <Link
+                  href={item.href}
+                  className="group flex h-full flex-col p-7 transition-colors hover:bg-[var(--surface)] md:p-8"
+                >
+                  <span aria-hidden className="text-[var(--rule)]">
+                    {item.icon}
+                  </span>
+                  <span className="mt-4 font-display text-xl leading-snug">{item.title}</span>
+                  <span className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">{item.detail}</span>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm">
+                    {item.cta}
+                    <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </Section>
+
+      <FaqSection
+        faqs={faqsByCategory("Buying")}
+        eyebrow="Buying from us"
+        title="Questions about buying"
+        lede="Anything else, just ask — by phone, WhatsApp or the enquiry form on each car's page."
+      />
     </>
   );
 }
+
+const nextSteps: { title: string; detail: string; cta: string; href: Route; icon: React.ReactNode }[] = [
+  {
+    title: "See a car in person",
+    detail: "Request a viewing or a test drive and we'll confirm a time with you.",
+    cta: "Book a viewing",
+    href: "/contact#book-a-viewing",
+    icon: <CalendarCheck className="size-5" />,
+  },
+  {
+    title: "Spread the cost",
+    detail: "How Hire Purchase, PCP and personal loans work, explained plainly.",
+    cta: "Finance explained",
+    href: "/finance",
+    icon: <Banknote className="size-5" />,
+  },
+  {
+    title: "Part exchange your car",
+    detail: "Send us the details and we'll usually come back within 24 hours on weekdays.",
+    cta: "Value your car",
+    href: "/part-exchange",
+    icon: <Repeat className="size-5" />,
+  },
+];
 
 function FiltersFallback() {
   return (
@@ -184,13 +246,10 @@ function FiltersFallback() {
   );
 }
 
-/**
- * No results is a conversion moment, not a dead end — the dealership holds
- * stock it never lists, so this points straight at a person.
- */
-function EmptyState() {
+/** Filters that match nothing, while stock exists: point back at a person. */
+function NoMatches() {
   return (
-    <div className="mt-6 border border-[var(--border)] px-6 py-16 text-center md:py-24">
+    <div className="mt-6 border border-[var(--border)] px-6 py-16 text-center md:py-20">
       <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
         Nothing matches — yet
       </p>
@@ -198,26 +257,24 @@ function EmptyState() {
         We hold more stock than we list online
       </h2>
       <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[var(--muted-foreground)]">
-        Cars come and go quickly, and some are sold before they ever reach the
-        website. Tell us what you&rsquo;re after and we&rsquo;ll let you know
-        what we have.
+        Try widening the filters, or tell us what you&rsquo;re after and we&rsquo;ll let you know what we
+        have.
       </p>
-
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <ExternalButtonLink
+        <Link
+          href="/vehicles"
+          className="inline-flex items-center gap-2 border-b border-[var(--rule)] pb-1 text-sm transition-colors hover:text-[var(--rule)]"
+        >
+          Clear filters
+        </Link>
+        <a
           href={whatsappLinks.sourcing}
           target="_blank"
           rel="noopener noreferrer"
-          variant="whatsapp"
-          size="md"
+          className="inline-flex items-center gap-2 border-b border-[var(--rule)] pb-1 text-sm transition-colors hover:text-[var(--rule)]"
         >
-          <WhatsAppIcon className="size-4" />
-          Tell us what you want
-        </ExternalButtonLink>
-        <ExternalButtonLink href={site.phone.href} variant="outline" size="md">
-          <Phone className="size-4" />
-          {site.phone.display}
-        </ExternalButtonLink>
+          Tell us what you want on WhatsApp
+        </a>
       </div>
     </div>
   );
