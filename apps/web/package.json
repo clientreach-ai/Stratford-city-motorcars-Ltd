@@ -9,25 +9,23 @@
     "check-content": "node scripts/check-content.mjs",
     "check-inventory": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-inventory.mjs",
     "start": "next start",
-    "inventory:import-seed": "bun scripts/import-seed.ts"
+    "inventory:import-seed": "bun scripts/import-seed.ts",
+    "create-owner": "bun scripts/create-owner.ts"
   },
   "dependencies": {
+    "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
     "@Stratford-city-motorcars-Ltd/db": "workspace:*",
     "@Stratford-city-motorcars-Ltd/env": "workspace:*",
     "@Stratford-city-motorcars-Ltd/ui": "workspace:*",
     "@swc/helpers": "^0.5.23",
-    "@tanstack/react-form": "^1.33.2",
     "babel-plugin-react-compiler": "^1.0.0",
-    "better-auth": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "catalog:",
     "next": "^16.3.0",
-    "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sharp": "^0.35.4",
-    "sonner": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

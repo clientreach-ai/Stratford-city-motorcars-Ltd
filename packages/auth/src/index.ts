@@ -61,3 +61,34 @@ export function getAuth(): Auth {
   instance ??= createAuth();
   return instance;
 }
+
+/**
+ * Creates a dashboard login deliberately, from the command line — the only way
+ * an account can exist while public sign-up is disabled. Mirrors what
+ * better-auth's own email sign-up stores (a user plus a credential account with
+ * a hashed password).
+ */
+export async function createOwnerAccount(input: { email: string; name: string; password: string }) {
+  const auth = getAuth();
+  const context = await auth.$context;
+  const email = input.email.trim().toLowerCase();
+
+  if (input.password.length < 12) throw new Error("Use a password of at least 12 characters.");
+  if (await context.internalAdapter.findUserByEmail(email)) {
+    throw new Error(`An account for ${email} already exists.`);
+  }
+
+  const { createLocalAccountIssuer } = await import("better-auth/db");
+  const user = await context.internalAdapter.createUser(
+    { email, name: input.name.trim(), emailVerified: true },
+    { method: "email-password" },
+  );
+  await context.internalAdapter.linkAccount({
+    userId: user.id,
+    providerId: "credential",
+    issuer: createLocalAccountIssuer("credential"),
+    accountId: user.id,
+    password: await context.password.hash(input.password),
+  });
+  return { id: user.id, email };
+}
