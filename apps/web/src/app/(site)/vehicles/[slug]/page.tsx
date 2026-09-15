@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Banknote, CalendarCheck, Check, ExternalLink, Phone, Repeat } from "lucide-react";
 
-import { VehicleEnquiryForm } from "@/components/forms/vehicle-enquiry-form";
+import { BOOK_VIEWING_HASH, VehicleEnquiryForm } from "@/components/forms/vehicle-enquiry-form";
 import { Breadcrumbs } from "@/components/site/page-hero";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -186,6 +186,8 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
 
       {!isSold ? (
         <Section id="enquire" tinted size="md" className="scroll-mt-24">
+          {/* Target of "Book a viewing": the form reads the hash and opens on a viewing request. */}
+          <span id="book-viewing" aria-hidden className="block scroll-mt-24" />
           <Container>
             <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-20">
               <div>
@@ -399,7 +401,7 @@ function PricePanel({ vehicle, enquiryWhatsApp }: { vehicle: PublicVehicle; enqu
           </ExternalButtonLink>
 
           {/* Same-page anchor, so a plain link rather than a route. */}
-          <ExternalButtonLink href="#enquire" variant="outline" size="lg" className="w-full">
+          <ExternalButtonLink href={BOOK_VIEWING_HASH} variant="outline" size="lg" className="w-full">
             <CalendarCheck className="size-4" />
             Book a viewing
           </ExternalButtonLink>

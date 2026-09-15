@@ -14,11 +14,13 @@ import { submitContact } from "@/lib/forms/actions";
 import { ENQUIRY_TYPES, type FormState } from "@/lib/forms/options";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
+import { useFormFeedbackFocus } from "./use-form-feedback";
 
 const initial: FormState = { status: "idle" };
 
 export function ContactForm() {
   const [state, action] = useActionState(submitContact, initial);
+  const formRef = useFormFeedbackFocus(state);
 
   if (state.status === "success") {
     return (
@@ -35,7 +37,7 @@ export function ContactForm() {
     state.status === "invalid" || state.status === "unavailable" ? state.values : {};
 
   return (
-    <form action={action} className="relative space-y-5" noValidate>
+    <form ref={formRef} action={action} className="relative space-y-5" noValidate>
       <Honeypot />
 
       {state.status === "unavailable" ? (

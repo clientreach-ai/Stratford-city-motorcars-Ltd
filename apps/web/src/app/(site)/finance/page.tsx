@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Phone } from "lucide-react";
 
-import { FinanceForm } from "@/components/forms/finance-form";
+import { FinanceForm, FinanceFormFromLink } from "@/components/forms/finance-form";
 import { PageHero } from "@/components/site/page-hero";
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -139,7 +140,10 @@ export default function FinancePage() {
             </div>
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
-              <FinanceForm />
+              {/* The car comes from `?vehicle=` on a car's finance link; the page itself stays static. */}
+              <Suspense fallback={<FinanceForm />}>
+                <FinanceFormFromLink />
+              </Suspense>
             </div>
           </div>
         </Container>
