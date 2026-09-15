@@ -15,6 +15,7 @@ import { VehicleGallery } from "@/components/vehicle/vehicle-gallery";
 import { VehicleHistory } from "@/components/vehicle/vehicle-history";
 import { VehicleSpecification } from "@/components/vehicle/vehicle-specification";
 import { VehicleVideo } from "@/components/vehicle/vehicle-video";
+import { paymentMethods } from "@/lib/content/services";
 import { financeExampleFor, financeStatusStatement } from "@/lib/finance";
 import { formatMileage, formatPrice, formatVehiclePrice } from "@/lib/format";
 import { getRelatedVehicles, getVehicleBySlug, getVehicleSlugs, resolvePreviousSlug } from "@/lib/inventory/repository";
@@ -191,6 +192,33 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                   <SectionLabel id="history">History, checks &amp; cover</SectionLabel>
                   <VehicleHistory vehicle={vehicle} />
                 </section>
+
+                {!isSold ? (
+                  <section aria-labelledby="buying">
+                    <SectionLabel id="buying">Buying this car</SectionLabel>
+                    <dl className="mt-5 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+                      {[
+                        { term: "Ways to pay", detail: paymentMethods.join(", ") + "." },
+                        {
+                          term: "Part exchange",
+                          detail:
+                            "Welcome. Send us your car's details and we'll usually come back within 24 hours on weekdays with an initial figure.",
+                        },
+                        {
+                          term: "Delivery",
+                          detail:
+                            "We deliver nationwide. A delivery charge may apply, so ask us about delivery for this car.",
+                        },
+                        { term: "Viewing", detail: `${site.hours.sentence} ${site.hours.outOfHours}` },
+                      ].map((row) => (
+                        <div key={row.term} className="grid gap-1 py-4 text-sm sm:grid-cols-[9rem_1fr] sm:gap-6">
+                          <dt className="font-medium">{row.term}</dt>
+                          <dd className="leading-relaxed text-[var(--muted-foreground)]">{row.detail}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
+                ) : null}
               </div>
             </div>
           </div>
