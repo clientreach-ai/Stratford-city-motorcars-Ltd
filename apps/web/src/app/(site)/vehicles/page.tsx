@@ -134,7 +134,12 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
               </div>
 
               {results.length > 0 ? (
-                <div className="mt-6 grid gap-px bg-[var(--border)] sm:grid-cols-2 xl:grid-cols-3">
+                <h2 className="sr-only">
+                  {results.length === 1 ? "1 car" : `${results.length} cars`} for sale
+                </h2>
+              ) : null}
+              {results.length > 0 ? (
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {results.map((vehicle, index) => (
                     <VehicleCard
                       key={vehicle.id}
@@ -142,7 +147,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                       // Only the first card can be the LCP element on a phone.
                       priority={index === 0}
                       sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
-                      className="reveal border-0"
+                      className="reveal"
                     />
                   ))}
                 </div>

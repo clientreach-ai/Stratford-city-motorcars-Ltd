@@ -18,13 +18,13 @@ export function NotFoundContent() {
       <Container className="flex min-h-[70vh] flex-col items-center justify-center py-24 text-center">
         <Eyebrow>Page not found</Eyebrow>
 
-        <p
+        {/* Ghosted numerals are decoration: drawn with CSS content so they are
+            neither read aloud nor treated as body text. */}
+        <span
           aria-hidden
           data-numeric
-          className="mt-8 font-display text-[clamp(5rem,18vw,11rem)] leading-none text-bone/12"
-        >
-          404
-        </p>
+          className="mt-8 block font-display text-[clamp(5rem,18vw,11rem)] leading-none text-bone/12 before:content-['404']"
+        />
 
         <h1 className="mt-2 text-[clamp(1.75rem,4vw,2.75rem)] leading-tight">
           This one&rsquo;s not here

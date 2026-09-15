@@ -254,13 +254,13 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
               </Link>
             </div>
 
-            <div className="mt-10 grid gap-px bg-[var(--border)] sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {related.map((item) => (
                 <VehicleCard
                   key={item.id}
                   vehicle={item}
                   sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
-                  className="reveal border-0"
+                  className="reveal"
                 />
               ))}
             </div>

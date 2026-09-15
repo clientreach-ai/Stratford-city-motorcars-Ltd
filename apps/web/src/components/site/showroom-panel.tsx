@@ -19,7 +19,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
               href={mapLinks.place}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-[var(--rule)]"
+              className="inline-block py-1 transition-colors hover:text-[var(--rule)]"
             >
               {site.address.street}
               <br />
@@ -32,7 +32,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
           <DetailRow icon={<Phone className="size-4" />} term="Phone">
             <a
               href={site.phone.href}
-              className="transition-colors hover:text-[var(--rule)]"
+              className="inline-block py-1 transition-colors hover:text-[var(--rule)]"
             >
               {site.phone.display}
             </a>
@@ -41,7 +41,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
           <DetailRow icon={<Mail className="size-4" />} term="Email">
             <a
               href={`mailto:${site.email}`}
-              className="break-all transition-colors hover:text-[var(--rule)]"
+              className="inline-block break-all py-1 transition-colors hover:text-[var(--rule)]"
             >
               {site.email}
             </a>

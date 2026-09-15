@@ -48,14 +48,14 @@ export default async function HomePage() {
                 }
               />
 
-              <div className="mt-12 grid gap-px bg-[var(--border)] sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {featured.map((vehicle, index) => (
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
                     // Below the hero on every viewport; the headline is the LCP.
                     sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 92vw"
-                    className="reveal border-0"
+                    className="reveal"
                   />
                 ))}
               </div>

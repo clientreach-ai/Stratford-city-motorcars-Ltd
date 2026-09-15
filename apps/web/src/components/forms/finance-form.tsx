@@ -105,8 +105,8 @@ export function FinanceForm({ vehicleSlug }: { vehicleSlug?: string }) {
         </Field>
       </div>
 
-      <label htmlFor="hasPartExchange" className="flex cursor-pointer items-start gap-3 border-t border-[var(--border)] pt-5 text-sm">
-        <Checkbox id="hasPartExchange" name="hasPartExchange" className="mt-0.5" defaultChecked={values.hasPartExchange === "on"} />
+      <label htmlFor="hasPartExchange" className="flex min-h-11 cursor-pointer items-center gap-3 border-t border-[var(--border)] pt-5 text-sm">
+        <Checkbox id="hasPartExchange" name="hasPartExchange" className="shrink-0" defaultChecked={values.hasPartExchange === "on"} />
         <span>I have a car to part exchange</span>
       </label>
 

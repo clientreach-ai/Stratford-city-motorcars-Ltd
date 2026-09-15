@@ -119,11 +119,11 @@ export function PartExchangeForm({ vehicleSlug }: { vehicleSlug?: string }) {
           />
         </Field>
 
-        <label htmlFor="outstandingFinance" className="flex cursor-pointer items-start gap-3 text-sm">
+        <label htmlFor="outstandingFinance" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
           <Checkbox
             id="outstandingFinance"
             name="outstandingFinance"
-            className="mt-0.5"
+            className="shrink-0"
             defaultChecked={values.outstandingFinance === "on"}
           />
           <span>There&rsquo;s outstanding finance on this car</span>
@@ -176,7 +176,8 @@ export function PartExchangeForm({ vehicleSlug }: { vehicleSlug?: string }) {
 
         <Field label="Which of our cars are you interested in?" name="interestedIn" error={errors?.interestedIn}>
           <Input
-            {...fieldProps("interestedIn", errors?.interestedIn, "Optional")}
+            {...fieldProps("interestedIn", errors?.interestedIn)}
+            placeholder="Optional"
             defaultValue={values.interestedIn ?? (slug ? humaniseSlug(slug) : undefined)}
           />
         </Field>

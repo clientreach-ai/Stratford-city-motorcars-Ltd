@@ -185,20 +185,20 @@ export function VehicleEnquiryForm({
 
       <fieldset className="space-y-3 border-t border-[var(--border)] pt-5">
         <legend className="sr-only">Also interested in</legend>
-        <label htmlFor="interestedInFinance" className="flex cursor-pointer items-start gap-3 text-sm">
+        <label htmlFor="interestedInFinance" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
           <Checkbox
             id="interestedInFinance"
             name="interestedInFinance"
-            className="mt-0.5"
+            className="shrink-0"
             defaultChecked={values.interestedInFinance === "on"}
           />
           <span>I&rsquo;d like to hear about finance</span>
         </label>
-        <label htmlFor="hasPartExchange" className="flex cursor-pointer items-start gap-3 text-sm">
+        <label htmlFor="hasPartExchange" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
           <Checkbox
             id="hasPartExchange"
             name="hasPartExchange"
-            className="mt-0.5"
+            className="shrink-0"
             defaultChecked={values.hasPartExchange === "on"}
           />
           <span>I have a car to part exchange</span>
