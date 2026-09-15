@@ -273,8 +273,6 @@ const comparisonRows: { label: string; value: (product: (typeof financeProducts)
         ? "Optional — put some money down and borrow less."
         : "Paid at the start. A part exchange can count towards it.",
   },
-  { label: "Who owns the car", value: (product) => product.ownership },
-  { label: "At the end", value: (product) => product.endOfTerm },
   { label: "Best for", value: (product) => product.bestFor },
 ];
 

@@ -79,11 +79,11 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
 
       <PageHero
         eyebrow="Current stock"
-        title={summary ? `${summary}` : "Every car we have, in one place"}
+        title={summary ? `${summary}` : "Sports and luxury cars for sale"}
         lede={
           summary
             ? `Showing the ${results.length === 1 ? "one car" : `${results.length} cars`} that match. Adjust the filters to widen your search.`
-            : "Sports and luxury cars for sale in Stratford, East London. Every car here has been photographed inside and out, and we hold more than we list — so if you don't see it, ask."
+            : "From a family-owned showroom in Stratford, East London. Every car listed has been photographed inside and out, and we hold more than we list — so if you don't see what you're after, ask."
         }
         crumbs={crumbs}
       />
