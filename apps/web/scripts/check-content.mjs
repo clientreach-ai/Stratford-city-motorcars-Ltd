@@ -7,9 +7,11 @@
  * postcode, unconfirmed finance/broker claims, "included"/AA warranty claims,
  * blanket HPI claims, the old legal boilerplate, links to the old £12k/£16k
  * vehicle pages,
- * the "every car has a full service and MOT" guarantee, 24-hour/same-day
- * response promises, "competitive valuations" and business identities the
- * client has not confirmed (marque specialist, dealer group, commission-free).
+ * the "every car has a full service and MOT" guarantee, unqualified 24-hour,
+ * same-day and five-minute response promises, "competitive valuations",
+ * business identities the client has not confirmed (motor group, marque or
+ * prestige specialist, commission-free), the legacy site's contradictory
+ * contact details and stock photography.
  *
  * Inventory rules (price range, photography gate, featured-only homepage) are
  * behavioural and checked separately by scripts/check-inventory.mjs.
@@ -70,18 +72,35 @@ const RULES = [
   // "every car has a full service and MOT before sale".
   { group: "preparation guarantee", pattern: /every (car|vehicle)[^.<"]{0,40}\b(full service|MOT)\b/i },
 
-  // Response times are not confirmed — enquiries are handled personally.
-  { group: "response-time promise", pattern: /within 24 hours|\b24[- ]hours?\b|usually the same day/i },
+  // Response times. The only confirmed turnaround is part-exchange valuations
+  // "usually, on weekdays" within 24 hours — so 24 hours must carry both
+  // qualifiers. Same-day and five-minute promises are not confirmed.
+  {
+    group: "response-time promise",
+    pattern: /within 24 hours(?! on weekdays)|(?<!usually[^.]{0,40})within 24 hours|\b24-hour\b|usually the same day|5[- ]minute response|within 5 minutes/i,
+  },
 
   // Part-exchange valuations are an initial guide, confirmed on inspection.
-  { group: "valuation claims", pattern: /competitive valuations?|confirmed, not revised|quietly revise/i },
+  { group: "valuation claims", pattern: /competitive valuations?|confirmed, not revised|quietly revise|top prices paid/i },
 
   // Positioning: a small family-owned business trading in sports and luxury
-  // cars — not a marque specialist, dealer group or commission-free showroom.
+  // cars. The client approved "a small, independent showroom", but not a
+  // motor group, a marque or prestige specialism, or commission claims.
   {
     group: "unsupported identity",
-    pattern: /\bon commission\b|commission[- ]free|no commission|Rolls-Royce specialists?|dealer group|independent (dealer|dealership|showroom)/i,
+    pattern: /\bon commission\b|commission[- ]free|no commission|(Rolls-Royce|prestige|classic[- ]car) specialists?|dealer group|motor group|premier motor/i,
   },
+  { group: "retired positioning", pattern: /prestige used cars|prestige,? performance|prestige (&|and) classic/i },
+
+  // The legacy site's contradictory contact details and hire schema.
+  {
+    group: "legacy contact details",
+    pattern: /Unit 12|Stratford Business Park|0000 000000|stratfordcitymotorcars\.co\.uk/i,
+  },
+  { group: "hire", pattern: /CarRental/ },
+
+  // Stock photography must never stand in for a dealer's car.
+  { group: "stock imagery", pattern: /images\.unsplash\.com|unsplash\.com\/photos/i },
 ];
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);

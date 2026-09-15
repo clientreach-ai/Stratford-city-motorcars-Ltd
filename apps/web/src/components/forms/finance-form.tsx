@@ -1,25 +1,26 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 
-import {
-  Checkbox,
-  Field,
-  fieldProps,
-  Honeypot,
-  Input,
-  Select,
-  Textarea,
-} from "@/components/ui/field";
+import { Checkbox, Field, fieldProps, Honeypot, Input } from "@/components/ui/field";
 import { submitFinanceEnquiry } from "@/lib/forms/actions";
-import { EMPLOYMENT_STATUSES, type FormState } from "@/lib/forms/options";
+import type { FormState } from "@/lib/forms/options";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
+import { humaniseSlug, useFormFeedbackFocus, validVehicleSlug } from "./use-form-feedback";
 
 const initial: FormState = { status: "idle" };
 
-export function FinanceForm({ defaultVehicle }: { defaultVehicle?: string }) {
+/**
+ * Finance enquiry. Shortened at the client's request: contact details, the car,
+ * a deposit and a monthly budget. It asks nothing about income, employment or
+ * credit history — no lender is set up to use it, and none of it is needed to
+ * start a conversation.
+ */
+export function FinanceForm({ vehicleSlug }: { vehicleSlug?: string }) {
   const [state, action] = useActionState(submitFinanceEnquiry, initial);
+  const formRef = useFormFeedbackFocus(state);
 
   if (state.status === "success") {
     return (
@@ -32,27 +33,20 @@ export function FinanceForm({ defaultVehicle }: { defaultVehicle?: string }) {
   }
 
   const errors = state.status === "invalid" ? state.fieldErrors : undefined;
-  const values =
-    state.status === "invalid" || state.status === "unavailable" ? state.values : {};
+  const values = state.status === "invalid" || state.status === "unavailable" ? state.values : {};
+  const slug = values.vehicleSlug ?? vehicleSlug;
 
   return (
-    <form action={action} className="relative space-y-5" noValidate>
+    <form ref={formRef} action={action} className="relative space-y-5" noValidate>
       <Honeypot />
+      {slug ? <input type="hidden" name="vehicleSlug" value={slug} /> : null}
 
-      {state.status === "unavailable" ? (
-        <UnavailablePanel message={state.message} />
-      ) : null}
+      {state.status === "unavailable" ? <UnavailablePanel message={state.message} /> : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Your name" name="name" required error={errors?.name}>
-          <Input
-            {...fieldProps("name", errors?.name)}
-            defaultValue={values.name}
-            autoComplete="name"
-            required
-          />
+          <Input {...fieldProps("name", errors?.name)} defaultValue={values.name} autoComplete="name" required />
         </Field>
-
         <Field label="Phone" name="phone" required error={errors?.phone}>
           <Input
             {...fieldProps("phone", errors?.phone)}
@@ -77,95 +71,53 @@ export function FinanceForm({ defaultVehicle }: { defaultVehicle?: string }) {
       </Field>
 
       <Field
-        label="Vehicle you're interested in"
+        label="Car you're interested in"
         name="vehicle"
         error={errors?.vehicle}
         hint="Leave blank if you're still deciding — we can help you choose."
       >
         <Input
           {...fieldProps("vehicle", errors?.vehicle, "Optional")}
-          defaultValue={values.vehicle ?? defaultVehicle}
-          placeholder="e.g. 2016 Mercedes-Benz SL63 AMG"
+          defaultValue={values.vehicle ?? (slug ? humaniseSlug(slug) : undefined)}
         />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field
-          label="Deposit available"
-          name="deposit"
-          error={errors?.deposit}
-          hint="In pounds"
-        >
+        <Field label="Deposit available (£)" name="deposit" error={errors?.deposit}>
           <Input
-            {...fieldProps("deposit", errors?.deposit, "In pounds")}
+            {...fieldProps("deposit", errors?.deposit)}
             type="number"
             inputMode="numeric"
             min={0}
             step={100}
             defaultValue={values.deposit}
-            placeholder="3000"
           />
         </Field>
-
-        <Field
-          label="Monthly budget"
-          name="monthlyBudget"
-          error={errors?.monthlyBudget}
-          hint="Roughly what you'd be comfortable with"
-        >
+        <Field label="Monthly budget (£)" name="monthlyBudget" error={errors?.monthlyBudget}>
           <Input
-            {...fieldProps(
-              "monthlyBudget",
-              errors?.monthlyBudget,
-              "Roughly what you'd be comfortable with",
-            )}
+            {...fieldProps("monthlyBudget", errors?.monthlyBudget)}
             type="number"
             inputMode="numeric"
             min={0}
             step={25}
             defaultValue={values.monthlyBudget}
-            placeholder="450"
           />
         </Field>
       </div>
 
-      <Field
-        label="Employment status"
-        name="employmentStatus"
-        error={errors?.employmentStatus}
-      >
-        <Select
-          {...fieldProps("employmentStatus", errors?.employmentStatus)}
-          defaultValue={values.employmentStatus ?? ""}
-        >
-          <option value="">Prefer not to say</option>
-          {EMPLOYMENT_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </Select>
-      </Field>
-
-      <Field label="Anything else we should know?" name="message" error={errors?.message}>
-        <Textarea
-          {...fieldProps("message", errors?.message)}
-          defaultValue={values.message}
-          rows={3}
-        />
-      </Field>
-
-      <label
-        htmlFor="hasPartExchange"
-        className="flex cursor-pointer items-start gap-3 border-t border-[var(--border)] pt-5 text-sm"
-      >
-        <Checkbox id="hasPartExchange" name="hasPartExchange" className="mt-0.5" />
+      <label htmlFor="hasPartExchange" className="flex min-h-11 cursor-pointer items-center gap-3 border-t border-[var(--border)] pt-5 text-sm">
+        <Checkbox id="hasPartExchange" name="hasPartExchange" className="shrink-0" defaultChecked={values.hasPartExchange === "on"} />
         <span>I have a car to part exchange</span>
       </label>
 
       <SubmitButton className="w-full">Send finance enquiry</SubmitButton>
-
       <DirectContactNote />
     </form>
   );
+}
+
+/** Reads `?vehicle=<slug>` from a car's finance link. Render inside <Suspense>. */
+export function FinanceFormFromLink() {
+  const slug = validVehicleSlug(useSearchParams().get("vehicle"));
+  return <FinanceForm vehicleSlug={slug} />;
 }

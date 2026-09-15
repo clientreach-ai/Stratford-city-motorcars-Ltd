@@ -2,17 +2,18 @@
 /**
  * Inventory publishing regression check.
  *
- * Exercises the rules in src/lib/inventory/visibility.ts against the real
- * records in data.ts and small fixtures derived from them:
+ * Exercises the rules in src/lib/inventory/visibility.ts against the real seed
+ * records in data.ts and fixtures derived from them:
  *
  *  - the old £12,000 / £16,000 records stay hidden even if published and
- *    photographed (price outside the client's normal stock range)
- *  - a car cannot be public without the dealership's own exterior and
- *    interior photographs; library stand-ins do not count
- *  - the homepage features hand-picked cars only, with no fallback to other
- *    stock
- *  - repository.ts actually routes visibility and featuring through those
- *    rules
+ *    photographed (price outside the client's £20,000–£1,000,000 range)
+ *  - POA cars are exempt from the price rule, and nothing else is
+ *  - a car cannot be public without dealer exterior and interior photographs;
+ *    library media does not count and never reaches the public view
+ *  - drafts and archived cars are never public; sold cars keep their page
+ *  - a publishable car must have its core details
+ *  - the homepage features hand-picked cars only, with no fallback
+ *  - repository.ts routes everything public through these rules
  *
  *   node scripts/check-inventory.mjs
  *
@@ -26,9 +27,17 @@ import { fileURLToPath } from "node:url";
 
 const src = (path) => new URL(`../src/lib/inventory/${path}`, import.meta.url);
 
-const { vehicles } = await import(src("data.ts"));
-const { PUBLIC_PRICE_RANGE, isPubliclyVisible, publicationBlockers, selectFeatured } =
-  await import(src("visibility.ts"));
+const { seedVehicles } = await import(src("data.ts"));
+const {
+  LISTING_PHOTO_TARGET,
+  PUBLIC_PRICE_RANGE,
+  isPubliclyVisible,
+  listingRecommendations,
+  publicBlockers,
+  publicationIssues,
+  selectFeatured,
+  toPublicVehicle,
+} = await import(src("visibility.ts"));
 
 const results = [];
 function check(name, fn) {
@@ -40,22 +49,26 @@ function check(name, fn) {
   }
 }
 
-const photo = (view, provenance = "dealer") => ({
-  src: `/vehicles/fixture/${view}.webp`,
-  alt: `Fixture ${view}`,
+let nextId = 0;
+const photo = (category, provenance = "dealer") => ({
+  id: `fixture-${category}-${provenance}-${(nextId += 1)}`,
+  kind: "image",
+  src: `/media/fixture/${category}-${nextId}.webp`,
+  alt: `Fixture ${category}`,
   width: 2400,
   height: 1600,
+  category,
   provenance,
-  view,
 });
-const fullyPhotographed = [photo("exterior"), photo("interior")];
+const fullyPhotographed = () => [photo("exterior"), photo("interior")];
 const bySlug = (slug) => {
-  const vehicle = vehicles.find((v) => v.slug === slug);
+  const vehicle = seedVehicles.find((v) => v.slug === slug);
   assert.ok(vehicle, `expected a record with slug ${slug} in data.ts`);
-  return vehicle;
+  return structuredClone(vehicle);
 };
-/** A record as if someone had published it and supplied full photography. */
-const publishedWithPhotos = (vehicle) => ({ ...vehicle, published: true, images: fullyPhotographed });
+/** A seed record as if the dealership had published it with full photography. */
+const publishedWithPhotos = (slug) => ({ ...bySlug(slug), status: "published", media: fullyPhotographed() });
+const codes = (record) => publicBlockers(record).map((issue) => issue.code);
 
 // ---- Old inventory ---------------------------------------------------------
 
@@ -66,14 +79,15 @@ check("old £16k Jaguar XF and £12k ML63 AMG records are still kept", () => {
 
 check("old £12k/£16k records stay hidden even when published and photographed", () => {
   for (const slug of ["jaguar-xf-2012", "mercedes-benz-ml63-amg-2006"]) {
-    const vehicle = publishedWithPhotos(bySlug(slug));
-    assert.equal(isPubliclyVisible(vehicle), false, `${slug} became visible`);
-    assert.deepEqual(publicationBlockers(vehicle), ["price-out-of-range"]);
+    const record = publishedWithPhotos(slug);
+    assert.equal(isPubliclyVisible(record), false, `${slug} became visible`);
+    assert.deepEqual(codes(record), ["price-out-of-range"]);
+    assert.equal(toPublicVehicle(record), null);
   }
 });
 
 check("price range is £20,000–£1,000,000 inclusive", () => {
-  const base = publishedWithPhotos(bySlug("mercedes-benz-sl63-amg-2016"));
+  const base = publishedWithPhotos("mercedes-benz-sl63-amg-2016");
   assert.equal(PUBLIC_PRICE_RANGE.min, 20_000);
   assert.equal(PUBLIC_PRICE_RANGE.max, 1_000_000);
   assert.equal(isPubliclyVisible({ ...base, price: 19_999 }), false);
@@ -82,65 +96,172 @@ check("price range is £20,000–£1,000,000 inclusive", () => {
   assert.equal(isPubliclyVisible({ ...base, price: 1_000_001 }), false);
 });
 
-check("no record in data.ts is currently public", () => {
-  // Every record is unpublished and unphotographed today. Update this check
-  // when the client confirms a car and its dealer photographs are added.
-  const visible = vehicles.filter(isPubliclyVisible).map((v) => v.slug);
-  assert.deepEqual(visible, []);
+check("a car with no price is blocked unless it is POA", () => {
+  const base = publishedWithPhotos("rolls-royce-corniche-1999");
+  assert.deepEqual(codes({ ...base, price: null }), ["missing-price"]);
+  assert.equal(isPubliclyVisible({ ...base, price: null, priceOnApplication: true }), true);
+});
+
+check("POA does not bypass any other rule", () => {
+  const record = { ...bySlug("jaguar-xf-2012"), status: "published", priceOnApplication: true, media: [] };
+  assert.deepEqual(codes(record), ["missing-exterior-photography", "missing-interior-photography"]);
+});
+
+check("every seed record is a draft and none is public", () => {
+  assert.equal(seedVehicles.length, 7);
+  for (const record of seedVehicles) assert.equal(record.status, "draft", record.slug);
+  assert.deepEqual(seedVehicles.filter(isPubliclyVisible).map((v) => v.slug), []);
+});
+
+check("seed records carry no unsupported HPI or warranty claims", () => {
+  for (const record of seedVehicles) {
+    assert.equal(record.hpiStatus, "unknown", record.slug);
+    assert.equal(record.warranty.available, null, record.slug);
+    assert.doesNotMatch(`${record.description} ${record.features.join(" ")}`, /HPI/i, record.slug);
+  }
+});
+
+check("legacy /sales slugs are preserved for redirects", () => {
+  assert.deepEqual(bySlug("rolls-royce-dawn-2016").previousSlugs, ["rolls-royce-dawn"]);
+  assert.deepEqual(bySlug("porsche-macan-s-2014").previousSlugs, ["porsche-macan-2014"]);
 });
 
 // ---- Photography gate ------------------------------------------------------
 
 check("published in-range car with no photographs is hidden", () => {
-  const vehicle = { ...bySlug("mercedes-benz-sl63-amg-2016"), published: true, images: [] };
-  assert.deepEqual(publicationBlockers(vehicle), [
-    "missing-exterior-photography",
-    "missing-interior-photography",
-  ]);
+  const record = { ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [] };
+  assert.deepEqual(codes(record), ["missing-exterior-photography", "missing-interior-photography"]);
 });
 
-check("library stand-ins do not satisfy the photography gate", () => {
-  const vehicle = {
-    ...bySlug("mercedes-benz-sl63-amg-2016"),
-    published: true,
-    images: [photo("exterior", "library"), photo("interior", "library")],
-    libraryImages: [photo("exterior", "library")],
+check("library media does not satisfy the photography gate", () => {
+  const record = {
+    ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"),
+    media: [photo("exterior", "library"), photo("interior", "library")],
   };
-  assert.equal(isPubliclyVisible(vehicle), false);
+  assert.equal(isPubliclyVisible(record), false);
 });
 
 check("the Dawn's library image alone does not publish it", () => {
-  const dawn = bySlug("rolls-royce-dawn-2016");
-  assert.ok(dawn.libraryImages.length > 0);
-  assert.equal(isPubliclyVisible({ ...dawn, published: true }), false);
+  const dawn = { ...bySlug("rolls-royce-dawn-2016"), status: "published" };
+  assert.ok(dawn.media.some((item) => item.provenance === "library"));
+  assert.equal(isPubliclyVisible(dawn), false);
 });
 
 check("exterior-only dealer photography is not enough (interiors required)", () => {
-  const vehicle = {
-    ...bySlug("mercedes-benz-sl63-amg-2016"),
-    published: true,
-    images: [photo("exterior"), photo("exterior")],
-  };
-  assert.deepEqual(publicationBlockers(vehicle), ["missing-interior-photography"]);
+  const record = { ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [photo("exterior"), photo("exterior")] };
+  assert.deepEqual(codes(record), ["missing-interior-photography"]);
 });
 
 check("interior-only dealer photography is not enough", () => {
-  const vehicle = { ...bySlug("mercedes-benz-sl63-amg-2016"), published: true, images: [photo("interior")] };
-  assert.deepEqual(publicationBlockers(vehicle), ["missing-exterior-photography"]);
+  const record = { ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [photo("interior")] };
+  assert.deepEqual(codes(record), ["missing-exterior-photography"]);
 });
 
-check("published, in range, dealer exterior + interior photographs → public", () => {
-  assert.equal(isPubliclyVisible(publishedWithPhotos(bySlug("mercedes-benz-sl63-amg-2016"))), true);
+check("detail and documents photographs do not count towards the minimum", () => {
+  const record = { ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [photo("detail"), photo("documents")] };
+  assert.deepEqual(codes(record), ["missing-exterior-photography", "missing-interior-photography"]);
 });
 
-check("an unpublished car stays hidden however complete it is", () => {
-  const vehicle = { ...publishedWithPhotos(bySlug("mercedes-benz-sl63-amg-2016")), published: false };
-  assert.deepEqual(publicationBlockers(vehicle), ["not-published"]);
+check("published, complete, in range, dealer exterior + interior → public", () => {
+  assert.equal(isPubliclyVisible(publishedWithPhotos("mercedes-benz-sl63-amg-2016")), true);
+});
+
+check("the public view drops library media and resolves the cover", () => {
+  const exterior = photo("exterior");
+  const interior = photo("interior");
+  const library = photo("exterior", "library");
+  const record = {
+    ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"),
+    media: [interior, library, exterior],
+  };
+  const view = toPublicVehicle(record);
+  assert.ok(view);
+  assert.equal(view.cover.id, exterior.id, "cover falls back to the first dealer exterior");
+  assert.deepEqual(view.images.map((image) => image.id), [exterior.id, interior.id]);
+  assert.ok(!("media" in view), "raw media must not be exposed");
+
+  const explicit = toPublicVehicle({ ...record, coverImageId: interior.id });
+  assert.equal(explicit.cover.id, interior.id);
+  const libraryCover = toPublicVehicle({ ...record, coverImageId: library.id });
+  assert.equal(libraryCover.cover.id, exterior.id, "a library image can never be the cover");
+});
+
+check("public photographs always carry alt text", () => {
+  const exterior = { ...photo("exterior"), alt: "" };
+  const interior = { ...photo("interior"), alt: "   " };
+  const view = toPublicVehicle({ ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [exterior, interior] });
+  assert.ok(view);
+  for (const image of view.images) assert.match(image.alt, /2016 Mercedes-Benz SL63 AMG, (exterior|interior) photograph/);
+  assert.ok(
+    listingRecommendations({ ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [exterior, interior] }).some((tip) =>
+      tip.message.includes("no description"),
+    ),
+  );
+});
+
+// ---- Lifecycle and required details ------------------------------------------
+
+check("drafts and archived cars are never public, however complete", () => {
+  const complete = publishedWithPhotos("mercedes-benz-sl63-amg-2016");
+  assert.deepEqual(codes({ ...complete, status: "draft" }), ["not-published"]);
+  assert.deepEqual(codes({ ...complete, status: "archived" }), ["not-published"]);
+});
+
+check("a sold car keeps its page and is marked sold", () => {
+  const view = toPublicVehicle({ ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), status: "sold" });
+  assert.ok(view);
+  assert.equal(view.isSold, true);
+  assert.equal(view.isNewArrival, false);
+});
+
+check("a sold car still has to pass the publishing rules", () => {
+  const record = { ...bySlug("mercedes-benz-sl63-amg-2016"), status: "sold" };
+  assert.equal(toPublicVehicle(record), null);
+});
+
+check("a publishable car must have its core details", () => {
+  const record = {
+    ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"),
+    title: "",
+    make: " ",
+    model: "",
+    year: null,
+    mileage: null,
+    fuel: null,
+    transmission: null,
+    bodyType: null,
+    colour: "",
+    description: "",
+    slug: "Not A Slug",
+  };
+  assert.deepEqual(codes(record).sort(), [
+    "invalid-slug",
+    "missing-body-type",
+    "missing-colour",
+    "missing-description",
+    "missing-fuel",
+    "missing-make",
+    "missing-mileage",
+    "missing-model",
+    "missing-title",
+    "missing-transmission",
+    "missing-year",
+  ]);
+  for (const issue of publicationIssues(record)) {
+    assert.ok(issue.message.length > 10, `${issue.code} needs a human message`);
+  }
+});
+
+check("the 20+ photo target is a recommendation, not a requirement", () => {
+  const record = publishedWithPhotos("mercedes-benz-sl63-amg-2016");
+  assert.equal(LISTING_PHOTO_TARGET, 20);
+  assert.equal(isPubliclyVisible(record), true);
+  assert.ok(listingRecommendations(record).some((tip) => tip.message.includes("20+")));
 });
 
 // ---- Featured selection ----------------------------------------------------
 
-const car = (id, featured, status = "available") => ({ id, featured, status });
+const car = (id, featured, isSold = false) => ({ id, featured, isSold });
 
 check("homepage features nothing when nothing is hand-picked (no fallback)", () => {
   assert.deepEqual(selectFeatured([car("a", false), car("b", false), car("c", false)], 4), []);
@@ -156,7 +277,7 @@ check("homepage never pads featured cars with other stock", () => {
 
 check("sold cars are not featured, and the limit is respected", () => {
   const picked = selectFeatured(
-    [car("a", true, "sold"), car("b", true), car("c", true, "reserved"), car("d", true), car("e", true)],
+    [car("a", true, true), car("b", true), car("c", true), car("d", true), car("e", true)],
     3,
   );
   assert.deepEqual(picked.map((v) => v.id), ["b", "c", "d"]);
@@ -164,13 +285,14 @@ check("sold cars are not featured, and the limit is respected", () => {
 
 // ---- Wiring ----------------------------------------------------------------
 
-check("repository.ts routes visibility and featuring through visibility.ts", () => {
+check("repository.ts routes everything public through visibility.ts", () => {
   const source = readFileSync(fileURLToPath(src("repository.ts")), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/^\s*\/\/.*$/gm, "");
-  assert.match(source, /staticVehicles\.filter\([\s\S]*?publicationBlockers\(/, "loadVehicles() must apply publicationBlockers");
+  assert.match(source, /toPublicVehicle\(record/, "loadPublicVehicles() must apply toPublicVehicle");
   assert.match(source, /getFeaturedVehicles[\s\S]*?selectFeatured\(/, "getFeaturedVehicles() must use selectFeatured");
   assert.doesNotMatch(source, /!\s*[\w.]*\.featured\b/, "repository.ts must not select non-featured cars");
+  assert.doesNotMatch(source, /store\.list\(\)[\s\S]*?\.map\(\s*\(?\w+\)?\s*=>\s*\w+\s*\)/, "records must not bypass the public view");
 });
 
 // ---- Report ----------------------------------------------------------------
@@ -178,7 +300,7 @@ check("repository.ts routes visibility and featuring through visibility.ts", () 
 const failures = results.filter((result) => !result.ok);
 for (const result of results) {
   console.log(`${result.ok ? "  ok  " : "  FAIL"}  ${result.name}`);
-  if (!result.ok) console.log(`        ${result.error.message.split("\n").join("\n        ")}`);
+  if (!result.ok) console.log(`        ${String(result.error.message).split("\n").join("\n        ")}`);
 }
 
 if (failures.length > 0) {

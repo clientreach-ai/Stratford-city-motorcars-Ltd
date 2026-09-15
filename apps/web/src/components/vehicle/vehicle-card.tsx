@@ -3,10 +3,9 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
-import { formatMileageShort, formatPrice } from "@/lib/format";
+import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
 import { whatsappForVehicle } from "@/lib/whatsapp";
-import type { VehicleView } from "@/lib/inventory/types";
-import { PhotoPlate } from "./photo-plate";
+import type { PublicVehicle } from "@/lib/inventory/types";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
 /**
@@ -20,15 +19,17 @@ import { WhatsAppIcon } from "@/components/ui/icons";
 export function VehicleCard({
   vehicle,
   priority = false,
+  sizes = "(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 92vw",
   className,
 }: {
-  vehicle: VehicleView;
-  /** Set on the first card or two so the LCP image is not lazy-loaded. */
+  vehicle: PublicVehicle;
+  /** Set on the first card or two so the likely LCP image loads eagerly. */
   priority?: boolean;
+  /** Rendered width of the card image; the grid that places the card knows it best. */
+  sizes?: string;
   className?: string;
 }) {
-  const [cover] = vehicle.displayImages;
-  const isSold = vehicle.status === "sold";
+  const { cover, isSold } = vehicle;
 
   return (
     <article
@@ -40,19 +41,15 @@ export function VehicleCard({
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-ink-950">
-        {cover ? (
-          <Image
-            src={cover.src}
-            alt={cover.alt}
-            fill
-            priority={priority}
-            loading={priority ? undefined : "lazy"}
-            sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 92vw"
-            className="object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-[1.035]"
-          />
-        ) : (
-          <PhotoPlate make={vehicle.make} year={vehicle.year} compact />
-        )}
+        <Image
+          src={cover.src}
+          alt={cover.alt}
+          fill
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
+          sizes={sizes}
+          className="object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-[1.035]"
+        />
 
         <VehicleBadges vehicle={vehicle} />
       </div>
@@ -92,7 +89,7 @@ export function VehicleCard({
                 data-numeric
                 className="font-display text-2xl leading-none md:text-[1.75rem]"
               >
-                {formatPrice(vehicle.price)}
+                {formatVehiclePrice(vehicle)}
               </p>
             </div>
 
@@ -103,7 +100,7 @@ export function VehicleCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   // Above the stretched link so it stays independently clickable.
-                  className="relative z-10 flex size-10 items-center justify-center border border-[var(--border-strong)] text-[var(--foreground)] transition-colors duration-200 hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
+                  className="relative z-10 flex size-11 items-center justify-center border border-[var(--border-strong)] text-[var(--foreground)] transition-colors duration-200 hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"
                   aria-label={`Message us on WhatsApp about the ${vehicle.year} ${vehicle.title}`}
                 >
                   <WhatsAppIcon className="size-[1.05rem]" />
@@ -111,7 +108,7 @@ export function VehicleCard({
               ) : null}
               <span
                 aria-hidden
-                className="flex size-10 items-center justify-center border border-[var(--border-strong)] transition-colors duration-200 group-hover:border-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-[var(--primary-foreground)]"
+                className="flex size-11 items-center justify-center border border-[var(--border-strong)] transition-colors duration-200 group-hover:border-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-[var(--primary-foreground)]"
               >
                 <ArrowUpRight className="size-[1.05rem]" />
               </span>
@@ -128,15 +125,14 @@ function Dot() {
 }
 
 /**
- * Badges render only when the data warrants one. No vehicle currently carries
- * a "new arrival" badge because all seven were listed in May — that is correct
- * behaviour, not a bug.
+ * Badges render only when the data warrants one: sold, reserved, a new arrival
+ * (listed in the last 30 days), or hand-picked for the homepage.
  */
-function VehicleBadges({ vehicle }: { vehicle: VehicleView }) {
+function VehicleBadges({ vehicle }: { vehicle: PublicVehicle }) {
   const badges: { label: string; tone: "sold" | "reserved" | "new" | "featured" }[] = [];
 
-  if (vehicle.status === "sold") badges.push({ label: "Sold", tone: "sold" });
-  else if (vehicle.status === "reserved") badges.push({ label: "Reserved", tone: "reserved" });
+  if (vehicle.isSold) badges.push({ label: "Sold", tone: "sold" });
+  else if (vehicle.reserved) badges.push({ label: "Reserved", tone: "reserved" });
   else if (vehicle.isNewArrival) badges.push({ label: "New arrival", tone: "new" });
   else if (vehicle.featured) badges.push({ label: "Featured", tone: "featured" });
 

@@ -1,18 +1,19 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import type { Route } from "next";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Checkbox, Input, Label, Select } from "@/components/ui/field";
-import { formatNumber, formatPrice } from "@/lib/format";
+import { Checkbox } from "@/components/ui/field";
+import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import type { VehicleFacets } from "@/lib/inventory/types";
 
 /**
- * Stock filters.
+ * Stock filters — make and model, the two the client asked for. Anything more
+ * would make a small, hand-picked stock list feel harder to browse, not easier.
  *
  * All state lives in the URL, so a filtered view is shareable, bookmarkable,
  * survives a refresh and gives the back button something sensible to do.
@@ -47,6 +48,7 @@ export function VehicleFilterSheet({
   activeCount: number;
 }) {
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
 
   return (
     <>
@@ -72,7 +74,7 @@ export function VehicleFilterSheet({
 
       <MobileSheet
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={close}
         resultCount={resultCount}
       >
         <FilterControls facets={facets} activeCount={activeCount} idPrefix="sheet" />
@@ -116,16 +118,6 @@ function useFilterParams() {
     [commit],
   );
 
-  const set = useCallback(
-    (key: string, value: string) => {
-      commit((params) => {
-        if (value) params.set(key, value);
-        else params.delete(key);
-      });
-    },
-    [commit],
-  );
-
   const clear = useCallback(() => {
     commit((params) => {
       const sort = params.get("sort");
@@ -134,7 +126,7 @@ function useFilterParams() {
     });
   }, [commit]);
 
-  return { searchParams, toggle, set, clear, isPending };
+  return { searchParams, toggle, clear, isPending };
 }
 
 function FilterControls({
@@ -151,28 +143,7 @@ function FilterControls({
    */
   idPrefix: string;
 }) {
-  const { searchParams, toggle, set, clear, isPending } = useFilterParams();
-  const [term, setTerm] = useState(searchParams.get("q") ?? "");
-  const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  // Keep the box in step when the URL changes from elsewhere (chips, clear).
-  useEffect(() => {
-    setTerm(searchParams.get("q") ?? "");
-  }, [searchParams]);
-
-  useEffect(() => () => clearTimeout(debounce.current), []);
-
-  const onSearchChange = (value: string) => {
-    setTerm(value);
-    clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => set("q", value), 350);
-  };
-
-  // Ranges are null when there is no stock to derive them from; the groups
-  // that depend on them are then left out rather than offering empty selects.
-  const priceBands = facets.priceRange ? buildBands(facets.priceRange, 4) : [];
-  const mileageBands = facets.mileageRange ? buildBands(facets.mileageRange, 4) : [];
-  const years = facets.yearRange ? yearOptions(facets.yearRange) : [];
+  const { searchParams, toggle, clear, isPending } = useFilterParams();
 
   return (
     <div
@@ -194,18 +165,6 @@ function FilterControls({
         ) : null}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-filter-q`}>Keyword</Label>
-        <Input
-          id={`${idPrefix}-filter-q`}
-          type="search"
-          value={term}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Try “convertible” or “AMG”"
-          className="h-11"
-        />
-      </div>
-
       {facets.make.length ? (
         <FilterGroup title="Make">
           <CheckList
@@ -218,145 +177,13 @@ function FilterControls({
         </FilterGroup>
       ) : null}
 
-      {facets.model.length > 1 ? (
+      {facets.model.length ? (
         <FilterGroup title="Model">
           <CheckList
             idPrefix={idPrefix}
             name="model"
             options={facets.model}
             selected={searchParams.getAll("model")}
-            onToggle={toggle}
-          />
-        </FilterGroup>
-      ) : null}
-
-      {priceBands.length ? (
-        <FilterGroup title="Price">
-          <div className="grid grid-cols-2 gap-2">
-            <Select
-              aria-label="Minimum price"
-              value={searchParams.get("minPrice") ?? ""}
-              onChange={(event) => set("minPrice", event.target.value)}
-              className="h-11 text-sm"
-            >
-              <option value="">No min</option>
-              {priceBands.map((band) => (
-                <option key={band} value={band}>
-                  {formatPrice(band)}
-                </option>
-              ))}
-            </Select>
-            <Select
-              aria-label="Maximum price"
-              value={searchParams.get("maxPrice") ?? ""}
-              onChange={(event) => set("maxPrice", event.target.value)}
-              className="h-11 text-sm"
-            >
-              <option value="">No max</option>
-              {priceBands.map((band) => (
-                <option key={band} value={band}>
-                  {formatPrice(band)}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </FilterGroup>
-      ) : null}
-
-      {mileageBands.length ? (
-        <FilterGroup title="Maximum mileage">
-          <Select
-            aria-label="Maximum mileage"
-            value={searchParams.get("maxMileage") ?? ""}
-            onChange={(event) => set("maxMileage", event.target.value)}
-            className="h-11 text-sm"
-          >
-            <option value="">Any mileage</option>
-            {mileageBands.map((band) => (
-              <option key={band} value={band}>
-                Under {formatNumber(band)} miles
-              </option>
-            ))}
-          </Select>
-        </FilterGroup>
-      ) : null}
-
-      {years.length ? (
-        <FilterGroup title="Year">
-          <div className="grid grid-cols-2 gap-2">
-            <Select
-              aria-label="Earliest year"
-              value={searchParams.get("minYear") ?? ""}
-              onChange={(event) => set("minYear", event.target.value)}
-              className="h-11 text-sm"
-            >
-              <option value="">From</option>
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </Select>
-            <Select
-              aria-label="Latest year"
-              value={searchParams.get("maxYear") ?? ""}
-              onChange={(event) => set("maxYear", event.target.value)}
-              className="h-11 text-sm"
-            >
-              <option value="">To</option>
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </FilterGroup>
-      ) : null}
-
-      {facets.bodyType.length ? (
-        <FilterGroup title="Body type">
-          <CheckList
-            idPrefix={idPrefix}
-            name="bodyType"
-            options={facets.bodyType}
-            selected={searchParams.getAll("bodyType")}
-            onToggle={toggle}
-          />
-        </FilterGroup>
-      ) : null}
-
-      {facets.fuel.length ? (
-        <FilterGroup title="Fuel">
-          <CheckList
-            idPrefix={idPrefix}
-            name="fuel"
-            options={facets.fuel}
-            selected={searchParams.getAll("fuel")}
-            onToggle={toggle}
-          />
-        </FilterGroup>
-      ) : null}
-
-      {facets.transmission.length ? (
-        <FilterGroup title="Gearbox">
-          <CheckList
-            idPrefix={idPrefix}
-            name="transmission"
-            options={facets.transmission}
-            selected={searchParams.getAll("transmission")}
-            onToggle={toggle}
-          />
-        </FilterGroup>
-      ) : null}
-
-      {facets.features.length ? (
-        <FilterGroup title="Features">
-          <CheckList
-            idPrefix={idPrefix}
-            name="features"
-            options={facets.features}
-            selected={searchParams.getAll("features")}
             onToggle={toggle}
           />
         </FilterGroup>
@@ -444,19 +271,9 @@ function MobileSheet({
   resultCount: number;
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-    };
-  }, [open, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus({ open, containerRef: panelRef, initialFocusRef: closeRef, onClose });
 
   return (
     <div
@@ -482,6 +299,7 @@ function MobileSheet({
       />
 
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal={open || undefined}
         aria-label="Filter stock"
@@ -494,10 +312,11 @@ function MobileSheet({
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-5 py-4">
           <h2 className="font-display text-xl">Filter stock</h2>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close filters"
-            className="flex size-10 items-center justify-center border border-[var(--border-strong)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]"
+            className="flex size-11 items-center justify-center border border-[var(--border-strong)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]"
           >
             <X className="size-4" />
           </button>
@@ -513,25 +332,4 @@ function MobileSheet({
       </div>
     </div>
   );
-}
-
-/** Round bands derived from the real min/max so options always make sense. */
-function buildBands(range: { min: number; max: number }, count: number): number[] {
-  const step = (range.max - range.min) / count;
-  if (!Number.isFinite(step) || step <= 0) return [range.max];
-
-  const magnitude = 10 ** Math.floor(Math.log10(step));
-  const rounded = Math.max(Math.ceil(step / magnitude) * magnitude, 1);
-
-  const bands: number[] = [];
-  for (let value = rounded; value < range.max + rounded; value += rounded) {
-    bands.push(Math.round(value));
-  }
-  return bands.slice(0, 8);
-}
-
-function yearOptions(range: { min: number; max: number }): number[] {
-  const years: number[] = [];
-  for (let year = range.max; year >= range.min; year -= 1) years.push(year);
-  return years;
 }

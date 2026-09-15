@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { formatMileage } from "./format";
 import { site } from "./site";
-import type { VehicleView } from "./inventory/types";
+import type { PublicVehicle } from "./inventory/types";
 
 const DEFAULT_OG = "/brand/og-default.jpg";
 
@@ -12,6 +12,8 @@ interface PageMetaInput {
   /** Route path beginning with a slash — drives the canonical URL. */
   path: string;
   image?: string;
+  /** Describes the share image; defaults to the business name. */
+  imageAlt?: string;
   noIndex?: boolean;
   type?: "website" | "article";
 }
@@ -26,6 +28,7 @@ export function pageMetadata({
   description,
   path,
   image = DEFAULT_OG,
+  imageAlt = site.name,
   noIndex = false,
   type = "website",
 }: PageMetaInput): Metadata {
@@ -42,7 +45,7 @@ export function pageMetadata({
       siteName: site.name,
       locale: "en_GB",
       type,
-      images: [{ url: image, width: 1200, height: 630, alt: site.name }],
+      images: [{ url: image, alt: imageAlt, ...(image === DEFAULT_OG ? { width: 1200, height: 630 } : {}) }],
     },
     twitter: {
       card: "summary_large_image",
@@ -60,7 +63,6 @@ const postalAddress = {
   "@type": "PostalAddress",
   streetAddress: site.address.street,
   addressLocality: site.address.locality,
-  addressRegion: site.address.region,
   postalCode: site.address.postcode,
   addressCountry: site.address.country,
 };
@@ -71,10 +73,10 @@ const postalAddress = {
  */
 export function autoDealerSchema() {
   return {
-    "@context": "https://schema.org",
     "@type": "AutoDealer",
     "@id": `${site.url}/#dealer`,
     name: site.name,
+    legalName: site.company.legalName,
     description: site.tagline,
     url: site.url,
     telephone: site.phone.e164,
@@ -102,27 +104,57 @@ export function autoDealerSchema() {
       { "@type": "City", name: "London" },
       { "@type": "Country", name: "United Kingdom" },
     ],
-    paymentAccepted: "Cash, Bank transfer, Debit card, Credit card, Finance",
+    paymentAccepted: "Cash, Bank transfer, Debit card, Credit card, Finance, Part exchange",
     currenciesAccepted: "GBP",
     priceRange: "££££",
     hasMap: `${site.url.replace(/\/$/, "")}/contact`,
   };
 }
 
-/** A single listing, as a `Car` with an `Offer`. */
-export function vehicleSchema(vehicle: VehicleView) {
-  const availability =
-    vehicle.status === "sold"
-      ? "https://schema.org/SoldOut"
-      : vehicle.status === "reserved"
-        ? "https://schema.org/LimitedAvailability"
-        : "https://schema.org/InStock";
+/**
+ * The dealer plus a WebSite node, emitted once per page from the site layout.
+ * No `sameAs`: the client's Instagram and TikTok handles have not been supplied.
+ */
+export function dealerGraph() {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      autoDealerSchema(),
+      {
+        "@type": "WebSite",
+        "@id": `${site.url}/#website`,
+        name: site.name,
+        url: site.url,
+        inLanguage: "en-GB",
+        publisher: { "@id": `${site.url}/#dealer` },
+      },
+    ],
+  };
+}
+
+/** Site-relative media paths become absolute; remote URLs pass through. */
+export function absoluteUrl(src: string): string {
+  return /^https?:\/\//.test(src) ? src : `${site.url}${src}`;
+}
+
+/**
+ * A single listing, as a `Car`. The `Offer` is included only when the car has a
+ * price — a POA car has no price to state, and an offer without one is invalid.
+ */
+export function vehicleSchema(vehicle: PublicVehicle) {
+  const availability = vehicle.isSold
+    ? "https://schema.org/SoldOut"
+    : vehicle.reserved
+      ? "https://schema.org/LimitedAvailability"
+      : "https://schema.org/InStock";
 
   // Only assert properties we actually hold for this vehicle.
   const optional: Record<string, unknown> = {};
   if (vehicle.engine) optional.vehicleEngine = { "@type": "EngineSpecification", name: vehicle.engine };
   if (vehicle.doors) optional.numberOfDoors = vehicle.doors;
   if (vehicle.seats) optional.seatingCapacity = vehicle.seats;
+  if (vehicle.previousOwners !== undefined) optional.numberOfPreviousOwners = vehicle.previousOwners;
+  if (vehicle.registrationDate) optional.dateVehicleFirstRegistered = vehicle.registrationDate;
   // A UK registration mark is not a VIN, and Schema.org has no registration
   // property, so the registration is deliberately not published here.
 
@@ -136,12 +168,10 @@ export function vehicleSchema(vehicle: VehicleView) {
     brand: { "@type": "Brand", name: vehicle.make },
     model: vehicle.model,
     vehicleModelDate: String(vehicle.year),
-    productionDate: String(vehicle.year),
     bodyType: vehicle.bodyType,
     color: vehicle.colour,
     fuelType: vehicle.fuel,
     vehicleTransmission: vehicle.transmission,
-    vehicleConfiguration: vehicle.bodyType,
     mileageFromOdometer: {
       "@type": "QuantitativeValue",
       value: vehicle.mileage,
@@ -149,19 +179,21 @@ export function vehicleSchema(vehicle: VehicleView) {
     },
     itemCondition: "https://schema.org/UsedCondition",
     ...optional,
-    ...(vehicle.displayImages.length
-      ? { image: vehicle.displayImages.map((img) => `${site.url}${img.src}`) }
+    image: vehicle.images.map((image) => absoluteUrl(image.src)),
+    ...(vehicle.price !== null && !vehicle.priceOnApplication
+      ? {
+          offers: {
+            "@type": "Offer",
+            "@id": `${site.url}/vehicles/${vehicle.slug}#offer`,
+            price: vehicle.price,
+            priceCurrency: "GBP",
+            availability,
+            itemCondition: "https://schema.org/UsedCondition",
+            url: `${site.url}/vehicles/${vehicle.slug}`,
+            seller: { "@id": `${site.url}/#dealer` },
+          },
+        }
       : {}),
-    offers: {
-      "@type": "Offer",
-      "@id": `${site.url}/vehicles/${vehicle.slug}#offer`,
-      price: vehicle.price,
-      priceCurrency: "GBP",
-      availability,
-      itemCondition: "https://schema.org/UsedCondition",
-      url: `${site.url}/vehicles/${vehicle.slug}`,
-      seller: { "@id": `${site.url}/#dealer` },
-    },
   };
 }
 
@@ -196,7 +228,7 @@ export function faqSchema(entries: { question: string; answer: string }[]) {
 }
 
 /** The stock page, as an ordered list of the vehicles currently shown. */
-export function itemListSchema(vehicles: VehicleView[]) {
+export function itemListSchema(vehicles: PublicVehicle[]) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -210,12 +242,14 @@ export function itemListSchema(vehicles: VehicleView[]) {
 }
 
 /** Short, factual summary used in vehicle page descriptions. */
-export function vehicleMetaDescription(vehicle: VehicleView): string {
+export function vehicleMetaDescription(vehicle: PublicVehicle): string {
   const parts = [
-    `${vehicle.year} ${vehicle.title} for sale in Stratford, East London.`,
+    vehicle.isSold
+      ? `${vehicle.year} ${vehicle.title}, sold by Stratford City Motorcars in Stratford, East London.`
+      : `${vehicle.year} ${vehicle.title} for sale in Stratford, East London.`,
     `${formatMileage(vehicle.mileage)}, ${vehicle.fuel}, ${vehicle.transmission}.`,
     vehicle.hpiStatus === "clear" ? "History check clear." : "",
-    "Part exchange welcome.",
+    vehicle.isSold ? "" : "Part exchange welcome.",
   ];
   return parts.filter(Boolean).join(" ");
 }

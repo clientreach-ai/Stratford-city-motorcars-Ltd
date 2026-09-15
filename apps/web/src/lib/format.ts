@@ -11,6 +11,12 @@ export function formatPrice(value: number): string {
   return gbp.format(value);
 }
 
+/** "£40,000", or "POA" for a car whose price is on application. */
+export function formatVehiclePrice(vehicle: { price: number | null; priceOnApplication: boolean }): string {
+  if (vehicle.priceOnApplication || vehicle.price === null) return "POA";
+  return formatPrice(vehicle.price);
+}
+
 /** 38,000 miles */
 export function formatMileage(value: number): string {
   return `${decimal.format(value)} miles`;
@@ -25,12 +31,30 @@ export function formatNumber(value: number): string {
   return decimal.format(value);
 }
 
+const longDate = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  // Dates are stored as calendar dates (YYYY-MM-DD) or UTC instants; formatting
+  // in UTC stops a date shifting by a day on servers in other time zones.
+  timeZone: "UTC",
+});
+
+/** "14 March 2027" from "2027-03-14" or an ISO timestamp. */
 export function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(iso));
+  return longDate.format(new Date(iso));
+}
+
+const monthYear = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+
+/** "March 2016" — used for first registration, where the day adds nothing. */
+export function formatMonthYear(iso: string): string {
+  return monthYear.format(new Date(iso));
+}
+
+/** "5,461cc" */
+export function formatEngineSize(cc: number): string {
+  return `${decimal.format(cc)}cc`;
 }
 
 /** "Rolls-Royce Dawn" → "rolls-royce-dawn" */
