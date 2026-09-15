@@ -115,7 +115,13 @@ export default function FinancePage() {
         <Container>
           <SectionHeading eyebrow="At a glance" title="How the three compare" />
 
-          <div className="mt-12 overflow-x-auto border border-[var(--border)] bg-[var(--background)]">
+          {/* Focusable so keyboard users can scroll the table sideways on a phone. */}
+          <div
+            role="region"
+            aria-label="Finance options compared"
+            tabIndex={0}
+            className="mt-12 overflow-x-auto border border-[var(--border)] bg-[var(--background)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--ring)]"
+          >
             <table className="w-full min-w-[44rem] text-left text-sm">
               <caption className="sr-only">Hire Purchase, Personal Contract Purchase and personal loans compared</caption>
               <thead>
@@ -183,7 +189,7 @@ export default function FinancePage() {
           <ol className="mt-12 grid gap-px border border-bone/12 bg-bone/12 md:grid-cols-3">
             {enquirySteps.map((step, index) => (
               <li key={step.title} className="bg-ink-950 p-7 md:p-8">
-                <span aria-hidden data-numeric className="font-display text-4xl leading-none text-bone/30">
+                <span aria-hidden data-numeric className="font-display text-4xl leading-none text-bone/50">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <h3 className="mt-5 font-display text-xl leading-snug">{step.title}</h3>
