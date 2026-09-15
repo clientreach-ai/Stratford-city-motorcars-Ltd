@@ -3,11 +3,13 @@ import { Suspense } from "react";
 import { Check, Phone } from "lucide-react";
 
 import { PartExchangeForm, PartExchangeFormFromLink } from "@/components/forms/part-exchange-form";
+import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
+import { faqsByCategory } from "@/lib/content/faqs";
 import { partExchangeChecklist, partExchangeSteps } from "@/lib/content/services";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -33,7 +35,7 @@ export default function PartExchangePage() {
       <PageHero
         eyebrow="Part exchange"
         title="Your current car can do most of the work"
-        lede="Tell us what you're driving and we'll usually come back within 24 hours on weekdays with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
+        lede="Put the car you're driving now towards your next one. Send us its details and we'll usually come back within 24 hours on weekdays with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
         crumbs={crumbs}
       />
 
@@ -43,6 +45,7 @@ export default function PartExchangePage() {
           <SectionHeading
             eyebrow="How it works"
             title="Four steps from your car to ours"
+            lede="You're under no obligation at any point. If the figure isn't right for you, that's the end of it."
           />
 
           <ol className="mt-14 grid gap-px bg-[var(--border)] md:grid-cols-2 xl:grid-cols-4">
@@ -153,13 +156,19 @@ export default function PartExchangePage() {
             </div>
 
             <p className="mt-12 border-l border-brass pl-5 text-xs leading-relaxed text-bone/55">
-              {site.compliance.partExchangeSubjectToInspection} Vehicles must have
-              a valid MOT and be roadworthy. Outstanding finance must be disclosed
-              and settled. We reserve the right to decline a part exchange.
+              {site.compliance.partExchangeSubjectToInspection} Outstanding finance
+              must be disclosed and settled before a part exchange completes.
             </p>
           </div>
         </Container>
       </Section>
+
+      <FaqSection
+        faqs={faqsByCategory("Part exchange")}
+        eyebrow="Part-exchange questions"
+        title="Good to know"
+        lede="Anything else about your car, just ask — photos and questions are easiest on WhatsApp."
+      />
     </>
   );
 }
