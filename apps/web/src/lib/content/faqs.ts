@@ -17,8 +17,9 @@ export interface Faq {
  *    finance FAQs were removed (they described a lender panel that does not
  *    exist yet)
  *  - the warranty and delivery answers use confirmed facts only
- *  - the part-exchange answer no longer promises a 24-hour turnaround or
- *    "competitive valuations", neither of which the intake confirms
+ *  - the part-exchange answer gives the confirmed turnaround with its
+ *    qualifier ("usually within 24 hours on weekdays") and no longer claims
+ *    "competitive valuations"
  *
  * "Visiting" entries render on the contact page. "Sales" entries are not
  * currently rendered anywhere — FAQ structured data is only emitted where the
@@ -35,7 +36,7 @@ export const faqs: Faq[] = [
     id: "faq-004",
     question: "Do you accept part-exchange vehicles?",
     answer:
-      "Yes. Tell us about your current vehicle and we'll come back to you with an initial figure. The final valuation is confirmed after a physical inspection and can go towards your next car.",
+      "Yes. Tell us about your current vehicle and we'll usually come back within 24 hours on weekdays with an initial figure. The final valuation is confirmed after a physical inspection and can go towards your next car.",
     category: "Sales",
   },
   {

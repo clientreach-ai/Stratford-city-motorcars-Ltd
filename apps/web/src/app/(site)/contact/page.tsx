@@ -121,9 +121,20 @@ export default function ContactPage() {
             <h2 className="mt-5 text-[clamp(2rem,4vw,2.75rem)] leading-[1.08]">
               21-25 Romford Road, Stratford
             </h2>
-            <p className="mt-5 leading-relaxed text-[var(--muted-foreground)]">
-              We&rsquo;re on Romford Road with free parking on site.
-            </p>
+            <dl className="mt-8 space-y-5">
+              {[
+                { term: "Sat nav", detail: site.directions.satNav },
+                { term: "On foot", detail: site.directions.onFoot },
+                { term: "By car", detail: site.directions.byCar },
+              ].map((row) => (
+                <div key={row.term} className="grid gap-1 sm:grid-cols-[7rem_1fr] sm:gap-6">
+                  <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--rule)] sm:pt-1">
+                    {row.term}
+                  </dt>
+                  <dd className="leading-relaxed text-[var(--muted-foreground)]">{row.detail}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="mt-14">

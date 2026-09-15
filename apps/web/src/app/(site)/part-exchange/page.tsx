@@ -15,7 +15,7 @@ import { whatsappLinks } from "@/lib/whatsapp";
 export const metadata: Metadata = pageMetadata({
   title: "Part Exchange — Value Your Car",
   description:
-    "Put your current car towards your next one. Tell us about it and we'll come back to you with an initial valuation, confirmed on inspection.",
+    "Put your current car towards your next one. Tell us about it and we'll usually come back within 24 hours on weekdays with an initial valuation, confirmed on inspection.",
   path: "/part-exchange",
 });
 
@@ -32,7 +32,7 @@ export default function PartExchangePage() {
       <PageHero
         eyebrow="Part exchange"
         title="Your current car can do most of the work"
-        lede="Tell us what you're driving and we'll come back to you personally with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
+        lede="Tell us what you're driving and we'll usually come back within 24 hours on weekdays with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
         crumbs={crumbs}
       />
 
@@ -76,7 +76,7 @@ export default function PartExchangePage() {
             <div className="lg:sticky lg:top-28 lg:self-start">
               <Eyebrow>What we need</Eyebrow>
               <h2 className="mt-5 text-[clamp(1.75rem,3.4vw,2.5rem)] leading-tight">
-                Six things, two minutes
+                What we need to value it
               </h2>
 
               <ul className="mt-8 space-y-3.5">
@@ -132,7 +132,7 @@ export default function PartExchangePage() {
 
             <div className="mt-10 space-y-8">
               <NextStep
-                title="An initial figure"
+                title="Usually within 24 hours on weekdays"
                 detail="We come back to you by phone or email with an initial figure based on what you've told us."
               />
               <NextStep

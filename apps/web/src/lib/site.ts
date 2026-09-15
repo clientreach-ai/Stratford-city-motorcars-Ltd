@@ -114,6 +114,18 @@ export const site = {
 
   parking: "Free parking on site.",
 
+  /**
+   * Written directions — the client asked for them alongside the map. The
+   * sat-nav note records the client's own experience: E15 4LJ is the correct
+   * postcode, but some sat navs stop short of or past the showroom.
+   */
+  directions: {
+    satNav:
+      "Use E15 4LJ. Some sat navs finish a little before or after the showroom, so look for numbers 21–25 Romford Road.",
+    onFoot: "From Stratford station, walk to The Broadway and continue east onto Romford Road.",
+    byCar: "Romford Road is the A118, reached from the A11 and A12. There's free parking on site.",
+  },
+
   transport: {
     rail: {
       label: "Stratford Station",
@@ -138,23 +150,52 @@ export const site = {
   },
 
   /**
-   * Regulatory wording. The previous site's "credit broker, not a lender" and
-   * "subject to status… lender approval" lines were removed: the client has no
-   * lender panel yet and is still confirming whether it acts as a broker,
-   * lender or introducer. Replacement wording must come from the client's
-   * compliance adviser — do not write it here.
+   * Legal entity. Company name, number, place of registration and registered
+   * office must appear on a UK company's website. The number comes from the
+   * client intake; the registered office was checked on the Companies House
+   * register (15 September 2026) and is the showroom address the client
+   * confirmed.
    */
+  company: {
+    legalName: "Stratford City Motorcars Ltd",
+    number: "15481206",
+    registeredIn: "England and Wales",
+    registeredOffice: "21-25 Romford Road, London, E15 4LJ",
+  },
+
+  /**
+   * Finance promotion switch.
+   *
+   * The site explains HP, PCP and personal loans (client-confirmed wording) but
+   * makes no finance offer. A monthly figure or a finance calculator is a
+   * financial promotion: it needs the firm's approved FCA status statement, a
+   * lender and a full representative example. The client has no lender panel
+   * yet and is still confirming whether it acts as a broker, lender or
+   * introducer, so this stays off. Set `statusStatement` to the approved
+   * wording (from the client's compliance adviser) to enable per-car monthly
+   * figures — never write it here yourself.
+   */
+  finance: {
+    statusStatement: null as string | null,
+    /** FCA firm reference number from the intake. Shown only with the status statement. */
+    firmReferenceNumber: "1042347",
+  },
+
+  /**
+   * Online reservation switch. The client wants buyers to reserve a car with a
+   * card deposit of £100–£500. That needs a payment provider, a confirmed
+   * deposit amount and approved refund terms, none of which exist yet, so the
+   * reserve panel is built but not rendered.
+   */
+  reservations: {
+    enabled: false,
+    depositGbp: null as number | null,
+  },
+
   compliance: {
     partExchangeSubjectToInspection:
       "All valuations are an initial guide and are confirmed only after a physical inspection and document check.",
-    /**
-     * Not rendered anywhere. The intake supplies FCA firm reference 1042347 and
-     * company number 15481206, but they stay null until the approved FCA status
-     * wording and the registered office address are confirmed and a component
-     * is added to display them.
-     */
-    fcaFirmReferenceNumber: null as string | null,
-    companyNumber: null as string | null,
+    /** Only if the business is VAT registered — not supplied. */
     vatNumber: null as string | null,
   },
 } as const;

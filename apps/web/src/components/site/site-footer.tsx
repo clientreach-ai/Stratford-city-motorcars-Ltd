@@ -138,10 +138,16 @@ export async function SiteFooter() {
         </div>
 
         <div className="mt-14 border-t border-bone/10 pt-8">
-          <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-center">
-            <p>
-              © {new Date().getFullYear()} {site.name}. All rights reserved.
-            </p>
+          <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-end">
+            <div className="space-y-1.5">
+              <p>
+                © {new Date().getFullYear()} {site.name}. All rights reserved.
+              </p>
+              <p className="max-w-xl leading-relaxed">
+                {site.company.legalName}. Registered in {site.company.registeredIn}, company number{" "}
+                {site.company.number}. Registered office: {site.company.registeredOffice}.
+              </p>
+            </div>
             <nav aria-label="Legal">
               <ul className="flex flex-wrap gap-x-6 gap-y-2">
                 <li>
