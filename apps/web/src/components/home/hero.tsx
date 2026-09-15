@@ -63,7 +63,7 @@ export async function Hero() {
             {hasStock ? (
               <>
                 {marques.length} {marques.length === 1 ? "marque" : "marques"} on
-                the floor in Stratford
+                the floor
                 {prices.length ? <>, from {formatPrice(Math.min(...prices))}</> : null}.{" "}
               </>
             ) : null}

@@ -209,7 +209,10 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                           detail:
                             "We deliver nationwide. A delivery charge may apply, so ask us about delivery for this car.",
                         },
-                        { term: "Viewing", detail: `${site.hours.sentence} ${site.hours.outOfHours}` },
+                        {
+                          term: "Viewing",
+                          detail: `Request a viewing or test drive below. ${site.hours.compact}; out-of-hours by WhatsApp or text.`,
+                        },
                       ].map((row) => (
                         <div key={row.term} className="grid gap-1 py-4 text-sm sm:grid-cols-[9rem_1fr] sm:gap-6">
                           <dt className="font-medium">{row.term}</dt>
