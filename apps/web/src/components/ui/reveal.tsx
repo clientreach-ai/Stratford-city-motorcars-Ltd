@@ -5,23 +5,22 @@ import { useEffect } from "react";
 /**
  * One IntersectionObserver for the whole page.
  *
- * Anything with `className="reveal"` fades up once when it scrolls into view.
- * Mounting a single observer in the layout keeps this to a few hundred bytes
- * rather than shipping a wrapper component per animated block, and elements
- * added later (filter results, for instance) are picked up automatically.
+ * Elements with `className="reveal"` are visible in the server HTML. After
+ * hydration, any that are still below the viewport are marked
+ * `data-reveal="pending"` (hidden) and fade up once when they scroll into view.
+ * Elements already on screen are left alone, so nothing above the fold waits
+ * for JavaScript and there is no flash of hidden content.
  *
- * The CSS honours `prefers-reduced-motion`, so this only ever toggles an
- * attribute — it never animates anything on its own.
+ * Mounting a single observer in the layout keeps this to a few hundred bytes,
+ * and elements added later (filter results, for instance) are picked up
+ * automatically. Reduced-motion users get no animation at all.
  */
 export function RevealObserver() {
   useEffect(() => {
-    const show = (element: Element) => element.setAttribute("data-shown", "true");
-
     if (
       typeof IntersectionObserver === "undefined" ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      document.querySelectorAll(".reveal").forEach(show);
       return;
     }
 
@@ -29,23 +28,28 @@ export function RevealObserver() {
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          show(entry.target);
+          entry.target.setAttribute("data-reveal", "shown");
           observer.unobserve(entry.target);
         }
       },
       { rootMargin: "0px 0px -8% 0px", threshold: 0.05 },
     );
 
-    const observeAll = () => {
-      document
-        .querySelectorAll(".reveal:not([data-shown])")
-        .forEach((element) => observer.observe(element));
+    const enrol = () => {
+      document.querySelectorAll<HTMLElement>(".reveal:not([data-reveal])").forEach((element) => {
+        if (element.getBoundingClientRect().top < window.innerHeight) {
+          element.setAttribute("data-reveal", "static");
+          return;
+        }
+        element.setAttribute("data-reveal", "pending");
+        observer.observe(element);
+      });
     };
 
-    observeAll();
+    enrol();
 
     // Catch nodes rendered after hydration (filtered stock, opened panels).
-    const mutations = new MutationObserver(observeAll);
+    const mutations = new MutationObserver(enrol);
     mutations.observe(document.body, { childList: true, subtree: true });
 
     return () => {

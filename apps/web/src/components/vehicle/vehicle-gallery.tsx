@@ -99,7 +99,9 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
                 setActive(index);
                 setLightbox(true);
               }}
-              aria-label={`View photograph ${index + 1} of ${count} fullscreen`}
+              // The accessible name starts with what is visible (the photograph's
+              // description), then says what the button does.
+              aria-label={`${image.alt}. Photograph ${index + 1} of ${count}, view full screen`}
               className="relative aspect-[4/3] w-full shrink-0 snap-center cursor-zoom-in bg-ink-950 md:aspect-[16/10]"
             >
               <Image
