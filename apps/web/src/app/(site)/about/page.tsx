@@ -6,7 +6,7 @@ import { ShowroomPanel } from "@/components/site/showroom-panel";
 import { ButtonLink } from "@/components/ui/button";
 import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
-import { getAllVehicles } from "@/lib/inventory/repository";
+import { getAvailableVehicles } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 
@@ -23,7 +23,7 @@ const crumbs = [
 ];
 
 export default async function AboutPage() {
-  const vehicles = await getAllVehicles();
+  const vehicles = await getAvailableVehicles();
   const marques = [...new Set(vehicles.map((vehicle) => vehicle.make))].sort();
 
   return (

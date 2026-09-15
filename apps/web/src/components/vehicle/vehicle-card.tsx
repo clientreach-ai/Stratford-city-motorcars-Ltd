@@ -3,9 +3,9 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
-import { formatMileageShort, formatPrice } from "@/lib/format";
+import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
 import { whatsappForVehicle } from "@/lib/whatsapp";
-import type { VehicleView } from "@/lib/inventory/types";
+import type { PublicVehicle } from "@/lib/inventory/types";
 import { PhotoPlate } from "./photo-plate";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
@@ -22,13 +22,12 @@ export function VehicleCard({
   priority = false,
   className,
 }: {
-  vehicle: VehicleView;
+  vehicle: PublicVehicle;
   /** Set on the first card or two so the LCP image is not lazy-loaded. */
   priority?: boolean;
   className?: string;
 }) {
-  const [cover] = vehicle.displayImages;
-  const isSold = vehicle.status === "sold";
+  const { cover, isSold } = vehicle;
 
   return (
     <article
@@ -92,7 +91,7 @@ export function VehicleCard({
                 data-numeric
                 className="font-display text-2xl leading-none md:text-[1.75rem]"
               >
-                {formatPrice(vehicle.price)}
+                {formatVehiclePrice(vehicle)}
               </p>
             </div>
 
@@ -132,11 +131,11 @@ function Dot() {
  * a "new arrival" badge because all seven were listed in May — that is correct
  * behaviour, not a bug.
  */
-function VehicleBadges({ vehicle }: { vehicle: VehicleView }) {
+function VehicleBadges({ vehicle }: { vehicle: PublicVehicle }) {
   const badges: { label: string; tone: "sold" | "reserved" | "new" | "featured" }[] = [];
 
-  if (vehicle.status === "sold") badges.push({ label: "Sold", tone: "sold" });
-  else if (vehicle.status === "reserved") badges.push({ label: "Reserved", tone: "reserved" });
+  if (vehicle.isSold) badges.push({ label: "Sold", tone: "sold" });
+  else if (vehicle.reserved) badges.push({ label: "Reserved", tone: "reserved" });
   else if (vehicle.isNewArrival) badges.push({ label: "New arrival", tone: "new" });
   else if (vehicle.featured) badges.push({ label: "Featured", tone: "featured" });
 

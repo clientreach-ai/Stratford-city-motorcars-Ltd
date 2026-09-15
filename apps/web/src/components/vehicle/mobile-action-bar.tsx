@@ -5,7 +5,6 @@ import { MessageSquare, Phone } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { formatPrice } from "@/lib/format";
 import { site } from "@/lib/site";
 
 /**
@@ -22,7 +21,8 @@ export function MobileActionBar({
   formId = "enquire",
 }: {
   whatsappHref: string;
-  price: number;
+  /** Already formatted: a price or "POA". */
+  price: string;
   formId?: string;
 }) {
   const [visible, setVisible] = useState(false);
@@ -69,7 +69,7 @@ export function MobileActionBar({
           data-numeric
           className="hidden shrink-0 pl-1 pr-1.5 font-display text-lg text-bone min-[400px]:block"
         >
-          {formatPrice(price)}
+          {price}
         </p>
 
         <BarAction href={site.phone.href} label="Call" ariaLabel={`Call ${site.phone.display}`}>

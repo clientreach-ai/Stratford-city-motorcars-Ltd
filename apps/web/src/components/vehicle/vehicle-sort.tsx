@@ -6,7 +6,6 @@ import { X } from "lucide-react";
 import type { Route } from "next";
 
 import { Select } from "@/components/ui/field";
-import { formatNumber, formatPrice } from "@/lib/format";
 import { DEFAULT_SORT, SORT_OPTIONS } from "@/lib/inventory/types";
 
 function useUpdateParams() {
@@ -66,25 +65,9 @@ export function VehicleSort() {
 }
 
 const LABELS: Record<string, string> = {
-  q: "Keyword",
   make: "Make",
   model: "Model",
-  fuel: "Fuel",
-  transmission: "Gearbox",
-  bodyType: "Body",
-  features: "Feature",
-  minPrice: "From",
-  maxPrice: "Up to",
-  maxMileage: "Under",
-  minYear: "From",
-  maxYear: "To",
 };
-
-function formatChip(key: string, value: string): string {
-  if (key === "minPrice" || key === "maxPrice") return formatPrice(Number(value));
-  if (key === "maxMileage") return `${formatNumber(Number(value))} miles`;
-  return value;
-}
 
 /**
  * Applied filters, each individually removable. On a phone this is the only
@@ -96,7 +79,7 @@ export function ActiveFilterChips() {
 
   const chips: { key: string; value: string }[] = [];
   for (const [key, value] of searchParams.entries()) {
-    if (key === "sort" || !value) continue;
+    if (!(key in LABELS) || !value) continue;
     chips.push({ key, value });
   }
 
@@ -120,9 +103,9 @@ export function ActiveFilterChips() {
             className="group flex items-center gap-2 border border-[var(--border-strong)] py-1.5 pl-3 pr-2.5 text-xs transition-colors hover:border-[var(--primary)]"
           >
             <span className="text-[var(--muted-foreground)]">
-              {LABELS[chip.key] ?? chip.key}
+              {LABELS[chip.key]}
             </span>
-            <span>{formatChip(chip.key, chip.value)}</span>
+            <span>{chip.value}</span>
             <X className="size-3.5 text-[var(--muted-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
             <span className="sr-only">Remove filter</span>
           </button>

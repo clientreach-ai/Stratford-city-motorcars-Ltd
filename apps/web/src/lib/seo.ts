@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { formatMileage } from "./format";
 import { site } from "./site";
-import type { VehicleView } from "./inventory/types";
+import type { PublicVehicle } from "./inventory/types";
 
 const DEFAULT_OG = "/brand/og-default.jpg";
 
@@ -109,20 +109,29 @@ export function autoDealerSchema() {
   };
 }
 
-/** A single listing, as a `Car` with an `Offer`. */
-export function vehicleSchema(vehicle: VehicleView) {
-  const availability =
-    vehicle.status === "sold"
-      ? "https://schema.org/SoldOut"
-      : vehicle.status === "reserved"
-        ? "https://schema.org/LimitedAvailability"
-        : "https://schema.org/InStock";
+/** Site-relative media paths become absolute; remote URLs pass through. */
+export function absoluteUrl(src: string): string {
+  return /^https?:\/\//.test(src) ? src : `${site.url}${src}`;
+}
+
+/**
+ * A single listing, as a `Car`. The `Offer` is included only when the car has a
+ * price — a POA car has no price to state, and an offer without one is invalid.
+ */
+export function vehicleSchema(vehicle: PublicVehicle) {
+  const availability = vehicle.isSold
+    ? "https://schema.org/SoldOut"
+    : vehicle.reserved
+      ? "https://schema.org/LimitedAvailability"
+      : "https://schema.org/InStock";
 
   // Only assert properties we actually hold for this vehicle.
   const optional: Record<string, unknown> = {};
   if (vehicle.engine) optional.vehicleEngine = { "@type": "EngineSpecification", name: vehicle.engine };
   if (vehicle.doors) optional.numberOfDoors = vehicle.doors;
   if (vehicle.seats) optional.seatingCapacity = vehicle.seats;
+  if (vehicle.previousOwners !== undefined) optional.numberOfPreviousOwners = vehicle.previousOwners;
+  if (vehicle.registrationDate) optional.dateVehicleFirstRegistered = vehicle.registrationDate;
   // A UK registration mark is not a VIN, and Schema.org has no registration
   // property, so the registration is deliberately not published here.
 
@@ -136,12 +145,10 @@ export function vehicleSchema(vehicle: VehicleView) {
     brand: { "@type": "Brand", name: vehicle.make },
     model: vehicle.model,
     vehicleModelDate: String(vehicle.year),
-    productionDate: String(vehicle.year),
     bodyType: vehicle.bodyType,
     color: vehicle.colour,
     fuelType: vehicle.fuel,
     vehicleTransmission: vehicle.transmission,
-    vehicleConfiguration: vehicle.bodyType,
     mileageFromOdometer: {
       "@type": "QuantitativeValue",
       value: vehicle.mileage,
@@ -149,19 +156,21 @@ export function vehicleSchema(vehicle: VehicleView) {
     },
     itemCondition: "https://schema.org/UsedCondition",
     ...optional,
-    ...(vehicle.displayImages.length
-      ? { image: vehicle.displayImages.map((img) => `${site.url}${img.src}`) }
+    image: vehicle.images.map((image) => absoluteUrl(image.src)),
+    ...(vehicle.price !== null && !vehicle.priceOnApplication
+      ? {
+          offers: {
+            "@type": "Offer",
+            "@id": `${site.url}/vehicles/${vehicle.slug}#offer`,
+            price: vehicle.price,
+            priceCurrency: "GBP",
+            availability,
+            itemCondition: "https://schema.org/UsedCondition",
+            url: `${site.url}/vehicles/${vehicle.slug}`,
+            seller: { "@id": `${site.url}/#dealer` },
+          },
+        }
       : {}),
-    offers: {
-      "@type": "Offer",
-      "@id": `${site.url}/vehicles/${vehicle.slug}#offer`,
-      price: vehicle.price,
-      priceCurrency: "GBP",
-      availability,
-      itemCondition: "https://schema.org/UsedCondition",
-      url: `${site.url}/vehicles/${vehicle.slug}`,
-      seller: { "@id": `${site.url}/#dealer` },
-    },
   };
 }
 
@@ -196,7 +205,7 @@ export function faqSchema(entries: { question: string; answer: string }[]) {
 }
 
 /** The stock page, as an ordered list of the vehicles currently shown. */
-export function itemListSchema(vehicles: VehicleView[]) {
+export function itemListSchema(vehicles: PublicVehicle[]) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -210,7 +219,7 @@ export function itemListSchema(vehicles: VehicleView[]) {
 }
 
 /** Short, factual summary used in vehicle page descriptions. */
-export function vehicleMetaDescription(vehicle: VehicleView): string {
+export function vehicleMetaDescription(vehicle: PublicVehicle): string {
   const parts = [
     `${vehicle.year} ${vehicle.title} for sale in Stratford, East London.`,
     `${formatMileage(vehicle.mileage)}, ${vehicle.fuel}, ${vehicle.transmission}.`,

@@ -4,32 +4,22 @@ import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { Container, Eyebrow } from "@/components/ui/section";
 import { StockSearch } from "@/components/vehicle/stock-search";
 import { formatPrice } from "@/lib/format";
-import { priceCeilings } from "@/lib/inventory/price-bands";
-import { getAllVehicles, getMakeModelIndex } from "@/lib/inventory/repository";
+import { getAvailableVehicles, getMakeModelIndex } from "@/lib/inventory/repository";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
 export async function Hero() {
-  const [vehicles, makeModels] = await Promise.all([
-    getAllVehicles(),
+  const [available, makeModels] = await Promise.all([
+    getAvailableVehicles(),
     getMakeModelIndex(),
   ]);
 
-  const available = vehicles.filter((vehicle) => vehicle.status !== "sold");
   // With no published stock the stock summary and the search are left out
   // entirely, rather than rendering "0 marques… from £Infinity" or empty selects.
   const hasStock = available.length > 0;
-  const prices = available.map((vehicle) => vehicle.price);
+  const prices = available.flatMap((vehicle) => (vehicle.price === null ? [] : [vehicle.price]));
   const marques = [...new Set(available.map((vehicle) => vehicle.make))];
 
-  const priceBands = priceCeilings(prices).map((ceiling) => ({
-    value: String(ceiling),
-    label: `Up to ${formatPrice(ceiling)}`,
-  }));
-  const fuels = [...new Set(available.map((vehicle) => vehicle.fuel))].sort();
-  const transmissions = [
-    ...new Set(available.map((vehicle) => vehicle.transmission)),
-  ].sort();
 
   return (
     <section
@@ -62,7 +52,8 @@ export async function Hero() {
             {hasStock ? (
               <>
                 {marques.length} {marques.length === 1 ? "marque" : "marques"} on
-                the floor in Stratford, from {formatPrice(Math.min(...prices))}.{" "}
+                the floor in Stratford
+                {prices.length ? <>, from {formatPrice(Math.min(...prices))}</> : null}.{" "}
               </>
             ) : null}
             Take your time and ask us anything. Every enquiry is handled
@@ -114,13 +105,7 @@ export async function Hero() {
               </ExternalButtonLink>
             </div>
 
-            <StockSearch
-              makeModels={makeModels}
-              priceBands={priceBands}
-              fuels={fuels}
-              transmissions={transmissions}
-              className="p-4 md:p-5"
-            />
+            <StockSearch makeModels={makeModels} className="p-4 md:p-5" />
           </div>
         </Container>
       ) : null}

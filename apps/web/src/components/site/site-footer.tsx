@@ -3,15 +3,15 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { getAllVehicles } from "@/lib/inventory/repository";
-import type { VehicleView } from "@/lib/inventory/types";
+import { getAvailableVehicles } from "@/lib/inventory/repository";
+import type { PublicVehicle } from "@/lib/inventory/types";
 import { mapLinks, site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 type FooterHref = React.ComponentProps<typeof Link>["href"];
 
 /** The most common values of a field across published stock, most frequent first. */
-function topValues(vehicles: VehicleView[], pick: (vehicle: VehicleView) => string, limit: number) {
+function topValues(vehicles: PublicVehicle[], pick: (vehicle: PublicVehicle) => string, limit: number) {
   const counts = new Map<string, number>();
   for (const vehicle of vehicles) counts.set(pick(vehicle), (counts.get(pick(vehicle)) ?? 0) + 1);
   return [...counts.entries()]
@@ -21,22 +21,18 @@ function topValues(vehicles: VehicleView[], pick: (vehicle: VehicleView) => stri
 }
 
 /**
- * Stock shortcuts are derived from what is actually published, so the footer
- * never links to a make or body type with nothing behind it. With no published
- * stock only "All vehicles" remains.
+ * Stock shortcuts are derived from the cars actually for sale, so the footer
+ * never links to a make with nothing behind it. With no stock only
+ * "All vehicles" remains.
  */
 async function getStockLinks(): Promise<{ href: FooterHref; label: string }[]> {
-  const vehicles = (await getAllVehicles()).filter((vehicle) => vehicle.status !== "sold");
+  const vehicles = await getAvailableVehicles();
 
   return [
     { href: "/vehicles", label: "All vehicles" },
-    ...topValues(vehicles, (vehicle) => vehicle.make, 2).map((make) => ({
+    ...topValues(vehicles, (vehicle) => vehicle.make, 4).map((make) => ({
       href: { pathname: "/vehicles", query: { make } },
       label: make,
-    })),
-    ...topValues(vehicles, (vehicle) => vehicle.bodyType, 2).map((bodyType) => ({
-      href: { pathname: "/vehicles", query: { bodyType } },
-      label: bodyType,
     })),
   ];
 }

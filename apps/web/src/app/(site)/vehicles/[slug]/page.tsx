@@ -21,13 +21,13 @@ import { Container, Eyebrow, Section } from "@/components/ui/section";
 import { MobileActionBar } from "@/components/vehicle/mobile-action-bar";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { VehicleGallery } from "@/components/vehicle/vehicle-gallery";
-import { formatMileage, formatPrice } from "@/lib/format";
+import { formatMileage, formatVehiclePrice } from "@/lib/format";
 import {
   getRelatedVehicles,
   getVehicleBySlug,
   getVehicleSlugs,
 } from "@/lib/inventory/repository";
-import type { VehicleView } from "@/lib/inventory/types";
+import type { PublicVehicle } from "@/lib/inventory/types";
 import {
   breadcrumbSchema,
   pageMetadata,
@@ -58,10 +58,10 @@ export async function generateMetadata(
   }
 
   return pageMetadata({
-    title: `${vehicle.year} ${vehicle.title} — ${formatPrice(vehicle.price)}`,
+    title: `${vehicle.year} ${vehicle.title} — ${formatVehiclePrice(vehicle)}`,
     description: vehicleMetaDescription(vehicle),
     path: `/vehicles/${vehicle.slug}`,
-    image: vehicle.displayImages[0]?.src,
+    image: vehicle.cover.src,
   });
 }
 
@@ -80,7 +80,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
   ];
 
   const enquiryWhatsApp = whatsappForVehicle(vehicle);
-  const isSold = vehicle.status === "sold";
+  const { isSold } = vehicle;
 
   return (
     <>
@@ -106,11 +106,11 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
             {/* ---- Gallery ------------------------------------------------ */}
             <div className="min-w-0 lg:col-start-1 lg:row-start-1">
               <VehicleGallery
-                images={vehicle.displayImages}
+                images={vehicle.images}
                 make={vehicle.make}
                 year={vehicle.year}
                 title={`${vehicle.year} ${vehicle.title}`}
-                isLibrary={vehicle.showingLibraryImages}
+                isLibrary={false}
               />
             </div>
 
@@ -125,7 +125,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                         Sold
                       </span>
                     ) : null}
-                    {vehicle.status === "reserved" ? (
+                    {vehicle.reserved && !isSold ? (
                       <span className="bg-[var(--rule)] px-2.5 py-1 font-roman text-[0.5625rem] uppercase tracking-[0.18em] text-white">
                         Reserved
                       </span>
@@ -152,7 +152,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                       data-numeric
                       className="mt-1.5 font-display text-[clamp(2.25rem,5vw,3rem)] leading-none"
                     >
-                      {formatPrice(vehicle.price)}
+                      {formatVehiclePrice(vehicle)}
                     </p>
                     <p className="mt-2.5 text-xs text-[var(--muted-foreground)]">
                       Includes VAT where applicable.
@@ -392,7 +392,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
       ) : null}
 
       {!isSold ? (
-        <MobileActionBar whatsappHref={enquiryWhatsApp} price={vehicle.price} />
+        <MobileActionBar whatsappHref={enquiryWhatsApp} price={formatVehiclePrice(vehicle)} />
       ) : null}
 
       {/* Clears the sticky bar so it never covers the footer's last line. */}
@@ -417,7 +417,7 @@ function SectionLabel({ id, children }: { id: string; children: React.ReactNode 
  * recorded engine size shows no engine row rather than an empty one or,
  * worse, a guess.
  */
-function SpecTable({ vehicle }: { vehicle: VehicleView }) {
+function SpecTable({ vehicle }: { vehicle: PublicVehicle }) {
   const rows: { term: string; value: string }[] = [
     { term: "Make", value: vehicle.make },
     { term: "Model", value: vehicle.model },
@@ -460,7 +460,7 @@ function SpecTable({ vehicle }: { vehicle: VehicleView }) {
  * every car is checked — so the card never implies a check the dealership has
  * not confirmed for this specific vehicle.
  */
-function historyCheckCopy(status: VehicleView["hpiStatus"]): {
+function historyCheckCopy(status: PublicVehicle["hpiStatus"]): {
   value: string;
   detail: string;
 } {
