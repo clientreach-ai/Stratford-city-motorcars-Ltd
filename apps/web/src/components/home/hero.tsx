@@ -8,6 +8,14 @@ import { getAvailableVehicles, getMakeModelIndex } from "@/lib/inventory/reposit
 import { whatsappLinks } from "@/lib/whatsapp";
 import { WhatsAppIcon } from "@/components/ui/icons";
 
+/** Four confirmed facts, set under the headline in place of stock numbers. */
+const heroFacts = [
+  { term: "Family owned", detail: "Small by choice" },
+  { term: "Sports & luxury", detail: "What we trade in" },
+  { term: "Finance & part exchange", detail: "Explained plainly" },
+  { term: "Nationwide delivery", detail: "Ask for your car" },
+];
+
 export async function Hero() {
   const [available, makeModels] = await Promise.all([
     getAvailableVehicles(),
@@ -59,32 +67,44 @@ export async function Hero() {
                 {prices.length ? <>, from {formatPrice(Math.min(...prices))}</> : null}.{" "}
               </>
             ) : null}
-            Take your time and ask us anything. Every enquiry is handled
-            personally.
+            A small family-owned showroom on Romford Road, Stratford. Take your
+            time, ask us anything — every enquiry is handled personally.
           </p>
 
           <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
             <ButtonLink href="/vehicles" size="lg" className="w-full sm:w-auto">
-              View stock
+              View cars
             </ButtonLink>
             <ButtonLink
-              href="/finance"
+              href="/contact#book-a-viewing"
               variant="outline"
               size="lg"
               className="w-full sm:w-auto"
             >
-              Car finance
+              Book a viewing
             </ButtonLink>
-            <ButtonLink
-              href="/part-exchange"
-              variant="outline"
+            <ExternalButtonLink
+              href={whatsappLinks.browsing}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="whatsapp"
               size="lg"
               className="w-full sm:w-auto"
             >
-              Part exchange
-            </ButtonLink>
+              <WhatsAppIcon className="size-4" />
+              WhatsApp us
+            </ExternalButtonLink>
           </div>
         </div>
+
+        <dl className="mt-14 grid grid-cols-2 gap-px border border-bone/12 bg-bone/12 md:mt-20 lg:grid-cols-4">
+          {heroFacts.map((fact) => (
+            <div key={fact.term} className="bg-ink-950 px-4 py-5 md:px-6 md:py-6">
+              <dt className="font-display text-base leading-snug text-bone md:text-lg">{fact.term}</dt>
+              <dd className="mt-1 text-xs text-bone/55 md:text-sm">{fact.detail}</dd>
+            </div>
+          ))}
+        </dl>
       </Container>
 
       {/* Search sits on the seam between the hero and the page below it. */}
