@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowRight, Banknote, CalendarCheck, Check, ExternalLink, Phone, Repeat } from "lucide-react";
 
 import { BOOK_VIEWING_HASH, VehicleEnquiryForm } from "@/components/forms/vehicle-enquiry-form";
@@ -17,7 +17,7 @@ import { VehicleSpecification } from "@/components/vehicle/vehicle-specification
 import { VehicleVideo } from "@/components/vehicle/vehicle-video";
 import { financeExampleFor, financeStatusStatement } from "@/lib/finance";
 import { formatMileage, formatPrice, formatVehiclePrice } from "@/lib/format";
-import { getRelatedVehicles, getVehicleBySlug, getVehicleSlugs } from "@/lib/inventory/repository";
+import { getRelatedVehicles, getVehicleBySlug, getVehicleSlugs, resolvePreviousSlug } from "@/lib/inventory/repository";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { reservationOffer } from "@/lib/reservations";
 import { breadcrumbSchema, pageMetadata, vehicleMetaDescription, vehicleSchema } from "@/lib/seo";
@@ -28,6 +28,16 @@ import { whatsappForVehicle, whatsappLinks } from "@/lib/whatsapp";
 export async function generateStaticParams() {
   const slugs = await getVehicleSlugs();
   return slugs.map((slug) => ({ slug }));
+}
+
+/**
+ * A car whose web address was changed in the dashboard keeps its old slugs in
+ * `previousSlugs`; links to the old address land on the current page.
+ */
+async function redirectRenamedVehicle(slug: string) {
+  if (!/^[a-z0-9-]{1,160}$/.test(slug)) return;
+  const current = await resolvePreviousSlug(slug);
+  if (current && current !== slug) permanentRedirect(`/vehicles/${current}`);
 }
 
 export async function generateMetadata(props: PageProps<"/vehicles/[slug]">): Promise<Metadata> {
@@ -54,7 +64,10 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
   const { slug } = await props.params;
   const vehicle = await getVehicleBySlug(slug);
 
-  if (!vehicle) notFound();
+  if (!vehicle) {
+    await redirectRenamedVehicle(slug);
+    notFound();
+  }
 
   const related = await getRelatedVehicles(slug, 3);
   const name = `${vehicle.year} ${vehicle.title}`;
