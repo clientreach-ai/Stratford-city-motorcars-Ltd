@@ -11,7 +11,7 @@ import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About — A Family Business in Stratford",
+  title: "About Us — Family-Owned Car Sales in Stratford",
   description:
     "A small family-owned business on Romford Road in Stratford, trading in sports and luxury cars. Every enquiry is handled personally.",
   path: "/about",

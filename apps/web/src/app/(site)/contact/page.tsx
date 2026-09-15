@@ -14,8 +14,8 @@ import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Contact — Romford Road, Stratford E15",
-  description: `Call, WhatsApp or email us. Find us at ${site.address.full} with free parking on site. ${site.hours.sentence}`,
+  title: "Contact & Directions — Stratford, East London",
+  description: `Call, WhatsApp or email us, or visit ${site.address.full}. Free parking on site. ${site.hours.sentence}`,
   path: "/contact",
 });
 

@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         // Only the staff area. Filtered stock URLs stay crawlable — the footer
         // links to several of them — and are kept out of the index by a
         // canonical pointing back at /vehicles instead.
-        disallow: ["/login", "/dashboard"],
+        disallow: ["/login", "/dashboard", "/api/"],
       },
     ],
     sitemap: `${site.url}/sitemap.xml`,

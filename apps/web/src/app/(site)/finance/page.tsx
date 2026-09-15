@@ -20,7 +20,7 @@ import { whatsappLinks } from "@/lib/whatsapp";
  * compliance adviser before any of that returns.
  */
 export const metadata: Metadata = pageMetadata({
-  title: "Car Finance — HP, PCP & Personal Loans",
+  title: "Car Finance Explained — HP, PCP & Personal Loans",
   description:
     "Hire Purchase, Personal Contract Purchase and personal loans explained plainly, so you can see which might suit you.",
   path: "/finance",

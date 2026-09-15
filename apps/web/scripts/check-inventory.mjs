@@ -186,6 +186,19 @@ check("the public view drops library media and resolves the cover", () => {
   assert.equal(libraryCover.cover.id, exterior.id, "a library image can never be the cover");
 });
 
+check("public photographs always carry alt text", () => {
+  const exterior = { ...photo("exterior"), alt: "" };
+  const interior = { ...photo("interior"), alt: "   " };
+  const view = toPublicVehicle({ ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [exterior, interior] });
+  assert.ok(view);
+  for (const image of view.images) assert.match(image.alt, /2016 Mercedes-Benz SL63 AMG, (exterior|interior) photograph/);
+  assert.ok(
+    listingRecommendations({ ...publishedWithPhotos("mercedes-benz-sl63-amg-2016"), media: [exterior, interior] }).some((tip) =>
+      tip.message.includes("no description"),
+    ),
+  );
+});
+
 // ---- Lifecycle and required details ------------------------------------------
 
 check("drafts and archived cars are never public, however complete", () => {
