@@ -10,6 +10,13 @@ Everything under **Completed** was exercised against a production build
 (`next build` + `next start`), not only type-checked. Results are in
 [Verification record](#verification-record).
 
+> **Staff dashboard removed.** A dashboard (login, inventory editor, media
+> upload, enquiries) was built in Phase 9 and then removed on request, to be
+> rebuilt. The login page, dashboard, `/api/auth`, the upload
+> API and the owner-account script no longer exist; `/login`, `/dashboard` and
+> `/admin` return 404. The public website was re-verified after the removal and
+> is unchanged.
+
 ---
 
 ## Completed
@@ -27,7 +34,7 @@ Everything under **Completed** was exercised against a production build
 - Company name, number 15481206 and registered office (21–25 Romford Road,
   E15 4LJ) in the footer, checked against Companies House.
 
-### One inventory for site and dashboard (Phase 2)
+### One inventory source (Phase 2)
 
 - `vehicle` table (Postgres) as the single source of truth, with a read-only
   seed fallback when no database is configured.
@@ -53,12 +60,11 @@ Everything under **Completed** was exercised against a production build
 
 ### Media (Phase 4)
 
-- Upload pipeline: EXIF rotation, metadata and GPS stripped, max 2560px, WebP,
-  minimum 800px and size limits with plain-English refusals.
-- Photo categories, alt text, cover choice, reorder, removal (deletes the file),
-  video upload or YouTube/Vimeo link, 360° link.
+- Media model on each car: photo categories, alt text, cover, dealer vs
+  library provenance, video file or YouTube/Vimeo link, 360° link.
 - `next/image` with AVIF/WebP and per-layout `sizes`; eager, high-priority first
-  gallery image; immutable caching for uploaded media.
+  gallery image; `/media/*` served with immutable caching and range requests.
+- No upload tool (removed with the dashboard).
 - Retired brand assets replaced (Open Graph card, favicon and app icons with the
   new positioning).
 
@@ -66,8 +72,8 @@ Everything under **Completed** was exercised against a production build
 
 - Per-page metadata and canonicals, AutoDealer/WebSite/Car/Breadcrumb JSON-LD
   (no `Offer` for POA), sitemap with vehicle images, robots rules.
-- Permanent redirects for `/sales`, `/used-cars-stratford`, `/mission`,
-  `/admin*` and `/sales/<legacy-slug>`. Renamed cars redirect from their old
+- Permanent redirects for `/sales`, `/used-cars-stratford`, `/mission` and
+  `/sales/<legacy-slug>`. Renamed cars redirect from their old
   `/vehicles/<slug>`.
 - Filtered stock views are `noindex` with a canonical to `/vehicles`; real 404s.
 
@@ -90,17 +96,8 @@ Everything under **Completed** was exercised against a production build
 ### Performance and hardening (Phase 8)
 
 - Security headers (nosniff, referrer policy, frame denial, limited CSP,
-  permissions policy, HSTS), no `X-Powered-By`, `no-store` + `noindex` on
-  staff routes, error boundaries that do not leak details.
-
-### Dashboard (Phase 9)
-
-- Staff login (sign-up disabled; owner accounts by script), session check in
-  every page, action and upload.
-- Overview, inventory list, vehicle editor with live publishing blockers and
-  field-level validation, media manager, enquiries with status.
-- Publish/unpublish, mark sold, reserve, feature, archive/restore, duplicate;
-  stale-save protection; slug conflicts explained.
+  permissions policy, HSTS), no `X-Powered-By`, error boundaries that do not
+  leak details.
 
 ---
 
@@ -145,9 +142,9 @@ assumed.
 
 | Item | Needed for | Notes |
 | --- | --- | --- |
-| Production Postgres | Inventory, enquiries, staff accounts | Run `pnpm --filter @Stratford-city-motorcars-Ltd/db db:migrate` (the root `pnpm db:migrate` goes through turbo, which needs an interactive terminal), then optionally `pnpm --filter web inventory:import-seed`, then `pnpm --filter web create-owner` |
-| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | Dashboard | Secret of 32+ random characters; URL is the site origin |
-| Persistent media storage | Uploaded photos and video | Local disk today (`MEDIA_ROOT`). Needs a host with a persistent volume, or an object-storage implementation of `MediaStorage` |
+| Staff dashboard | Editing stock, photos, reading enquiries | Removed; to be rebuilt |
+| Production Postgres | Inventory, enquiries | Run `pnpm --filter @Stratford-city-motorcars-Ltd/db db:migrate` (the root `pnpm db:migrate` goes through turbo, which needs an interactive terminal), then optionally `pnpm --filter web inventory:import-seed` |
+| Persistent media storage | Vehicle photos and video | Local disk today (`MEDIA_ROOT`). Needs a host with a persistent volume, or an object-storage implementation of `MediaStorage` |
 | Hosting | Everything | A long-running Node server (`next start`) is assumed. Serverless hosting needs object storage and a shared rate limiter first |
 | Email and SMS notifications | Telling the business about enquiries | Webhook (`LEADS_WEBHOOK_URL`) to Zapier/Make/n8n works today; or a provider-specific `LeadNotifier` |
 | Domain and DNS | Launch | Set `NEXT_PUBLIC_SITE_URL`; redirect the apex and any `.co.uk` to the canonical host |
@@ -162,17 +159,18 @@ assumed.
 
 The site should not go live until these are resolved:
 
-1. **No confirmed stock.** Every record is a draft and no car has dealer
+1. **No way to manage stock.** The dashboard was removed; there is no tool for
+   adding cars, photographs or reading enquiries.
+2. **No confirmed stock.** Every record is a draft and no car has dealer
    photography, so the public site would show no cars.
-2. **Legal pages are placeholders.** The forms collect names, emails and phone
+3. **Legal pages are placeholders.** The forms collect names, emails and phone
    numbers; an approved privacy notice must exist before they go live.
-3. **Production database, auth secret and owner account** are not provisioned.
-4. **Persistent media storage** is not provisioned; uploads on an ephemeral
-   filesystem would be lost.
-5. **No enquiry notification.** Without a webhook or provider, enquiries are
-   only visible in the dashboard and nobody is alerted.
-6. **Canonical domain and DNS** are not configured.
-7. **Finance page wording** should be reviewed against the firm's confirmed FCA
+4. **Production database** is not provisioned.
+5. **Persistent media storage** is not provisioned.
+6. **No enquiry notification.** Without a webhook or provider, enquiries sit in
+   the database unseen and nobody is alerted.
+7. **Canonical domain and DNS** are not configured.
+8. **Finance page wording** should be reviewed against the firm's confirmed FCA
    status before launch (no figures or approval claims are shown today).
 
 ---
@@ -181,22 +179,21 @@ The site should not go live until these are resolved:
 
 - **Rate limiting is in memory.** It resets on restart and is not shared across
   instances.
-- **Media** is on local disk; video is stored as uploaded (no transcoding or
-  poster generation), and uploads are buffered in memory (25 MB photo / 200 MB
-  video limits).
+- **Media** is on local disk; video is served as stored (no transcoding or
+  poster generation).
 - **CSP** does not restrict scripts or styles (Next.js inline scripts would need
   nonces).
 - **Dependency audit:** `pnpm audit --prod` reports one moderate advisory
   (esbuild dev server, GHSA-67mh-4wv8-2f99) reached through `drizzle-kit`, a
   development tool not shipped to the browser or run in production serving.
-- **Commit `b581ff3` does not build on its own** (the old dashboard still
-  imports the removed auth client); `6e243a6` completes it. Squash or keep the
-  pair together if the history is rewritten.
+- **History:** commit `b581ff3` does not build on its own (`6e243a6` completes
+  it). Both were superseded by the dashboard removal.
 - **Home page LCP** is the H1 text; Lighthouse attributes most of it to web-font
   render delay (see results below).
 - **Page redirects for renamed cars** carry the same `Location` header twice
   (Next.js behaviour); browsers follow it, verified in Chromium.
-- `apps/server` (Hono) is legacy scaffolding and is not needed to run the site.
+- `apps/server` and `packages/auth` are Better-T-Stack template code, restored
+  to their original form; the website does not use them.
 
 ---
 
@@ -204,57 +201,42 @@ The site should not go live until these are resolved:
 
 Run on Linux (Node 26.8.1, pnpm 11.3.0, Chromium via puppeteer-core, axe-core,
 Lighthouse), against local Postgres 18 (PGlite) with test fixtures that exist
-only in the local test database. Test credentials were local-only.
+only in the local test database.
 
-### Repository checks (on `b9d575d`)
+### After removing the dashboard (current state)
 
 | Check | Result |
 | --- | --- |
 | `pnpm check-types` | Pass |
-| `pnpm --filter web check-content` | Pass |
+| `pnpm --filter web check-content` (source and built HTML) | Pass |
 | `pnpm --filter web check-inventory` | 26/26 pass |
-| Mutation: price floor lowered to £10,000 | check-inventory fails (as intended) |
-| Mutation: photo minimum disabled | check-inventory fails (as intended) |
-| `next build` with and without `DATABASE_URL` | Pass |
-
-### Setup path on an empty database (`b9d575d`)
-
-| Step | Result |
-| --- | --- |
-| `drizzle-kit migrate` (db package) | Creates `account`, `lead`, `session`, `user`, `vehicle`, `verification` |
-| `inventory:import-seed`, run twice | 7 drafts imported, none featured; second run skips all 7 |
-| `create-owner` with a 5-character password / valid / same email again | Refused / created / refused |
-| Better Auth sign-in: correct password / wrong password | 200 with session cookie / 401 |
-| Better Auth sign-up | Refused (400); no user created |
-
-### Browser and HTTP checks (production build, database mode)
-
-Suites were run on `6e243a6`; `b9d575d` changed only the vehicle page's
-not-found path and was re-verified with the redirect checks below.
-
-| Suite | Result |
-| --- | --- |
+| `next build` with and without `DATABASE_URL` | Pass; route table lists only public routes, `/media/*` and `/sales/[slug]` |
+| Public routes (database mode) | All 200; hidden car 404; legacy redirects 308 |
+| `/login`, `/dashboard`, `/dashboard/inventory`, `/admin`, `/api/auth/*`, `/api/dashboard/media` | 404 |
+| `robots.txt` | Allows everything; sitemap listed |
 | Horizontal overflow, 8 widths × public pages | None |
 | axe-core, public pages at 1280 and 390 | No violations |
-| axe-core, dashboard pages at 1280 and 390 | No violations |
 | Keyboard (lightbox, filter sheet, mobile nav, skip link) | 11/11 |
-| Forms (validation, focus, success, viewing rules, honeypot, links, throttle, prefill) | 13/13 |
-| Webhook delivery | Received with bearer token; honeypot field not forwarded |
-| Server log PII scan after form tests | 0 matches for test names, emails and phones |
-| Dashboard end to end (login, create, validate, publish gate, upload, publish, public page, feature, sold, archive, enquiries, mobile) | 23/23 |
-| Media (video link rules, YouTube, reorder, remove + file deleted, duplicate) | 6/6 |
-| Upload API (`b9d575d`): no session / valid session from another origin | 401 / 403 |
-| Uploaded 4000×3000 JPEG with GPS and camera EXIF (`b9d575d`) | Stored as 2560×1920 WebP; no EXIF, GPS or camera strings in the file |
-| Captured server action replayed without session (`b9d575d`) | Redirected to `/login`; database unchanged |
-| Same action replayed with a session from another origin (`b9d575d`) | Rejected; database unchanged |
-| Rename a public car in the dashboard (`b9d575d`) | Old `/vehicles/` and `/sales/` URLs 308 to the new page; sitemap shows only the new URL |
-| Unknown, draft and malformed vehicle slugs (`b9d575d`) | 404 |
-| Security headers on `/`; `/dashboard` without session | Present; 307 to `/login` with `no-store` and `noindex` |
+| Forms (validation, focus, success, viewing rules, honeypot, links, throttle, prefill) | 13/13; webhook received every successful submission |
+| Security headers on `/` | All six present |
 | No-JavaScript render of home | All content visible |
 | Console errors on public pages | None (except the expected 404 resource on `/hire`) |
+
+### Earlier results for the public site (before the removal)
+
+These covered website code the removal did not change.
+
+| Check | Result |
+| --- | --- |
+| Mutation: price floor lowered / photo minimum disabled | check-inventory fails, as intended |
+| `drizzle-kit migrate` on an empty database | Creates `account`, `lead`, `session`, `user`, `vehicle`, `verification` |
+| `inventory:import-seed`, run twice | 7 drafts imported, none featured; second run skips all 7 |
+| Server log PII scan after form tests | 0 matches for test names, emails and phones |
+| Renamed car (old slug in `previousSlugs`) | Old `/vehicles/` and `/sales/` URLs 308 to the current page |
+| Unknown, draft and malformed vehicle slugs | 404 |
 | Image sizing (home, stock, vehicle; 390@3x and 1440@2x) | CLS 0; vehicle photos ≤1.31× rendered size; logo 1.77× (5 KB) |
 
-Lighthouse (mobile emulation, local production server, `6e243a6`):
+Lighthouse (mobile emulation, local production server):
 
 | Page | Performance | Accessibility | Best practices | SEO | LCP | CLS | TBT |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -266,20 +248,9 @@ Lighthouse (mobile emulation, local production server, `6e243a6`):
 Local results with simulated mobile throttling; production numbers depend on
 hosting, CDN and real photographs.
 
-### Seed mode (no database, `6e243a6`)
-
-- All public routes 200; legacy redirects correct; `/hire` and every
-  unconfirmed legacy car 404.
-- Empty-stock states render (no grids, filters or search); sitemap lists the six
-  public pages.
-- `/dashboard` redirects to `/login`, which explains the missing configuration;
-  `/api/auth/*` returns 503.
-- Content check passes on the built HTML.
-
 ### Not verified
 
 - Real devices (tested in Chromium emulation only), Safari and Firefox.
-- Deployment to any hosting provider, real DNS, HTTPS cookies in production.
+- Deployment to any hosting provider and real DNS.
 - Real email/SMS delivery (only a local webhook receiver).
-- Load, concurrency beyond single-user editing, and very large uploads.
-- Screen readers beyond axe-core automated checks.
+- Load and screen readers beyond axe-core automated checks.

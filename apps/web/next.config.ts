@@ -27,12 +27,6 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
 ];
 
-/** Staff and API responses are private: never cached by a CDN, never indexed. */
-const privateHeaders = [
-  { key: "Cache-Control", value: "private, no-store" },
-  { key: "X-Robots-Tag", value: "noindex, nofollow" },
-];
-
 const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
@@ -41,10 +35,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      { source: "/dashboard/:path*", headers: privateHeaders },
-      { source: "/dashboard", headers: privateHeaders },
-      { source: "/login", headers: privateHeaders },
-      { source: "/api/:path*", headers: privateHeaders },
     ];
   },
 
@@ -59,8 +49,6 @@ const nextConfig: NextConfig = {
       { source: "/sales", destination: "/vehicles", permanent: true },
       { source: "/used-cars-stratford", destination: "/vehicles", permanent: true },
       { source: "/mission", destination: "/about", permanent: true },
-      { source: "/admin", destination: "/login", permanent: true },
-      { source: "/admin/:path*", destination: "/login", permanent: true },
     ];
   },
 

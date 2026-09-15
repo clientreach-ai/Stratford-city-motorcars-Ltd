@@ -13,8 +13,9 @@ are not expensive. Until a car is photographed it stays hidden.
 - **A car cannot be published without the dealership's own photographs.** The
   publishing rules (`src/lib/inventory/visibility.ts`) require at least one
   dealer **exterior** and one dealer **interior** photograph. That is the
-  technical minimum, not the standard: the dashboard shows the 20+ target, detail
-  shots and walkaround video as a checklist on every car.
+  technical minimum, not the standard: `listingRecommendations()` in the same
+  file turns the 20+ target, detail shots and walkaround video into a checklist
+  for whoever edits stock.
 - **Stock and library photographs never appear publicly.** Media is marked
   `dealer` or `library`. Library media (a correctly identified photo of the same
   model, like the CC0 Rolls-Royce Dawn image kept in the seed data) never counts
@@ -23,10 +24,13 @@ are not expensive. Until a car is photographed it stays hidden.
 
 ## Adding photographs and video
 
-Use the dashboard: **Inventory → the car → Media**.
+There is no upload tool at the moment: it was part of the staff dashboard,
+which has been removed and is to be rebuilt. Whatever replaces it needs to
+cover the steps below, and must strip photo metadata (phone photos carry GPS
+coordinates) before anything is stored.
 
-1. **Upload photographs.** JPEG, PNG, WebP or AVIF, at least 800px on the long
-   side, up to 25 MB each. iPhone photos upload as JPEG from the browser.
+1. **Photographs** at least 800px on the long side; 2560px on the long edge is
+   plenty for every layout.
 2. **Classify every photograph** as exterior, interior, detail or documents.
    The publishing checklist counts exterior and interior.
 3. **Write the alt text** — describe the car and the angle ("2016 Mercedes-Benz
@@ -35,24 +39,15 @@ Use the dashboard: **Inventory → the car → Media**.
 4. **Order them and choose the cover.** The cover is the card thumbnail, the
    social share image and the first thing a buyer sees; make it the best
    front three-quarter exterior. Without a choice, the first exterior is used.
-5. **Add the walkaround video** — upload an MP4 (up to 200 MB), or paste an
+5. **Add the walkaround video** — an MP4 file, or an
    unlisted YouTube or Vimeo link, which keeps large files off the website.
 6. **360° spin** — paste the link from whichever spin service is used; it opens
    in a new tab.
 
-### What happens to an upload
+### How photographs are delivered
 
-Every photograph is processed once, on upload:
-
-- rotated the right way up from its EXIF orientation, then **all metadata is
-  removed** — phone photos carry GPS coordinates and device details that must
-  never be published;
-- scaled to at most **2560px** on the long edge (sharper than any screen needs,
-  a fraction of a 12-megapixel original);
-- stored as **WebP** at quality 82, with its final pixel size recorded so pages
-  reserve the right space and nothing jumps as it loads.
-
-The site never serves the stored master to a browser directly in a gallery.
+Each photograph's pixel size is recorded on the car, so pages reserve the right
+space and nothing jumps as it loads. The site never serves the stored master to a browser directly in a gallery.
 The Next.js image optimiser produces each size a layout needs — phone gallery,
 desktop gallery, card, thumbnail, full-screen viewer — as AVIF or WebP, caches
 it, and the page's `sizes` tell the browser which one to fetch. Only the first
@@ -60,13 +55,13 @@ gallery photograph loads immediately with high priority; every other photograph
 and thumbnail waits until it is about to scroll into view, and the full-screen
 viewer requests its image only when opened.
 
-Videos are stored exactly as uploaded (the site does not transcode) and use the
+Videos are served as stored (the site does not transcode) and use the
 native player with `preload="none"`, so nothing downloads until a buyer presses
 play. YouTube and Vimeo players are loaded only on click.
 
 ### Where files are kept
 
-Uploads are stored by `src/lib/media/storage.ts`. The built implementation
+Media files are read through `src/lib/media/storage.ts`. The built implementation
 writes to the server's disk under `MEDIA_ROOT` (default `apps/web/.data/media`)
 and serves files from `/media/…` with year-long immutable caching and range
 requests for video. That suits development and a single server with a
