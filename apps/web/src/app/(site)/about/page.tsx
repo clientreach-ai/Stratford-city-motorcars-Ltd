@@ -84,7 +84,7 @@ export default async function AboutPage() {
                     alt={site.name}
                     width={900}
                     height={269}
-                    sizes="200px"
+                    sizes="161px"
                     className="h-12 w-auto"
                   />
                 </div>

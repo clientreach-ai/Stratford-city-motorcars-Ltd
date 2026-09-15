@@ -58,3 +58,6 @@ dev-dist
 .dev.vars*
 
 .open-next
+
+# Local media storage and other runtime data (see src/lib/media)
+/.data/

@@ -44,7 +44,7 @@ export default async function HomePage() {
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
-                    priority={index < 2}
+                    // Below the hero on every viewport; the headline is the LCP.
                     sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 92vw"
                     className="reveal border-0"
                   />

@@ -60,8 +60,11 @@ export function SiteHeader() {
               alt={site.name}
               width={900}
               height={269}
-              sizes="200px"
-              priority
+              // Rendered 36px tall (≈121px wide) on phones and 44px (≈147px) from md.
+              sizes="(min-width: 768px) 148px, 121px"
+              // Above the fold but tiny and never the LCP element: load it
+              // straight away without a preload competing with the headline.
+              loading="eager"
               className="h-9 w-auto md:h-11"
             />
           </Link>
@@ -239,7 +242,7 @@ function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
             alt={site.name}
             width={900}
             height={269}
-            sizes="200px"
+            sizes="121px"
             className="h-9 w-auto"
           />
           <button

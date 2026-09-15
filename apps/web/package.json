@@ -26,6 +26,7 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "sharp": "^0.35.4",
     "sonner": "catalog:",
     "zod": "catalog:"
   },
