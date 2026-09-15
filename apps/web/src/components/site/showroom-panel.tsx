@@ -23,7 +23,7 @@ export function ShowroomPanel({ showMap = true }: { showMap?: boolean }) {
             >
               {site.address.street}
               <br />
-              {site.address.locality}, {site.address.region}
+              {site.address.locality}
               <br />
               {site.address.postcode}
             </a>
