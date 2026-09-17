@@ -15,7 +15,7 @@ export function createRateLimiter(options: { windowMs: number; max: number; mess
   const hits = new Map<string, number[]>();
 
   /** Records one attempt for this caller, or throws 429 when over the limit. */
-  return function consume(c: Context): void {
+  function consume(c: Context): void {
     const key = clientAddress(c);
     if (!key) return;
 
@@ -34,7 +34,19 @@ export function createRateLimiter(options: { windowMs: number; max: number; mess
         if (times.every((time) => now - time >= options.windowMs)) hits.delete(entry);
       }
     }
+  }
+
+  /**
+   * Forgets this caller's attempts — called after a successful sign-in, so a
+   * busy showroom (everyone on one office connection) is never locked out by
+   * its own staff signing in normally. Only failures count towards the limit.
+   */
+  consume.reset = function reset(c: Context): void {
+    const key = clientAddress(c);
+    if (key) hits.delete(key);
   };
+
+  return consume;
 }
 
 /**
