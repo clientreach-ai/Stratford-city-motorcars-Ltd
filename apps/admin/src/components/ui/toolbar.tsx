@@ -114,7 +114,8 @@ export function SegmentedFilter<T extends string>({
               onClick={() => onChange(option.value)}
               className={cn(
                 "relative -mb-px flex h-11 items-center gap-2 border-b-2 px-3.5 text-[0.8125rem] transition-colors duration-150",
-                active ? "border-ink-950 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+                // The selected tab carries the brass rule, as the website marks its current page.
+                active ? "border-rule text-foreground" : "border-transparent text-muted-foreground hover:border-ink-250 hover:text-foreground",
               )}
             >
               {option.label}
