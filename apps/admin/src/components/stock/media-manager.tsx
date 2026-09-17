@@ -211,7 +211,7 @@ export function MediaManager({
           <div className="min-w-0">
             <p className="text-sm font-medium">Add photographs</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              JPEG, PNG, WebP or AVIF, at least 1200 × 800. <span className="hidden sm:inline">Drop files here, or choose them.</span>
+              JPEG, PNG, WebP or AVIF. 1200 × 800 or larger looks sharpest. <span className="hidden sm:inline">Drop files here, or choose them.</span>
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
