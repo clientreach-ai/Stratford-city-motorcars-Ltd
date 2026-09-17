@@ -126,6 +126,7 @@ export function NumberInput({
   onValueChange,
   prefix,
   suffix,
+  formatGroups = true,
   className,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "prefix" | "type"> & {
@@ -133,6 +134,8 @@ export function NumberInput({
   onValueChange: (value: number | null) => void;
   prefix?: string;
   suffix?: string;
+  /** Thousands separators; off for years and similar. */
+  formatGroups?: boolean;
 }) {
   return (
     <div className="relative">
@@ -144,7 +147,7 @@ export function NumberInput({
       <input
         type="text"
         inputMode="numeric"
-        value={value === null || value === undefined ? "" : value.toLocaleString("en-GB")}
+        value={value === null || value === undefined ? "" : formatGroups ? value.toLocaleString("en-GB") : String(value)}
         onChange={(event) => {
           const digits = event.target.value.replace(/[^\d]/g, "");
           onValueChange(digits === "" ? null : Math.min(Number(digits), Number.MAX_SAFE_INTEGER));
