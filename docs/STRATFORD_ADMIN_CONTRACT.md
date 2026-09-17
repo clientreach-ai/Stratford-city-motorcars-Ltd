@@ -1,8 +1,9 @@
 # Stratford City Motorcars — admin ↔ API contract
 
-What the admin (`apps/admin`) expects from the backend. The admin is built and
-runs today on in-browser sample data; this document is what an API must do for
-it to run on real data with no screen changes.
+What the admin (`apps/admin`) expects from the backend, and what
+`apps/server` implements (`apps/server/src/modules/admin/`). Run the admin on
+it with `NEXT_PUBLIC_ADMIN_DATA=api`; with `mock` it uses in-browser sample
+data.
 
 Related: [architecture](./STRATFORD_ARCHITECTURE.md) ·
 [build status](./STRATFORD_BUILD_STATUS.md) ·
