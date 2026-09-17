@@ -18,26 +18,21 @@ import { formatDayLabel, formatLongDay, formatTime, plural } from "@/lib/format"
 import { queryKeys } from "@/lib/query";
 import { useSession } from "@/lib/session";
 
-function greeting(date = new Date()) {
-  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: "Europe/London" }).format(date));
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-}
-
 /**
  * What needs doing today: enquiries waiting for a reply, today's viewings,
  * cars held off the website and listings short of the standard. Every figure
  * comes from stored records — there is no visitor tracking to report.
  */
 export function Overview() {
-  const { user, can } = useSession();
+  const { can } = useSession();
   const { data, isPending, error, refetch } = useQuery({ queryKey: queryKeys.overview, queryFn: () => api.overview.get() });
 
   return (
     <PageBody>
       <PageHeader
         eyebrow={formatLongDay(new Date())}
-        title={`${greeting()}, ${user.name.split(" ")[0]}`}
-        description="What needs a reply, who is coming in, and what is on the website."
+        title="Overview"
+        description="What needs a reply, what is on the road, and the state of the website."
         actions={
           <>
             {can("appointments.edit") ? (
