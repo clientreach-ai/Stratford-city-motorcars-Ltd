@@ -42,9 +42,9 @@ disagree.
 - **Versions.** Writes to an existing record send `expectedUpdatedAt` (the
   `updatedAt` the admin read). If the stored value differs, refuse with 409.
   Always return a new, strictly later `updatedAt` after a change.
-- **No public sign-up.** Accounts exist only through invitations.
+- **No public sign-up.** Accounts are created only by the owner.
 - **Nothing is sent to customers.** No endpoint here emails, texts or messages
-  a customer. Team invitations are the only outbound email.
+  a customer. The only outbound email is a legacy team invitation.
 - **Logs** must not contain customer names, contact details or messages (the
   website follows the same rule).
 
@@ -235,9 +235,9 @@ Counts and `lastActivityAt` are computed.
 | Method | Path | Capability | Body | Response |
 | --- | --- | --- | --- | --- |
 | GET | `/team` | | | `TeamMember[]` |
-| POST | `/team` | team.manage | `InviteMemberInput` | `TeamMember` (status `invited`); sends the invitation email with a single-use link to set a password; 422 if the email is already used |
-| PATCH | `/team/:id` | team.manage | `{ role? , status?: "active" \| "deactivated" }` | `TeamMember`; 422 if it would leave no active owner, or a member deactivates themselves |
-| POST | `/team/:id/invitation` | team.manage | | 204; only for `invited` members |
+| POST | `/team` | team.manage | `InviteMemberInput` (`name`, `email`, `role`, `password`) | `TeamMember`, status `active`; the member signs in with that email and password at once, no email is sent; 422 if the email is already used or the password is under 12 characters |
+| PATCH | `/team/:id` | team.manage | `{ role?, status?: "active" \| "deactivated", password? }` | `TeamMember`; a `password` replaces their login, ends their other sessions and activates an `invited` member; 422 if it would leave no active owner, or a member deactivates themselves |
+| POST | `/team/:id/invitation` | team.manage | | 204; only for `invited` members (legacy invitation flow) |
 
 Deactivating a member ends their sessions and unassigns open enquiries they
 were handling (with an activity entry). Role changes apply from their next
@@ -270,7 +270,10 @@ the website (bearer `REVALIDATE_SECRET`), called by the API when
 
 ## Implementation notes (apps/server)
 
-- **Invitations.** `POST /team` creates the member as `invited` and emails a
+- **Accounts.** `POST /team` creates an active member with the owner's chosen
+  password (hashed by Better Auth's `hashPassword`); `PATCH /team/:id` with
+  `password` sets a new one. The owner passes the details on.
+- **Invitations (legacy).** Members left `invited` can still get a
   single-use link (7 days) to `ADMIN_URL/accept-invitation?token=…`. That page
   calls two routes that need no session: `GET /invitations/:token` →
   `{ name, email }` and `POST /invitations/:token/accept` `{ password }` → 204
