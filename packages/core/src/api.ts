@@ -123,9 +123,12 @@ export interface AdminApi {
 
   team: {
     list(): Promise<TeamMember[]>;
-    /** Needs `team.manage`. Sends the invitation email (backend). */
+    /** Needs `team.manage`. Creates an active account with the given password. */
     invite(input: InviteMemberInput): Promise<TeamMember>;
-    /** Needs `team.manage`. The last active owner cannot be demoted or deactivated (422). */
+    /**
+     * Needs `team.manage`. Role, status or a new password. The last active
+     * owner cannot be demoted or deactivated (422).
+     */
     update(id: string, input: UpdateMemberInput): Promise<TeamMember>;
     /** Needs `team.manage`. */
     resendInvite(id: string): Promise<void>;
