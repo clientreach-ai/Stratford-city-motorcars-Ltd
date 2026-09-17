@@ -18,6 +18,13 @@ export const vehicle = pgTable(
     status: text("status").notNull(),
     featured: boolean("featured").notNull().default(false),
     record: jsonb("record").notNull(),
+    /**
+     * Dealership-only facts, kept outside `record` so they can never reach a
+     * public page: who the car is held for (`Reservation`) and what it sold
+     * for (`SaleRecord`), as defined in packages/core/src/stock.ts.
+     */
+    reservation: jsonb("reservation"),
+    sale: jsonb("sale"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
