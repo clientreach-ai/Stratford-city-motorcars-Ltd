@@ -111,6 +111,98 @@ export function listingProgress(record: VehicleRecord): ListingProgress {
 
 export { REQUIRED_DEALER_PHOTOS };
 
+// ---- Lifecycle -------------------------------------------------------------------
+
+/**
+ * Which status each lifecycle action may be taken from, and what to say when it
+ * cannot. The API enforces these; the admin hides the actions and the sample
+ * data applies the same rules, so all three agree.
+ *
+ * Without them a car can leave a status by the wrong door: "put back on sale"
+ * on a draft would publish it without its photographs, and on an archived car
+ * it would undo an archive that only the owner may undo.
+ */
+export const STOCK_ACTION_RULES = {
+  publish: {
+    from: ["draft"],
+    refusal: {
+      published: "This car is already on the website.",
+      sold: "This car is marked sold. Use “Put back on sale” instead.",
+      archived: "Restore this car before publishing it.",
+    },
+  },
+  unpublish: {
+    from: ["published"],
+    refusal: {
+      draft: "This car is not on the website.",
+      sold: "This car is marked sold. Use “Put back on sale” first.",
+      archived: "Restore this car before taking it off the website.",
+    },
+  },
+  undoSale: {
+    from: ["sold"],
+    refusal: {
+      draft: "This car is not marked sold.",
+      published: "This car is already for sale.",
+      archived: "Restore this car before putting it back on sale.",
+    },
+  },
+  archive: {
+    from: ["draft", "published", "sold"],
+    refusal: { archived: "This car is already archived." },
+  },
+  restore: {
+    from: ["archived"],
+    refusal: {
+      draft: "This car is not archived.",
+      published: "This car is not archived.",
+      sold: "This car is not archived.",
+    },
+  },
+  edit: {
+    from: ["draft", "published", "sold"],
+    refusal: { archived: "Restore this car before editing it." },
+  },
+} as const satisfies Record<string, { from: readonly VehicleStatus[]; refusal: Partial<Record<VehicleStatus, string>> }>;
+
+export type StockAction = keyof typeof STOCK_ACTION_RULES;
+
+/** True when the action is allowed from the car's current status. */
+export function canTakeStockAction(action: StockAction, status: VehicleStatus): boolean {
+  return (STOCK_ACTION_RULES[action].from as readonly VehicleStatus[]).includes(status);
+}
+
+/** Why the action is refused, in words for the dealership. Undefined when allowed. */
+export function stockActionRefusal(action: StockAction, status: VehicleStatus): string | undefined {
+  if (canTakeStockAction(action, status)) return undefined;
+  const refusal = STOCK_ACTION_RULES[action].refusal as Partial<Record<VehicleStatus, string>>;
+  return refusal[status] ?? "This car cannot be changed that way right now.";
+}
+
+/**
+ * Why this car cannot be deleted outright, in words for the dealership.
+ * Undefined when it is safe to delete: a draft that never reached the website
+ * and that nobody has enquired about. Everything else is archived instead, so
+ * the dealership keeps its history.
+ */
+export function discardVehicleRefusal(
+  record: Pick<VehicleRecord, "status" | "listedAt">,
+  options: { hasEnquiries: boolean },
+): string | undefined {
+  if (record.status !== "draft") return "Only a draft can be deleted. Archive this car instead.";
+  if (record.listedAt) return "This car has been on the website before. Archive it instead.";
+  if (options.hasEnquiries) return "Someone has enquired about this car. Archive it instead.";
+  return undefined;
+}
+
+/**
+ * Where a restored car lands. A car archived while sold goes back to sold, so
+ * its sale — and its sale price — survives being archived.
+ */
+export function statusAfterRestore(sold: boolean): VehicleStatus {
+  return sold ? "sold" : "draft";
+}
+
 // ---- Queries and mutations -------------------------------------------------------
 
 export const STOCK_SORTS = [

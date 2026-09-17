@@ -82,6 +82,12 @@ export interface AdminApi {
     /** A draft copy with no media, no slug history and no sale. */
     duplicate(id: string): Promise<AdminVehicle>;
     /**
+     * Deletes a draft that has never been on the website, with its photographs.
+     * Refused (422) for any car that has been listed or has enquiries against
+     * it — those are archived instead, so the history is kept.
+     */
+    discard(id: string, options: Versioned): Promise<void>;
+    /**
      * Stores a photograph for this car and returns it as a dealer image.
      * The API re-encodes, strips metadata, records real dimensions and refuses
      * undersized images. The image is appended to the record's media at once
@@ -119,6 +125,11 @@ export interface AdminApi {
     list(query: CustomerListQuery): Promise<Page<Customer>>;
     get(id: string): Promise<CustomerDetail>;
     update(id: string, input: CustomerInput, options: Versioned): Promise<Customer>;
+    /**
+     * Erases a person at their request: the customer, their enquiries and the
+     * personal details on their viewings. Needs `enquiries.delete`.
+     */
+    erase(id: string): Promise<void>;
   };
 
   team: {
