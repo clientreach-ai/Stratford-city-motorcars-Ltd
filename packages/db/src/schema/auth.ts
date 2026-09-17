@@ -7,6 +7,11 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  /** Admin role: `owner` or `staff` (packages/core/src/team.ts). */
+  role: text("role").default("staff").notNull(),
+  /** `invited` | `active` | `deactivated`. Only active members can sign in. */
+  status: text("status").default("active").notNull(),
+  lastActiveAt: timestamp("last_active_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

@@ -23,3 +23,11 @@ export function getDb(connectionString: string): Database {
 }
 
 export * as tables from "./schema";
+
+/**
+ * Query helpers from the same drizzle-orm instance as the tables. Consumers
+ * import them from here so there is never a second copy with incompatible types.
+ */
+export { and, asc, count, desc, eq, gte, inArray, lt, ne, or, sql, type SQL } from "drizzle-orm";
+
+export { emailKey, phoneKey, recordWebsiteEnquiry, type WebsiteEnquiry } from "./enquiries";
