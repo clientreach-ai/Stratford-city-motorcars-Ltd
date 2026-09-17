@@ -16,12 +16,14 @@ apps/web            Next.js 16 (App Router). Public site, media delivery,
                     enquiry handling.
 apps/admin          Next.js 16 (App Router). The dealership admin, on its own
                     origin. Sample data until the API exists.
-apps/server         Hono. Better-T-Stack template API (/api/auth). Not used by
-                    the website.
+apps/server         Hono on Bun. Staff API (stock, media uploads, enquiries,
+                    auth) and a public read/enquiry API. See "API server".
 packages/core       The shared contract: vehicle model, publishing rules,
                     formatters, and every admin type, status and permission.
+packages/domain     Runtime rules shared by the website and the API: the Zod
+                    vehicle schema, stock search/sort and the enquiry forms.
 packages/db         Drizzle schema + migrations: vehicle, lead, auth tables.
-packages/auth       Better-T-Stack template auth config, used only by apps/server.
+packages/auth       Better Auth config (staff accounts), used by apps/server.
 packages/env        Typed environment validation.
 packages/ui         Design tokens and shared primitives.
 ```
@@ -43,6 +45,11 @@ prerendered at build time from whichever source is configured.
 ## Inventory
 
 Code: `apps/web/src/lib/inventory/`.
+
+The vehicle model and publishing rules live in `packages/core`; the Zod schema
+and stock search/sort live in `packages/domain`, so the API enforces exactly
+what the website does. `types.ts`, `schema.ts` and `visibility.ts` here
+re-export them.
 
 ### Two layers
 
@@ -277,5 +284,41 @@ screen → TanStack Query → AdminApi ─┬─ mock (in-browser sample data, d
 - **Concurrency**: every write carries the `updatedAt` it read; a mismatch is
   shown as "someone else saved this", never silently overwritten.
 - **Website cache**: stock changes must revalidate the website's `inventory`
-  tag through a secret-protected route on the website (not built yet).
+  tag through `POST /api/revalidate` on the website (bearer
+  `REVALIDATE_SECRET`).
 
+## API server
+
+Code: `apps/server/src/`. Hono on Bun, port 3000. Same database as the website.
+
+```text
+app.ts                 middleware, route mounting, body limits
+lib/                   http (errors), validation, db, rate limit, email, revalidate
+middleware/auth.ts     session loading, cross-origin write guard
+modules/health         GET /health
+modules/media          R2 storage, photo processing (sharp), GET /media/* proxy
+modules/vehicles       public stock routes, repository (record + reservation + sale)
+modules/leads          public enquiry submission and delivery (DB + webhook)
+modules/admin          the admin API: session, overview, stock, enquiries,
+                       appointments, customers, team + invitations, settings
+```
+
+| Route | Access | Purpose |
+| --- | --- | --- |
+| `GET /health` | public | Liveness and database check |
+| `GET /media/:vehicleId/:file` | public | Stored photos when the bucket has no public URL |
+| `GET /api/vehicles`, `/featured`, `/makes`, `/:slug`, `/:slug/related` | public | Stock that passes the publishing rules (`{ data, meta }`); old slugs 308 |
+| `POST /api/leads` | public | Enquiry with the website form fields; 6 per 10 min per address |
+| `/api/admin/*` | admin | Everything in [the admin contract](./STRATFORD_ADMIN_CONTRACT.md), with role checks |
+| `/api/auth/*` | none | Better Auth, used by `/api/admin/session`; sign-up disabled |
+
+- **Accounts**: members have a role (`owner`, `staff`) and a status (`invited`,
+  `active`, `deactivated`) on `user`. The first owner comes from
+  `pnpm --filter server staff:create`; everyone else is invited from the Team
+  page and sets a password at the admin's `/accept-invitation`.
+- **Security**: cookie sessions (`SameSite=None; Secure` in production),
+  capability checks on every write, writes from origins outside `CORS_ORIGIN`
+  refused, 1 MB body limit (26 MB for photo uploads), secure headers, sign-in
+  throttled, sale prices removed for roles without `stock.salePrice`.
+- **Cache**: after a stock change the API calls the website's
+  `POST /api/revalidate` (bearer `REVALIDATE_SECRET`) when configured.
