@@ -2,7 +2,8 @@
 /**
  * Inventory publishing regression check.
  *
- * Exercises the rules in src/lib/inventory/visibility.ts against the real seed
+ * Exercises the rules in packages/core/src/visibility.ts (shared with the admin
+ * and the API server) against the real seed
  * records in data.ts and fixtures derived from them:
  *
  *  - the old £12,000 / £16,000 records stay hidden even if published and
@@ -13,7 +14,7 @@
  *  - drafts and archived cars are never public; sold cars keep their page
  *  - a publishable car must have its core details
  *  - the homepage features hand-picked cars only, with no fallback
- *  - repository.ts routes everything public through these rules
+ *  - repository.ts and the shared search route everything public through these rules
  *
  *   node scripts/check-inventory.mjs
  *
@@ -26,6 +27,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const src = (path) => new URL(`../src/lib/inventory/${path}`, import.meta.url);
+const domain = (path) => new URL(`../../../packages/domain/src/inventory/${path}`, import.meta.url);
 
 const { seedVehicles } = await import(src("data.ts"));
 const {
@@ -285,13 +287,20 @@ check("sold cars are not featured, and the limit is respected", () => {
 
 // ---- Wiring ----------------------------------------------------------------
 
-check("repository.ts routes everything public through visibility.ts", () => {
-  const source = readFileSync(fileURLToPath(src("repository.ts")), "utf8")
+const withoutComments = (url) =>
+  readFileSync(fileURLToPath(url), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/^\s*\/\/.*$/gm, "");
+
+check("repository.ts routes everything public through visibility.ts", () => {
+  const source = withoutComments(src("repository.ts"));
+  const search = withoutComments(domain("search.ts"));
   assert.match(source, /toPublicVehicle\(record/, "loadPublicVehicles() must apply toPublicVehicle");
-  assert.match(source, /getFeaturedVehicles[\s\S]*?selectFeatured\(/, "getFeaturedVehicles() must use selectFeatured");
-  assert.doesNotMatch(source, /!\s*[\w.]*\.featured\b/, "repository.ts must not select non-featured cars");
+  assert.match(source, /getFeaturedVehicles[\s\S]*?featuredVehicles\(/, "getFeaturedVehicles() must use the shared featuredVehicles");
+  assert.match(search, /function featuredVehicles[\s\S]*?selectFeatured\(/, "featuredVehicles() must use selectFeatured");
+  for (const [name, text] of [["repository.ts", source], ["search.ts", search]]) {
+    assert.doesNotMatch(text, /!\s*[\w.]*\.featured\b/, `${name} must not select non-featured cars`);
+  }
   assert.doesNotMatch(source, /store\.list\(\)[\s\S]*?\.map\(\s*\(?\w+\)?\s*=>\s*\w+\s*\)/, "records must not bypass the public view");
 });
 
