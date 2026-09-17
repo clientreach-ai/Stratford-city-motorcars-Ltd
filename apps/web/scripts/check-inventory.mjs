@@ -201,6 +201,15 @@ check("public photographs always carry alt text", () => {
   );
 });
 
+check("small photographs are flagged, not blocked", () => {
+  const record = publishedWithPhotos("mercedes-benz-sl63-amg-2016");
+  const small = { ...photo("interior"), width: 675, height: 1200 };
+  const withSmall = { ...record, media: [photo("exterior"), small] };
+  assert.equal(isPubliclyVisible(withSmall), true);
+  assert.ok(listingRecommendations(withSmall).some((tip) => tip.message.includes("smaller than 1200 × 800")));
+  assert.ok(!listingRecommendations(record).some((tip) => tip.message.includes("smaller than")));
+});
+
 // ---- Lifecycle and required details ------------------------------------------
 
 check("drafts and archived cars are never public, however complete", () => {

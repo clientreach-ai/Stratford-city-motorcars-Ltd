@@ -145,7 +145,9 @@ cars that fail them; `needsReply` is new enquiries oldest first (max 6);
   "Website cache" below).
 
 **Uploading** (`POST /vehicles/:id/media`): accept JPEG, PNG, WebP or AVIF up
-to 25 MB; refuse images smaller than 1200 × 800 (422 on `file`); re-encode,
+to 25 MB; refuse images smaller than 400 × 300 in either orientation
+(`MINIMUM_PHOTO_SIZE`, 422 on `file`) and accept smaller-than-recommended ones
+(the checklist flags anything under 1200 × 800); re-encode,
 strip metadata (GPS), store through `MediaStorage` under a generated key, and
 record real width and height. **Append the image to the car's `media` without
 changing `updatedAt`** — an editor may be open, and a photo taken on a phone

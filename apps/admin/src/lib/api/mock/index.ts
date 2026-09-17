@@ -14,6 +14,8 @@ import {
   listingProgress,
   publicationIssues,
   listingRecommendations,
+  meetsPhotoSize,
+  MINIMUM_PHOTO_SIZE,
   type AdminApi,
   type AdminVehicle,
   type Appointment,
@@ -300,9 +302,6 @@ function toCustomer(db: MockDb, customer: MockDb["customers"][number]): Customer
 
 // ---- Photographs ---------------------------------------------------------------------------
 
-const MIN_WIDTH = 1200;
-const MIN_HEIGHT = 800;
-
 /**
  * Stands in for the API's image processing: checks the real size, then keeps
  * a reduced copy in the browser so the sample stays within storage limits.
@@ -317,12 +316,10 @@ async function processImage(file: File, onProgress?: (fraction: number) => void)
       element.src = url;
     });
     const { naturalWidth: width, naturalHeight: height } = image;
-    const landscape = width >= height;
-    const shortSide = landscape ? height : width;
-    const longSide = landscape ? width : height;
-    if (longSide < MIN_WIDTH || shortSide < MIN_HEIGHT) {
+    const longSide = Math.max(width, height);
+    if (!meetsPhotoSize({ width, height }, MINIMUM_PHOTO_SIZE)) {
       throw new ValidationError(
-        { file: `“${file.name}” is ${width}×${height}. Photographs need to be at least ${MIN_WIDTH}×${MIN_HEIGHT} to look sharp on the website.` },
+        { file: `“${file.name}” is ${width}×${height}. Photographs need to be at least ${MINIMUM_PHOTO_SIZE.long}×${MINIMUM_PHOTO_SIZE.short}.` },
         "This photograph is too small.",
       );
     }

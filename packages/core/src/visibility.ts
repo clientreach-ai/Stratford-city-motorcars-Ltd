@@ -188,6 +188,26 @@ export function isPubliclyVisible(record: VehicleRecord): boolean {
   return publicBlockers(record).length === 0;
 }
 
+/**
+ * Photograph sizes, in pixels on the long and short side (either orientation).
+ *
+ *  - `MINIMUM_PHOTO_SIZE` is refused on upload: thumbnails and icons.
+ *  - `RECOMMENDED_PHOTO_SIZE` stays sharp in the full-width gallery. Smaller
+ *    photographs are accepted and shown at their own size (never enlarged by
+ *    the image optimiser); the listing checklist suggests replacing them.
+ */
+export const MINIMUM_PHOTO_SIZE = { long: 400, short: 300 } as const;
+export const RECOMMENDED_PHOTO_SIZE = { long: 1200, short: 800 } as const;
+
+export function meetsPhotoSize(
+  image: { width: number; height: number },
+  size: { long: number; short: number },
+): boolean {
+  return Math.max(image.width, image.height) >= size.long && Math.min(image.width, image.height) >= size.short;
+}
+
+const meetsRecommendedPhotoSize = (image: VehicleImage) => meetsPhotoSize(image, RECOMMENDED_PHOTO_SIZE);
+
 export interface ListingRecommendation {
   section: PublicationIssue["section"] | "history";
   message: string;
@@ -212,6 +232,13 @@ export function listingRecommendations(record: VehicleRecord): ListingRecommenda
     tips.push({
       section: "media",
       message: `${missingAlt} photograph${missingAlt === 1 ? " has" : "s have"} no description. Describe the car and the angle for screen readers and Google Images.`,
+    });
+  }
+  const lowResolution = photos.filter((image) => !meetsRecommendedPhotoSize(image)).length;
+  if (lowResolution) {
+    tips.push({
+      section: "media",
+      message: `${lowResolution} photograph${lowResolution === 1 ? " is" : "s are"} smaller than ${RECOMMENDED_PHOTO_SIZE.long} × ${RECOMMENDED_PHOTO_SIZE.short} and may look soft on large screens.`,
     });
   }
   if (!photos.some((image) => image.category === "detail")) {
