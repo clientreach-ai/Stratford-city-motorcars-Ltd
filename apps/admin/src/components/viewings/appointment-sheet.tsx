@@ -273,7 +273,7 @@ export function AppointmentSheet({
               <Select {...c} value={form.status} onChange={(event) => set("status", event.target.value as AppointmentInput["status"])}>
                 {APPOINTMENT_STATUSES.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label} — {option.note.toLowerCase()}
+                    {option.label}
                   </option>
                 ))}
               </Select>

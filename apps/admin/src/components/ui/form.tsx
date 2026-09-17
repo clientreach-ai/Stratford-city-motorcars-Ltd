@@ -193,20 +193,29 @@ export function Checkbox({
   const id = useId();
   return (
     <div className={cn("flex items-start gap-3", className)}>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-        aria-describedby={description ? `${id}-d` : undefined}
-        className={cn(
-          "mt-0.5 size-4.5 shrink-0 cursor-pointer appearance-none rounded-[1px] border border-input bg-surface-raised transition-colors",
-          "checked:border-ink-950 checked:bg-ink-950 checked:bg-[length:11px] checked:bg-center checked:bg-no-repeat",
-          "checked:[background-image:url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23faf8f3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.5 3.5L13 5'/%3E%3C/svg%3E\")]",
-          "disabled:cursor-not-allowed disabled:opacity-45",
-        )}
-      />
+      <span className="relative mt-0.5 inline-flex size-4.5 shrink-0">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.checked)}
+          aria-describedby={description ? `${id}-d` : undefined}
+          className="peer size-4.5 cursor-pointer appearance-none rounded-[1px] border border-input bg-surface-raised transition-colors checked:border-ink-950 checked:bg-ink-950 hover:border-ink-500 disabled:cursor-not-allowed disabled:opacity-45"
+        />
+        <svg
+          aria-hidden
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="pointer-events-none absolute inset-0 m-auto size-3 text-bone opacity-0 transition-opacity peer-checked:opacity-100"
+        >
+          <path d="M3 8.5l3.5 3.5L13 5" />
+        </svg>
+      </span>
       <div className="min-w-0">
         <label htmlFor={id} className="cursor-pointer text-sm text-foreground">
           {label}
