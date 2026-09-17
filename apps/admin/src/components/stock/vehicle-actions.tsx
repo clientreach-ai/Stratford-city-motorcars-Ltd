@@ -9,7 +9,7 @@ import {
   type SaveVehicleResult,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 
@@ -27,6 +27,11 @@ export function vehicleName(vehicle: Pick<AdminVehicle, "year" | "title">) {
   return [vehicle.year, vehicle.title.trim()].filter(Boolean).join(" ") || "Untitled car";
 }
 
+/** Only a draft that has never been on the website can be deleted; the rest are archived. */
+export function canDeleteDraft(vehicle: Pick<AdminVehicle, "status" | "listedAt">) {
+  return vehicle.status === "draft" && !vehicle.listedAt;
+}
+
 type Run = (vehicle: AdminVehicle) => Promise<SaveVehicleResult>;
 
 /**
@@ -36,7 +41,7 @@ type Run = (vehicle: AdminVehicle) => Promise<SaveVehicleResult>;
  *
  * `render` must be placed in the tree for the dialogs to appear.
  */
-export function useVehicleActions(options: { onChange?: (result: SaveVehicleResult) => void } = {}) {
+export function useVehicleActions(options: { onChange?: (result: SaveVehicleResult) => void; onDiscard?: (vehicle: AdminVehicle) => void } = {}) {
   const { can } = useSession();
   const confirm = useConfirm();
   const router = useRouter();
@@ -68,8 +73,17 @@ export function useVehicleActions(options: { onChange?: (result: SaveVehicleResu
 
   const version = (vehicle: AdminVehicle) => ({ expectedUpdatedAt: vehicle.updatedAt });
 
+  // Deleting returns nothing to show, so it has its own mutation with the
+  // standard toasts — the API's refusal is the message on a failure.
+  const discarding = useAdminMutation((vehicle: AdminVehicle) => api.stock.discard(vehicle.id, version(vehicle)), {
+    success: "Draft deleted",
+    successDetail: "The draft and its photographs are gone.",
+    failure: "The draft was not deleted",
+    onSuccess: (_result, vehicle) => options.onDiscard?.(vehicle),
+  });
+
   const actions = {
-    busy: mutation.isPending,
+    busy: mutation.isPending || discarding.isPending,
 
     publish: (vehicle: AdminVehicle) => perform(vehicle, (v) => api.stock.publish(v.id, version(v)), "Published — for sale on the website"),
 
@@ -136,6 +150,28 @@ export function useVehicleActions(options: { onChange?: (result: SaveVehicleResu
 
     restore: (vehicle: AdminVehicle) => perform(vehicle, (v) => api.stock.restore(v.id, version(v)), "Restored as a draft"),
 
+    discard: async (vehicle: AdminVehicle) => {
+      const ok = await confirm({
+        title: "Delete this draft?",
+        body: (
+          <>
+            <strong className="font-medium">{vehicleName(vehicle)}</strong> and its photographs are removed for good — this cannot be undone. Archive
+            it instead to keep the record.
+          </>
+        ),
+        confirmLabel: "Delete draft",
+        tone: "danger",
+      });
+      if (!ok) return false;
+      try {
+        await discarding.mutateAsync(vehicle);
+        return true;
+      } catch {
+        // The toast carries the API's reason; nothing was deleted.
+        return false;
+      }
+    },
+
     duplicate: async (vehicle: AdminVehicle) => {
       try {
         const copy = await api.stock.duplicate(vehicle.id);
@@ -179,6 +215,8 @@ export function useVehicleActions(options: { onChange?: (result: SaveVehicleResu
 }
 
 function BlockedDialog({ vehicle, issues, onClose }: { vehicle: AdminVehicle; issues: PublicationIssue[]; onClose: () => void }) {
+  // No point offering the car's page to someone already on it.
+  const onTheCar = usePathname() === routes.vehicle(vehicle.id);
   return (
     <Dialog
       open
@@ -186,15 +224,21 @@ function BlockedDialog({ vehicle, issues, onClose }: { vehicle: AdminVehicle; is
       title="Not ready for the website"
       description={`${vehicleName(vehicle)} needs these before it can be published. Nothing was changed.`}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
+        onTheCar ? (
+          <Button variant="primary" onClick={onClose} data-autofocus>
             Close
           </Button>
-          <ButtonLink href={routes.vehicle(vehicle.id)} variant="primary">
-            Open the car
-            <ArrowRight aria-hidden />
-          </ButtonLink>
-        </>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Close
+            </Button>
+            <ButtonLink href={routes.vehicle(vehicle.id)} variant="primary">
+              Open the car
+              <ArrowRight aria-hidden />
+            </ButtonLink>
+          </>
+        )
       }
     >
       <ul className="space-y-2">

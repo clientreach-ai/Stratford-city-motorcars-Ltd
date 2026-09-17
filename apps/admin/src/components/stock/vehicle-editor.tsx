@@ -24,6 +24,7 @@ import {
   type VehicleRecord,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDown,
@@ -62,7 +63,7 @@ import { useSession } from "@/lib/session";
 
 import { MediaManager } from "./media-manager";
 import { PublishingPanel, SECTIONS, type SectionId } from "./publishing-panel";
-import { useVehicleActions, vehicleName } from "./vehicle-actions";
+import { canDeleteDraft, useVehicleActions, vehicleName } from "./vehicle-actions";
 
 /** The editable part of an AdminVehicle. */
 function toRecord(vehicle: AdminVehicle): VehicleRecord {
@@ -89,14 +90,37 @@ const FIELD_SECTION: Record<string, SectionId> = {
   seoDescription: "visibility",
 };
 
+/** A test date as the API stores it. */
+const MOT_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * What to bring into view for a field the API rejected: its section, or — for
+ * the MOT list, which the API reports as one field — the row at fault.
+ */
+function errorAnchor(field: string, record: VehicleRecord): string | undefined {
+  if (field === "motHistory") {
+    const index = record.motHistory.findIndex((row) => !MOT_DATE.test(row.date));
+    return index < 0 ? "history" : `mot-test-${index}`;
+  }
+  return FIELD_SECTION[field] ?? (field.startsWith("media") ? "media" : undefined);
+}
+
 export function VehicleEditor({ id }: { id: string }) {
   const query = useQuery({ queryKey: queryKeys.vehicle(id), queryFn: () => api.stock.get(id) });
 
-  if (query.error) {
+  // Only when there is nothing to show: a background refresh that fails — or a
+  // car deleted from under the editor — must not throw away work in progress.
+  if (query.error && !query.data) {
+    // A car that is not there needs one heading and a way back, not a stack of them.
+    const missing = query.error instanceof NotFoundError;
     return (
       <PageBody>
-        <PageHeader back={{ label: "Cars", href: routes.stock }} title={query.error instanceof NotFoundError ? "Car not found" : "This car could not be loaded"} />
-        <ErrorState error={query.error} onRetry={query.error instanceof NotFoundError ? undefined : () => void query.refetch()} />
+        <PageHeader
+          back={{ label: "Cars", href: routes.stock }}
+          title={missing ? "Car not found" : "This car could not be loaded"}
+          description={missing ? query.error.message : undefined}
+        />
+        {missing ? null : <ErrorState error={query.error} onRetry={() => void query.refetch()} />}
       </PageBody>
     );
   }
@@ -113,6 +137,7 @@ export function VehicleEditor({ id }: { id: string }) {
 
 function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   const client = useQueryClient();
+  const router = useRouter();
   const { can } = useSession();
   const canEdit = can("stock.edit");
 
@@ -135,7 +160,11 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
     client.setQueryData(queryKeys.vehicle(next.id), next);
   };
 
-  const actions = useVehicleActions({ onChange: (result) => accept(result.vehicle) });
+  const actions = useVehicleActions({
+    onChange: (result) => accept(result.vehicle),
+    // The car is gone: leave the editor for the list, which has just refreshed.
+    onDiscard: () => router.replace(routes.stock),
+  });
 
   // A newer version fetched in the background (a change made elsewhere) is
   // taken up when there are no unsaved edits; otherwise the version check
@@ -175,9 +204,9 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
       } else if (error instanceof ValidationError) {
         setFieldErrors(error.fields);
         const first = Object.keys(error.fields)[0];
-        const section = first ? FIELD_SECTION[first] ?? (first.startsWith("media") ? "media" : undefined) : undefined;
+        const anchor = first ? errorAnchor(first, draft) : undefined;
         notify.error("Not saved", Object.values(error.fields)[0] ?? error.message);
-        if (section) document.getElementById(section)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
         notify.error("Not saved", errorMessage(error));
       }
@@ -215,6 +244,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
     { label: "Duplicate", icon: <Copy />, onSelect: () => void actions.duplicate(vehicle), hidden: !canEdit },
     { label: "Archive", icon: <Archive />, tone: "danger", onSelect: () => void actions.archive(vehicle), hidden: vehicle.status === "archived" || !can("stock.archive") },
     { label: "Restore as draft", icon: <RotateCcw />, onSelect: () => void actions.restore(vehicle), hidden: vehicle.status !== "archived" || !can("stock.archive") },
+    { label: "Delete this draft", icon: <Trash2 />, tone: "danger", onSelect: () => void actions.discard(vehicle), hidden: !canDeleteDraft(vehicle) || !canEdit },
   ];
 
   const primary =
@@ -474,7 +504,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                 ) : null}
               </div>
 
-              <MotHistory rows={draft.motHistory} disabled={!canEdit} onChange={(rows) => set("motHistory", rows)} />
+              <MotHistory rows={draft.motHistory} disabled={!canEdit} error={fieldErrors.motHistory} onChange={(rows) => set("motHistory", rows)} />
             </div>
           </Section>
 
@@ -638,8 +668,10 @@ function TriState({
   );
 }
 
-function MotHistory({ rows, onChange, disabled }: { rows: MotTestRecord[]; onChange: (rows: MotTestRecord[]) => void; disabled?: boolean }) {
+function MotHistory({ rows, onChange, disabled, error }: { rows: MotTestRecord[]; onChange: (rows: MotTestRecord[]) => void; disabled?: boolean; error?: string }) {
   const update = (index: number, patch: Partial<MotTestRecord>) => onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  // The API reports the whole list as one field, so the rows it means are the ones without a proper date.
+  const atFault = (row: MotTestRecord) => Boolean(error) && !MOT_DATE.test(row.date);
   return (
     <div>
       <div className="flex items-center justify-between gap-4">
@@ -656,26 +688,45 @@ function MotHistory({ rows, onChange, disabled }: { rows: MotTestRecord[]; onCha
       </div>
       {rows.length ? (
         <ul className="mt-3 divide-y divide-border border border-border">
-          {rows.map((row, index) => (
-            <li key={index} className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-[10rem_8rem_9rem_minmax(0,1fr)_auto] sm:items-center">
-              <TextInput type="date" aria-label={`Test ${index + 1} date`} value={row.date} disabled={disabled} onChange={(e) => update(index, { date: e.target.value })} />
-              <Select aria-label={`Test ${index + 1} result`} value={row.result} disabled={disabled} onChange={(e) => update(index, { result: e.target.value as MotTestRecord["result"] })}>
-                <option value="pass">Pass</option>
-                <option value="fail">Fail</option>
-              </Select>
-              <NumberInput aria-label={`Test ${index + 1} mileage`} suffix="miles" value={row.mileage ?? null} disabled={disabled} onValueChange={(v) => update(index, { mileage: v ?? undefined })} />
-              <TextInput aria-label={`Test ${index + 1} advisories`} placeholder="Advisories" value={row.notes ?? ""} disabled={disabled} onChange={(e) => update(index, { notes: e.target.value || undefined })} className="col-span-2 sm:col-span-1" />
-              {!disabled ? (
-                <IconButton label={`Remove test ${index + 1}`} size="sm" className="col-span-2 justify-self-end hover:text-destructive sm:col-span-1" onClick={() => onChange(rows.filter((_, i) => i !== index))}>
-                  <Trash2 aria-hidden />
-                </IconButton>
-              ) : null}
-            </li>
-          ))}
+          {rows.map((row, index) => {
+            const flagged = atFault(row);
+            return (
+              <li key={index} id={`mot-test-${index}`} className={cn("scroll-mt-20 p-3", flagged && "bg-destructive/6")}>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-[10rem_8rem_9rem_minmax(0,1fr)_auto] sm:items-center">
+                  <TextInput
+                    type="date"
+                    aria-label={`Test ${index + 1} date`}
+                    aria-invalid={flagged || undefined}
+                    aria-describedby={flagged ? `mot-test-${index}-error` : undefined}
+                    value={row.date}
+                    disabled={disabled}
+                    onChange={(e) => update(index, { date: e.target.value })}
+                  />
+                  <Select aria-label={`Test ${index + 1} result`} value={row.result} disabled={disabled} onChange={(e) => update(index, { result: e.target.value as MotTestRecord["result"] })}>
+                    <option value="pass">Pass</option>
+                    <option value="fail">Fail</option>
+                  </Select>
+                  <NumberInput aria-label={`Test ${index + 1} mileage`} suffix="miles" value={row.mileage ?? null} disabled={disabled} onValueChange={(v) => update(index, { mileage: v ?? undefined })} />
+                  <TextInput aria-label={`Test ${index + 1} advisories`} placeholder="Advisories" value={row.notes ?? ""} disabled={disabled} onChange={(e) => update(index, { notes: e.target.value || undefined })} className="col-span-2 sm:col-span-1" />
+                  {!disabled ? (
+                    <IconButton label={`Remove test ${index + 1}`} size="sm" className="col-span-2 justify-self-end hover:text-destructive sm:col-span-1" onClick={() => onChange(rows.filter((_, i) => i !== index))}>
+                      <Trash2 aria-hidden />
+                    </IconButton>
+                  ) : null}
+                </div>
+                {flagged ? (
+                  <p id={`mot-test-${index}-error`} className="mt-1.5 text-[0.8125rem] leading-snug text-destructive">
+                    {error}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="mt-3 text-[0.8125rem] text-ink-500">No MOT tests recorded.</p>
       )}
+      {error && !rows.some(atFault) ? <p className="mt-1.5 text-[0.8125rem] leading-snug text-destructive">{error}</p> : null}
     </div>
   );
 }
