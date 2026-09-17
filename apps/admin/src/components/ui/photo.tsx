@@ -37,7 +37,7 @@ export function Photo({
 
   if (!src) {
     return (
-      <span role="img" aria-label="No photograph yet" className={cn("relative flex items-center justify-center overflow-hidden bg-ink-100 text-ink-400", className)}>
+      <span role="img" aria-label="No photograph yet" className={cn("relative flex items-center justify-center overflow-hidden bg-ink-100 text-ink-500", className)}>
         <Car className="size-[38%] max-h-8 max-w-8" strokeWidth={1.25} aria-hidden />
       </span>
     );
@@ -57,7 +57,7 @@ export function Photo({
 
   if (failed) {
     return (
-      <span role="img" aria-label={`${alt} (preview unavailable)`} className={cn("flex items-center justify-center bg-ink-100 text-ink-400", className)}>
+      <span role="img" aria-label={`${alt} (preview unavailable)`} className={cn("flex items-center justify-center bg-ink-100 text-ink-500", className)}>
         <ImageOff className="size-5" strokeWidth={1.25} aria-hidden />
       </span>
     );

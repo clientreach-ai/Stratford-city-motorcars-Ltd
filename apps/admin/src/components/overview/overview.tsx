@@ -113,7 +113,7 @@ function Figures({ data }: { data: OverviewData | undefined }) {
   }
   const { stock, enquiries, appointments } = data;
   return (
-    <dl className="grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-3 xl:grid-cols-6">
       <Metric
         label="New enquiries"
         value={enquiries.byStatus.new}
@@ -132,7 +132,7 @@ function Figures({ data }: { data: OverviewData | undefined }) {
       <Metric label="Drafts" value={stock.drafts} hint={stock.readyToPublish ? `${stock.readyToPublish} ready to publish` : "None ready to publish"} href={withQuery(routes.stock, { status: "draft" })} />
       <Metric label="Stock for sale" value={stock.stockValue ? formatPrice(stock.stockValue) : "—"} hint={stock.poaCount ? `Plus ${stock.poaCount} POA` : "Cash prices, cars on the website"} />
       <Metric label="Sold · 30 days" value={stock.soldRecently} hint="Pages stay up, marked sold" href={withQuery(routes.stock, { status: "sold" })} />
-    </dl>
+    </div>
   );
 }
 

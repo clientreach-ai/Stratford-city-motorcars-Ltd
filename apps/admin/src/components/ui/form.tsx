@@ -104,7 +104,7 @@ export function Field({
 
 export const controlClass =
   "w-full rounded-sm border border-input bg-surface-raised px-3 font-sans text-[0.9375rem] text-foreground sm:text-sm " +
-  "placeholder:text-ink-400 transition-colors duration-150 hover:border-ink-400 " +
+  "placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-400 " +
   "focus:border-ink-900 focus:outline-none focus-visible:outline-none focus:ring-1 focus:ring-ink-900 " +
   "aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive " +
   "disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500";

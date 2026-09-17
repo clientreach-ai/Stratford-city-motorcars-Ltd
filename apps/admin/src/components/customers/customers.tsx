@@ -311,7 +311,7 @@ function Profile({ detail }: { detail: CustomerDetail }) {
                 />
                 <div className="mt-4 border-t border-border pt-4">
                   <p className="admin-label">Notes</p>
-                  <p className="mt-1.5 text-sm whitespace-pre-line text-ink-800">{customer.notes || <span className="text-ink-400">No notes.</span>}</p>
+                  <p className="mt-1.5 text-sm whitespace-pre-line text-ink-800">{customer.notes || <span className="text-ink-500">No notes.</span>}</p>
                 </div>
               </>
             )}

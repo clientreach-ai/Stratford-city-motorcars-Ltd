@@ -154,7 +154,7 @@ export function PublishingPanel({
             {SECTIONS.map((section, index) => (
               <li key={section.id}>
                 <button type="button" onClick={() => jump(section.id)} className="flex h-9 w-full items-center gap-3 px-2 text-left text-[0.8125rem] text-ink-700 transition-colors hover:bg-ink-50 hover:text-foreground">
-                  <span data-numeric className="w-5 text-xs text-ink-400">
+                  <span data-numeric className="w-5 text-xs text-ink-500">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <span className="flex-1">{section.label}</span>

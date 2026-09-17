@@ -133,7 +133,7 @@ export function Team() {
               columns={columns}
               rowKey={(member) => member.id}
               sortable={false}
-              rowClassName={(member) => (member.status === "deactivated" ? "opacity-60" : "")}
+              rowClassName={(member) => (member.status === "deactivated" ? "bg-surface/60" : "")}
               actions={manage ? (member) => <ActionMenu label={`Actions for ${member.name}`} actions={menu(member)} /> : undefined}
               renderCard={(member) => (
                 <div className="min-w-0">
