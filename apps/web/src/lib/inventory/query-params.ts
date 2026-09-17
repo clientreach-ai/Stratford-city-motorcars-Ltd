@@ -1,4 +1,11 @@
-import { DEFAULT_SORT, SORT_OPTIONS, type SortOption, type VehicleQuery } from "./types";
+import {
+  DEFAULT_SORT,
+  SORT_OPTIONS,
+  type FacetValue,
+  type SortOption,
+  type VehicleFacets,
+  type VehicleQuery,
+} from "./types";
 
 /** What Next hands a page as `searchParams`. */
 export type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -38,6 +45,21 @@ export function parseSearchParams(params: RawSearchParams): VehicleQuery {
   };
 }
 
+/**
+ * Cars per page on the stock listing — four rows of the three-column grid on a
+ * desktop, and a page a phone can scroll without losing its place.
+ */
+export const PAGE_SIZE = 12;
+
+/**
+ * The page a customer asked for. Anything that is not a whole number above one
+ * — a stale link, a hand-edited URL — is the first page rather than an error.
+ */
+export function parsePage(params: RawSearchParams): number {
+  const raw = Number(toText(params.page));
+  return Number.isInteger(raw) && raw > 1 ? raw : 1;
+}
+
 /** Counts the filters a customer has actually applied — sort is not a filter. */
 export function countActiveFilters(query: VehicleQuery): number {
   return (query.make?.length ?? 0) + (query.model?.length ?? 0);
@@ -58,10 +80,31 @@ export function toSearchString(query: VehicleQuery): string {
   return search ? `?${search}` : "";
 }
 
-/** Human-readable summary of applied filters, used in the results heading. */
-export function describeQuery(query: VehicleQuery): string | null {
+/** The same filters and sort on another page. Page one carries no `page`. */
+export function toPageSearchString(query: VehicleQuery, page: number): string {
+  const search = toSearchString(query);
+  if (page <= 1) return search;
+  return `${search ? `${search}&` : "?"}page=${page}`;
+}
+
+/**
+ * Human-readable summary of applied filters, used in the results heading.
+ *
+ * Only values we actually hold are named, and they are named as our own stock
+ * spells them: a filter typed into the address bar would otherwise put whatever
+ * it carried straight into the page's heading.
+ */
+export function describeQuery(query: VehicleQuery, facets: VehicleFacets): string | null {
+  const known = (selected: string[] | undefined, options: FacetValue[]): string[] =>
+    (selected ?? []).flatMap((value) => {
+      const match = options.find((option) => option.value.toLowerCase() === value.toLowerCase());
+      return match ? [match.label] : [];
+    });
+
   const parts: string[] = [];
-  if (query.make?.length) parts.push(query.make.join(", "));
-  if (query.model?.length) parts.push(query.model.join(", "));
+  const makes = known(query.make, facets.make);
+  const models = known(query.model, facets.model);
+  if (makes.length) parts.push(makes.join(", "));
+  if (models.length) parts.push(models.join(", "));
   return parts.length ? parts.join(" · ") : null;
 }

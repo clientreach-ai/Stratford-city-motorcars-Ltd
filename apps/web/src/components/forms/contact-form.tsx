@@ -14,17 +14,21 @@ import { submitContact } from "@/lib/forms/actions";
 import { ENQUIRY_TYPES, type FormState } from "@/lib/forms/options";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
-import { useFormFeedbackFocus } from "./use-form-feedback";
+import { useFormFeedbackFocus, useSubmissionKey } from "./use-form-feedback";
 
 const initial: FormState = { status: "idle" };
 
 export function ContactForm() {
   const [state, action] = useActionState(submitContact, initial);
-  const formRef = useFormFeedbackFocus(state);
+  const { formRef, successRef } = useFormFeedbackFocus(state);
+  const values =
+    state.status === "invalid" || state.status === "unavailable" ? state.values : {};
+  const selectKey = useSubmissionKey(state);
 
   if (state.status === "success") {
     return (
       <SuccessPanel
+        ref={successRef}
         reference={state.reference}
         heading="Message received"
         detail="Thanks for getting in touch — we'll come back to you personally as soon as we can."
@@ -33,8 +37,6 @@ export function ContactForm() {
   }
 
   const errors = state.status === "invalid" ? state.fieldErrors : undefined;
-  const values =
-    state.status === "invalid" || state.status === "unavailable" ? state.values : {};
 
   return (
     <form ref={formRef} action={action} className="relative space-y-5" noValidate>
@@ -83,6 +85,7 @@ export function ContactForm() {
         error={errors?.enquiryType}
       >
         <Select
+          key={selectKey}
           {...fieldProps("enquiryType", errors?.enquiryType)}
           defaultValue={values.enquiryType ?? ENQUIRY_TYPES[0]}
           required

@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { useSearchParams } from "next/navigation";
 
 import { ExternalButtonLink } from "@/components/ui/button";
 import { Checkbox, Field, fieldProps, Honeypot, Input, Select, Textarea } from "@/components/ui/field";
@@ -18,7 +17,7 @@ import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
-import { humaniseSlug, useFormFeedbackFocus, validVehicleSlug } from "./use-form-feedback";
+import { useFormFeedbackFocus, useSubmissionKey } from "./use-form-feedback";
 
 const initial: FormState = { status: "idle" };
 
@@ -28,13 +27,23 @@ const initial: FormState = { status: "idle" };
  * number of keys, condition, outstanding finance, and photos (sent on WhatsApp,
  * where the business already handles them, rather than uploaded here).
  */
-export function PartExchangeForm({ vehicleSlug }: { vehicleSlug?: string }) {
+export function PartExchangeForm({
+  vehicleSlug,
+  vehicleName,
+}: {
+  /** Set only when `?vehicle=` named a car we actually hold. */
+  vehicleSlug?: string;
+  /** That car as we list it, e.g. "2016 Mercedes-Benz SL63 AMG". */
+  vehicleName?: string;
+}) {
   const [state, action] = useActionState(submitPartExchange, initial);
-  const formRef = useFormFeedbackFocus(state);
+  const { formRef, successRef } = useFormFeedbackFocus(state);
+  const selectKey = useSubmissionKey(state);
 
   if (state.status === "success") {
     return (
       <SuccessPanel
+        ref={successRef}
         reference={state.reference}
         heading="Valuation request received"
         detail="We'll usually come back within 24 hours on weekdays with an initial figure. Send a few photos on WhatsApp to help us, and bring the car in so we can confirm it in person."
@@ -100,10 +109,10 @@ export function PartExchangeForm({ vehicleSlug }: { vehicleSlug?: string }) {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <ChoiceField label="Service history" name="serviceHistory" options={SERVICE_HISTORY_OPTIONS} values={values} errors={errors} />
-          <ChoiceField label="MOT" name="motStatus" options={MOT_STATUSES} values={values} errors={errors} />
-          <ChoiceField label="Number of keys" name="keys" options={KEY_COUNTS} values={values} errors={errors} />
-          <ChoiceField label="Overall condition" name="condition" options={VEHICLE_CONDITIONS} values={values} errors={errors} />
+          <ChoiceField label="Service history" name="serviceHistory" options={SERVICE_HISTORY_OPTIONS} values={values} errors={errors} selectKey={selectKey} />
+          <ChoiceField label="MOT" name="motStatus" options={MOT_STATUSES} values={values} errors={errors} selectKey={selectKey} />
+          <ChoiceField label="Number of keys" name="keys" options={KEY_COUNTS} values={values} errors={errors} selectKey={selectKey} />
+          <ChoiceField label="Overall condition" name="condition" options={VEHICLE_CONDITIONS} values={values} errors={errors} selectKey={selectKey} />
         </div>
 
         <Field
@@ -178,7 +187,7 @@ export function PartExchangeForm({ vehicleSlug }: { vehicleSlug?: string }) {
           <Input
             {...fieldProps("interestedIn", errors?.interestedIn)}
             placeholder="Optional"
-            defaultValue={values.interestedIn ?? (slug ? humaniseSlug(slug) : undefined)}
+            defaultValue={values.interestedIn ?? vehicleName}
           />
         </Field>
       </fieldset>
@@ -195,12 +204,6 @@ export function PartExchangeForm({ vehicleSlug }: { vehicleSlug?: string }) {
   );
 }
 
-/** Reads `?vehicle=<slug>` from a car's part-exchange link. Render inside <Suspense>. */
-export function PartExchangeFormFromLink() {
-  const slug = validVehicleSlug(useSearchParams().get("vehicle"));
-  return <PartExchangeForm vehicleSlug={slug} />;
-}
-
 function Legend({ children }: { children: React.ReactNode }) {
   return (
     <legend className="mb-5 w-full border-b border-[var(--border)] pb-3 font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
@@ -215,16 +218,19 @@ function ChoiceField({
   options,
   values,
   errors,
+  selectKey,
 }: {
   label: string;
   name: string;
   options: readonly string[];
   values: Record<string, string>;
   errors?: Record<string, string[]>;
+  /** Remounts the control after a submission, so the choice survives it. */
+  selectKey: number;
 }) {
   return (
     <Field label={label} name={name} required error={errors?.[name]}>
-      <Select {...fieldProps(name, errors?.[name])} defaultValue={values[name] ?? ""} required>
+      <Select key={selectKey} {...fieldProps(name, errors?.[name])} defaultValue={values[name] ?? ""} required>
         <option value="" disabled>
           Choose…
         </option>

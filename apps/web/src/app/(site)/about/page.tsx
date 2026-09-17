@@ -127,7 +127,7 @@ export default async function AboutPage() {
               </div>
 
               <ButtonLink href="/vehicles" size="md" className="mt-4 w-full">
-                See what we have in
+                See what we have in stock
               </ButtonLink>
             </aside>
           </div>

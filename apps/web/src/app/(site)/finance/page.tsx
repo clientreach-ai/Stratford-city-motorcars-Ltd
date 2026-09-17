@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Phone } from "lucide-react";
 
-import { FinanceForm, FinanceFormFromLink } from "@/components/forms/finance-form";
+import { FinanceForm } from "@/components/forms/finance-form";
 import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { financeProducts, financeTerms, paymentMethods } from "@/lib/content/services";
+import { resolveVehicleBySlug } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
@@ -34,7 +35,7 @@ const crumbs = [
   { name: "Finance", path: "/finance" },
 ];
 
-export default function FinancePage() {
+export default function FinancePage(props: PageProps<"/finance">) {
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
@@ -239,9 +240,8 @@ export default function FinancePage() {
             </div>
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
-              {/* The car comes from `?vehicle=` on a car's finance link; the page itself stays static. */}
               <Suspense fallback={<FinanceForm />}>
-                <FinanceFormFromLink />
+                <FinanceFormForLinkedCar searchParams={props.searchParams} />
               </Suspense>
             </div>
           </div>
@@ -260,6 +260,23 @@ export default function FinancePage() {
       />
     </>
   );
+}
+
+/**
+ * The car comes from `?vehicle=` on a car's finance link, looked up in stock:
+ * a slug we do not hold prefills nothing, rather than a title made up from the
+ * URL. Reading the query renders this part of the page per request, so it sits
+ * inside <Suspense> with the empty form as its fallback.
+ */
+async function FinanceFormForLinkedCar({
+  searchParams,
+}: {
+  searchParams: PageProps<"/finance">["searchParams"];
+}) {
+  const { vehicle } = await searchParams;
+  const car = await resolveVehicleBySlug(Array.isArray(vehicle) ? vehicle[0] : vehicle);
+  if (!car) return <FinanceForm />;
+  return <FinanceForm vehicleSlug={car.slug} vehicleName={`${car.year} ${car.title}`} />;
 }
 
 const comparisonRows: { label: string; value: (product: (typeof financeProducts)[number]) => string }[] = [
