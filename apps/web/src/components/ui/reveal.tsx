@@ -36,7 +36,10 @@ export function RevealObserver() {
     );
 
     const enrol = () => {
-      document.querySelectorAll<HTMLElement>(".reveal:not([data-reveal])").forEach((element) => {
+      // Pending elements are picked up again too: when this effect re-runs
+      // (React Strict Mode, fast refresh, a remount) the previous observer is
+      // gone, and anything it left pending would otherwise stay hidden.
+      document.querySelectorAll<HTMLElement>('.reveal:not([data-reveal]), .reveal[data-reveal="pending"]').forEach((element) => {
         if (element.getBoundingClientRect().top < window.innerHeight) {
           element.setAttribute("data-reveal", "static");
           return;
@@ -55,6 +58,10 @@ export function RevealObserver() {
     return () => {
       observer.disconnect();
       mutations.disconnect();
+      // Nothing is left invisible without an observer to reveal it.
+      document.querySelectorAll<HTMLElement>('.reveal[data-reveal="pending"]').forEach((element) => {
+        element.removeAttribute("data-reveal");
+      });
     };
   }, []);
 
