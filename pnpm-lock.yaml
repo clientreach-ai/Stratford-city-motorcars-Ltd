@@ -115,6 +115,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@Stratford-city-motorcars-Ltd/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@Stratford-city-motorcars-Ltd/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -203,6 +206,15 @@ importers:
         version: 6.0.3
 
   packages/config: {}
+
+  packages/core:
+    devDependencies:
+      '@Stratford-city-motorcars-Ltd/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/db:
     dependencies:
