@@ -247,7 +247,7 @@ export function DefinitionList({
       {items
         .filter((item) => !item.hidden)
         .map((item) => (
-          <div key={item.label} className="grid grid-cols-[minmax(0,9rem)_1fr] gap-4 py-2.5 first:pt-0 last:pb-0">
+          <div key={item.label} className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-4 py-2.5 first:pt-0 last:pb-0">
             <dt className="admin-label pt-0.5">{item.label}</dt>
             <dd data-numeric className="min-w-0 text-sm break-words">
               {item.value === null || item.value === undefined || item.value === "" ? (
