@@ -197,7 +197,7 @@ export function StockList() {
       sortValue: (vehicle) => (vehicle.priceOnApplication ? Number.MAX_SAFE_INTEGER : (vehicle.price ?? -1)),
       cell: (vehicle) =>
         vehicle.price === null && !vehicle.priceOnApplication ? (
-          <span className="text-ink-400">Not set</span>
+          <span className="text-ink-500">Not set</span>
         ) : (
           <span data-numeric className="font-medium">
             {formatVehiclePrice(vehicle)}
@@ -228,7 +228,7 @@ export function StockList() {
       minWidth: "xl",
       align: "right",
       sortValue: (vehicle) => vehicle.openEnquiryCount,
-      cell: (vehicle) => <span data-numeric className={vehicle.openEnquiryCount ? "font-medium" : "text-ink-400"}>{vehicle.openEnquiryCount || "—"}</span>,
+      cell: (vehicle) => <span data-numeric className={vehicle.openEnquiryCount ? "font-medium" : "text-ink-500"}>{vehicle.openEnquiryCount || "—"}</span>,
     },
     {
       id: "updated",
@@ -320,7 +320,7 @@ export function StockList() {
           rowKey={(vehicle) => vehicle.id}
           busy={isFetching && !isPending}
           sortable={false}
-          rowClassName={(vehicle) => (vehicle.status === "archived" ? "opacity-60" : "")}
+          rowClassName={(vehicle) => (vehicle.status === "archived" ? "bg-surface/60" : "")}
           actions={(vehicle) => <ActionMenu label={`Actions for ${vehicleName(vehicle)}`} actions={menu(vehicle)} />}
           renderCard={(vehicle) => {
             const progress = progressById.get(vehicle.id)!;
@@ -332,7 +332,7 @@ export function StockList() {
                     {vehicleName(vehicle)}
                   </GuardedLink>
                   <p data-numeric className="mt-0.5 text-sm">
-                    {vehicle.price === null && !vehicle.priceOnApplication ? <span className="text-ink-400">Price not set</span> : formatVehiclePrice(vehicle)}
+                    {vehicle.price === null && !vehicle.priceOnApplication ? <span className="text-ink-500">Price not set</span> : formatVehiclePrice(vehicle)}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <VehicleStatusBadge status={vehicle.status} live={vehicle.status === "published" ? progress.live : undefined} />

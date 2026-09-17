@@ -68,7 +68,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     return (
       <Splash>
         <p className="text-sm text-bone/80">We could not check your session.</p>
-        <p className="mt-1 max-w-sm text-center text-xs text-bone/50">{error.message}</p>
+        <p className="mt-1 max-w-sm text-center text-xs text-bone/65">{error.message}</p>
         <button
           type="button"
           onClick={() => void refetch()}
@@ -83,7 +83,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   if (isPending || !user) {
     return (
       <Splash>
-        <p role="status" className="admin-eyebrow text-bone/55">
+        <p role="status" className="admin-eyebrow text-bone/65">
           {isPending ? "Checking your session…" : "Taking you to sign in…"}
         </p>
       </Splash>

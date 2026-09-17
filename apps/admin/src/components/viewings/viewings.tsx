@@ -184,7 +184,7 @@ export function Viewings() {
                     <p data-numeric className={cn("font-display text-xl leading-tight", today && "text-brass-deep")}>
                       {day.getDate()}
                     </p>
-                    {weekend ? <p className="text-[0.6875rem] text-ink-500">By appointment</p> : null}
+                    {weekend ? <p className="text-[0.6875rem] text-ink-600">By appointment</p> : null}
                   </header>
                   <div className="flex flex-1 flex-col gap-1.5 p-1.5">
                     {isPending ? (
@@ -262,7 +262,7 @@ function AppointmentCard({ appointment, onOpen, compact }: { appointment: Appoin
       className={cn(
         "group w-full border border-l-2 bg-surface-raised text-left transition-colors hover:border-ink-400",
         appointment.status === "requested" ? "border-l-brass" : appointment.status === "confirmed" ? "border-l-ink-950" : "border-l-ink-300",
-        done && "opacity-65",
+        done && "bg-surface",
         compact ? "px-2 py-1.5" : "flex items-start justify-between gap-3 px-4 py-3",
       )}
     >

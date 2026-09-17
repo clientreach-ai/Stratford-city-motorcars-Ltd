@@ -254,7 +254,7 @@ export function DefinitionList({
             <dt className="admin-label pt-0.5">{item.label}</dt>
             <dd data-numeric className="min-w-0 text-sm [overflow-wrap:anywhere]">
               {item.value === null || item.value === undefined || item.value === "" ? (
-                <span className="text-ink-400">Not recorded</span>
+                <span className="text-ink-500">Not recorded</span>
               ) : (
                 item.value
               )}

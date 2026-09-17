@@ -86,7 +86,7 @@ export function ContactActions({ enquiry, context, size = "md" }: { enquiry: Pic
 
 export function MemberInitials({ member, className }: { member: Pick<TeamMember, "name"> | undefined; className?: string }) {
   if (!member) {
-    return <span className={cn("text-xs text-ink-400", className)}>Unassigned</span>;
+    return <span className={cn("text-xs text-ink-500", className)}>Unassigned</span>;
   }
   return (
     <span className={cn("inline-flex items-center gap-2 text-[0.8125rem] text-ink-700", className)} title={member.name}>
@@ -108,7 +108,7 @@ export function EnquiryLine({ enquiry, showStatus = true, showWaiting = false }:
       <span className="min-w-0">
         <span className="flex items-center gap-2">
           <span className="truncate text-sm font-medium group-hover:underline group-hover:decoration-brass group-hover:underline-offset-4">{enquiry.name}</span>
-          <span className="text-xs text-ink-400" data-numeric>
+          <span className="text-xs text-ink-500" data-numeric>
             {enquiry.reference}
           </span>
         </span>

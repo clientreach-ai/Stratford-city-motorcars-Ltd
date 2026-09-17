@@ -104,7 +104,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
               collapsed ? (
                 <span aria-hidden className="mx-auto mb-2 block h-px w-5 bg-bone/15" />
               ) : (
-                <p className="admin-eyebrow mb-1.5 px-3 text-bone/40">{section.label}</p>
+                <p className="admin-eyebrow mb-1.5 px-3 text-bone/65">{section.label}</p>
               )
             ) : null}
             <ul className="flex flex-col gap-px">
@@ -124,7 +124,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
                         className={cn(
                           "group relative flex h-11 items-center gap-3 text-[0.8125rem] transition-colors duration-200 lg:h-10",
                           collapsed ? "mx-auto w-10 justify-center" : "px-3",
-                          here ? "bg-bone/[0.07] text-bone" : "text-bone/60 hover:bg-bone/[0.04] hover:text-bone",
+                          here ? "bg-bone/[0.07] text-bone" : "text-bone/70 hover:bg-bone/[0.04] hover:text-bone",
                         )}
                       >
                         {/* The current page is marked with a brass hairline, as the website marks its navigation. */}
@@ -205,7 +205,7 @@ export function AccountPanel({ collapsed }: { collapsed: boolean }) {
           </span>
         </Hint>
         <Hint content="Sign out" side="right">
-          <button type="button" onClick={leave} disabled={leaving} aria-label="Sign out" className="flex size-10 items-center justify-center text-bone/55 transition-colors hover:text-bone disabled:opacity-50">
+          <button type="button" onClick={leave} disabled={leaving} aria-label="Sign out" className="flex size-10 items-center justify-center text-bone/65 transition-colors hover:text-bone disabled:opacity-50">
             <LogOut className="size-4" strokeWidth={1.5} aria-hidden />
           </button>
         </Hint>
@@ -222,7 +222,7 @@ export function AccountPanel({ collapsed }: { collapsed: boolean }) {
         <p className="truncate text-[0.8125rem] text-bone" title={user.email}>
           {user.name}
         </p>
-        <p className="truncate text-[0.6875rem] text-bone/50">{role?.label}</p>
+        <p className="truncate text-[0.6875rem] text-bone/65">{role?.label}</p>
       </div>
       <button
         type="button"
@@ -230,7 +230,7 @@ export function AccountPanel({ collapsed }: { collapsed: boolean }) {
         disabled={leaving}
         aria-label={leaving ? "Signing out" : "Sign out"}
         title="Sign out"
-        className="flex size-10 shrink-0 items-center justify-center text-bone/55 transition-colors hover:text-bone disabled:opacity-50"
+        className="flex size-10 shrink-0 items-center justify-center text-bone/65 transition-colors hover:text-bone disabled:opacity-50"
       >
         <LogOut className="size-4" strokeWidth={1.5} aria-hidden />
       </button>
@@ -247,7 +247,7 @@ export function ViewWebsiteLink({ collapsed, className }: { collapsed?: boolean;
         rel="noopener noreferrer"
         aria-label={collapsed ? "View the website (opens in a new tab)" : undefined}
         className={cn(
-          "flex h-10 items-center gap-2.5 text-[0.8125rem] text-bone/55 transition-colors hover:text-bone",
+          "flex h-10 items-center gap-2.5 text-[0.8125rem] text-bone/65 transition-colors hover:text-bone",
           collapsed ? "w-10 justify-center" : "px-3",
           className,
         )}
@@ -266,6 +266,7 @@ export function ViewWebsiteLink({ collapsed, className }: { collapsed?: boolean;
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   return (
     <aside
+      aria-label="Sidebar"
       data-surface="dark"
       className={cn(
         "fixed inset-y-0 left-0 z-30 hidden flex-col bg-ink-950 text-bone transition-[width] duration-300 ease-[var(--ease-out-expo)] lg:flex",
@@ -294,7 +295,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
               onClick={onToggle}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!collapsed}
-              className="flex size-10 items-center justify-center text-bone/55 transition-colors hover:text-bone"
+              className="flex size-10 items-center justify-center text-bone/65 transition-colors hover:text-bone"
             >
               {collapsed ? <PanelLeftOpen className="size-4" strokeWidth={1.5} aria-hidden /> : <PanelLeftClose className="size-4" strokeWidth={1.5} aria-hidden />}
             </button>

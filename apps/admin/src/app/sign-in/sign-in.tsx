@@ -85,7 +85,7 @@ export function SignIn() {
           <p className="mt-4 font-display text-[2.5rem] leading-[1.05]">Stock, enquiries and viewings in one place.</p>
           <div aria-hidden className="mt-8 h-px w-16 bg-brass" />
         </div>
-        <p className="hidden text-xs text-bone/40 lg:block">21–25 Romford Road, London E15 4LJ</p>
+        <p className="hidden text-xs text-bone/65 lg:block">21–25 Romford Road, London E15 4LJ</p>
       </section>
 
       <section className="flex items-start justify-center px-5 py-10 sm:items-center sm:px-10">
