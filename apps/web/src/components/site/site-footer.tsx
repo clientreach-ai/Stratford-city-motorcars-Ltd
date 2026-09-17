@@ -5,7 +5,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { getAvailableVehicles } from "@/lib/inventory/repository";
 import type { PublicVehicle } from "@/lib/inventory/types";
-import { mapLinks, site } from "@/lib/site";
+import { getMapLinks, getSite } from "@/lib/settings";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 type FooterHref = React.ComponentProps<typeof Link>["href"];
@@ -46,6 +46,7 @@ const serviceLinks = [
 ] as const;
 
 export async function SiteFooter() {
+  const [site, mapLinks] = await Promise.all([getSite(), getMapLinks()]);
   const stockLinks = await getStockLinks();
 
   return (

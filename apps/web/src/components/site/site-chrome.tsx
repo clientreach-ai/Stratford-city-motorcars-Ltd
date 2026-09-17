@@ -1,3 +1,4 @@
+import { getSite } from "@/lib/settings";
 import { RevealObserver } from "@/components/ui/reveal";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
@@ -6,7 +7,10 @@ import { SiteHeader } from "@/components/site/site-header";
  * The public site's frame: skip link, header, main landmark, footer. Used by
  * the `(site)` layout and by the global 404, which renders outside that layout.
  */
-export function SiteChrome({ children }: { children: React.ReactNode }) {
+export async function SiteChrome({ children }: { children: React.ReactNode }) {
+  // The owner's saved business details, read once for the whole page.
+  const site = await getSite();
+
   return (
     <>
       <a
@@ -17,7 +21,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       </a>
 
       <div className="flex min-h-dvh flex-col">
-        <SiteHeader />
+        <SiteHeader site={site} />
         <main id="main" className="flex-1">
           {children}
         </main>

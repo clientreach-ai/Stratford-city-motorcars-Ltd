@@ -2,14 +2,14 @@ import { Car, Mail, MapPin, Phone, TrainFront } from "lucide-react";
 
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { mapLinks, site } from "@/lib/site";
+import { getMapLinks, getSite } from "@/lib/settings";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 /**
  * Showroom details. Shared by the homepage and the contact page so the address,
  * hours and travel information can never fall out of step between them.
  */
-export function ShowroomPanel({
+export async function ShowroomPanel({
   showMap = true,
   showHours = true,
 }: {
@@ -17,6 +17,8 @@ export function ShowroomPanel({
   /** Off where the page already shows the hours prominently. */
   showHours?: boolean;
 }) {
+  const [site, mapLinks] = await Promise.all([getSite(), getMapLinks()]);
+
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
       <div>
