@@ -127,7 +127,7 @@ export function SignIn() {
           </form>
 
           <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
-            Forgotten your password? Ask the owner to send you a new invitation from the Team page.
+            Forgotten your password? Ask the owner to set a new one from the Team page.
           </p>
 
           {isSampleData ? (
