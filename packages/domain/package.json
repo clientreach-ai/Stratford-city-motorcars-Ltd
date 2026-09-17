@@ -1,0 +1,23 @@
+{
+  "name": "@Stratford-city-motorcars-Ltd/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@Stratford-city-motorcars-Ltd/core": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@Stratford-city-motorcars-Ltd/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}
