@@ -113,13 +113,20 @@ async function noteOnEnquiry(tx: Executor, row: AppointmentRow, member: SessionU
 
   const status = enquiry.status as EnquiryStatus;
   const advance = status === "new" || status === "contacted";
+  // Arranging a viewing is a status change, so the enquiry gets an owner too.
+  let handledBy = enquiry.handledBy;
   if (advance) {
     await logActivity(tx, enquiry.id, member, "status", `Status changed from ${enquiryStatusLabel(status)} to Viewing arranged.`);
+    if (!handledBy) {
+      handledBy = member.id;
+      await logActivity(tx, enquiry.id, member, "assigned", `Assigned to ${member.name}.`);
+    }
   }
   await tx
     .update(lead)
     .set({
       status: advance ? "viewing-arranged" : status,
+      handledBy,
       firstRepliedAt: enquiry.firstRepliedAt ?? (status === "new" ? new Date() : null),
       updatedAt: stamp(enquiry.updatedAt),
     })
