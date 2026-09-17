@@ -14,6 +14,7 @@ import {
   listingProgress,
   publicationIssues,
   listingRecommendations,
+  passwordProblem,
   meetsPhotoSize,
   MINIMUM_PHOTO_SIZE,
   type AdminApi,
@@ -967,13 +968,17 @@ export function createMockApi(): AdminApi {
           if (input.name.trim().length < 2) fields.name = "Add their name.";
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fields.email = "That doesn't look like an email address.";
           else if (db.team.some((person) => person.email.toLowerCase() === email)) fields.email = "Someone on the team already uses this email address.";
+          const weak = passwordProblem(input.password);
+          if (weak) fields.password = weak;
           if (Object.keys(fields).length) throw new ValidationError(fields);
+          // Sample data keeps one shared password (SAMPLE_PASSWORD); the chosen
+          // one is checked but not stored.
           const member: TeamMember = {
             id: `u-${crypto.randomUUID().slice(0, 8)}`,
             name: input.name.trim(),
             email,
             role: input.role,
-            status: "invited",
+            status: "active",
             createdAt: new Date().toISOString(),
             lastActiveAt: null,
           };
@@ -986,15 +991,24 @@ export function createMockApi(): AdminApi {
           const user = requireCapability(db, "team.manage");
           const member = db.team.find((person) => person.id === id);
           if (!member) throw new NotFoundError("This person is no longer on the team.");
-          const next = { ...member, ...input };
-          const owners = db.team.filter((person) => (person.id === id ? next : person)).filter((person) => person.role === "owner" && person.status === "active");
+          const { password, ...changes } = input;
+          if (password !== undefined) {
+            const weak = passwordProblem(password);
+            if (weak) throw new ValidationError({ password: weak });
+          }
+          const next = {
+            ...member,
+            ...changes,
+            status: changes.status ?? (password !== undefined && member.status === "invited" ? ("active" as const) : member.status),
+          };
+          const owners = db.team.map((person) => (person.id === id ? next : person)).filter((person) => person.role === "owner" && person.status === "active");
           if (owners.length === 0) {
             throw new ValidationError({}, "There must always be at least one active owner.");
           }
           if (id === user.id && input.status === "deactivated") {
             throw new ValidationError({}, "You cannot deactivate your own account.");
           }
-          Object.assign(member, input);
+          Object.assign(member, { role: next.role, status: next.status });
           if (input.status === "deactivated") {
             for (const enquiry of db.enquiries) {
               if (enquiry.handledBy === id && isOpenEnquiry(enquiry.status)) {
