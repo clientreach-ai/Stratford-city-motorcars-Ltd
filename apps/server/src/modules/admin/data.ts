@@ -218,16 +218,36 @@ export function toCustomer(row: CustomerRow, leads: LeadRow[], appointments: App
 
 // ---- Search -------------------------------------------------------------------------------------
 
-/** Case-insensitive text match, plus phone-style digit matching for 4+ digits. */
+/**
+ * Case-insensitive text match, plus phone-style digit matching for 4+ digits.
+ *
+ * Spaces and punctuation are ignored on both sides, so "AB12CDE" finds
+ * "AB12 CDE", and UK numbers are compared in one form, so a number stored as
+ * "+44 7700 900123" is found by "07700 900123" and the other way round.
+ */
 export function matches(needle: string, ...values: (string | null | undefined)[]): boolean {
   const query = needle.trim().toLowerCase();
   if (!query) return true;
-  const digits = query.replace(/\D/g, "");
+  const squashed = squash(query);
+  const digits = ukDigits(query);
   return values.some((value) => {
     if (!value) return false;
-    if (value.toLowerCase().includes(query)) return true;
-    return digits.length >= 4 && value.replace(/\D/g, "").includes(digits);
+    const text = value.toLowerCase();
+    if (text.includes(query)) return true;
+    if (squashed.length >= 2 && squash(text).includes(squashed)) return true;
+    return digits.length >= 4 && ukDigits(text).includes(digits);
   });
+}
+
+/** Letters and digits only: "AB12 CDE" and "ab12-cde" both become "ab12cde". */
+function squash(value: string): string {
+  return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+/** Phone digits in one UK form, so +44… and 0… compare equal. */
+function ukDigits(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  return digits.startsWith("44") ? `0${digits.slice(2)}` : digits;
 }
 
 export { listVehicles };
