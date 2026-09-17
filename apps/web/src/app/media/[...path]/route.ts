@@ -1,4 +1,4 @@
-import { openMediaFile } from "@/lib/media/storage";
+import { isValidMediaKey, openMediaFile } from "@/lib/media/storage";
 
 /**
  * Serves uploaded vehicle media from local storage.
@@ -10,6 +10,10 @@ import { openMediaFile } from "@/lib/media/storage";
  *
  * Only keys matching `<vehicleId>/<generated>.<webp|jpg|mp4|webm>` resolve;
  * anything else — traversal attempts included — is a 404.
+ *
+ * Photos uploaded through the admin live in object storage. When a key is not
+ * on local disk and MEDIA_PROXY_ORIGIN is set (the API server), the request is
+ * forwarded to `<MEDIA_PROXY_ORIGIN>/media/<key>`.
  */
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -39,6 +43,32 @@ function parseRange(header: string | null, size: number): { start: number; end: 
   return { start, end };
 }
 
+const PROXIED_HEADERS = ["content-type", "content-length", "content-range", "accept-ranges", "etag", "last-modified"];
+
+/** Streams a stored photo from the API server, or 404s when there is no API. */
+async function proxyToApi(request: Request, key: string): Promise<Response> {
+  const origin = process.env.MEDIA_PROXY_ORIGIN?.trim().replace(/\/+$/, "");
+  if (!origin || !/^https?:\/\//.test(origin) || !isValidMediaKey(key)) return new Response("Not found", { status: 404 });
+
+  const range = request.headers.get("range");
+  const upstream = await fetch(`${origin}/media/${key}`, {
+    headers: range ? { range } : undefined,
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  }).catch(() => null);
+  if (!upstream || !(upstream.ok || upstream.status === 206)) return new Response("Not found", { status: 404 });
+
+  const headers = new Headers({
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "X-Content-Type-Options": "nosniff",
+  });
+  for (const name of PROXIED_HEADERS) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  return new Response(upstream.body, { status: upstream.status, headers });
+}
+
 export async function GET(request: Request, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
   const key = path.join("/");
@@ -47,7 +77,7 @@ export async function GET(request: Request, context: { params: Promise<{ path: s
   if (!contentType) return new Response("Not found", { status: 404 });
 
   const head = await openMediaFile(key, { start: 0, end: 0 });
-  if (!head) return new Response("Not found", { status: 404 });
+  if (!head) return proxyToApi(request, key);
   await head.stream.cancel();
 
   const baseHeaders = {

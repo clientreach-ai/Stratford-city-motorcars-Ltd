@@ -7,15 +7,19 @@
     "check-types": "tsc -b",
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.mjs"
+    "start": "bun run dist/index.mjs",
+    "staff:create": "bun scripts/create-staff.ts"
   },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
+    "@Stratford-city-motorcars-Ltd/core": "workspace:*",
     "@Stratford-city-motorcars-Ltd/db": "workspace:*",
+    "@Stratford-city-motorcars-Ltd/domain": "workspace:*",
     "@Stratford-city-motorcars-Ltd/env": "workspace:*",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "hono": "^4.12.32",
+    "sharp": "^0.35.4",
     "zod": "catalog:"
   },
   "devDependencies": {

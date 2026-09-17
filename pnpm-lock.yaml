@@ -136,9 +136,15 @@ importers:
       '@Stratford-city-motorcars-Ltd/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@Stratford-city-motorcars-Ltd/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@Stratford-city-motorcars-Ltd/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@Stratford-city-motorcars-Ltd/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@Stratford-city-motorcars-Ltd/env':
         specifier: workspace:*
         version: link:../../packages/env
@@ -151,6 +157,9 @@ importers:
       hono:
         specifier: ^4.12.32
         version: 4.13.7
+      sharp:
+        specifier: ^0.35.4
+        version: 0.35.4(@types/node@26.5.0)
       zod:
         specifier: 'catalog:'
         version: 4.5.4
@@ -176,6 +185,9 @@ importers:
       '@Stratford-city-motorcars-Ltd/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@Stratford-city-motorcars-Ltd/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@Stratford-city-motorcars-Ltd/env':
         specifier: workspace:*
         version: link:../../packages/env
@@ -298,6 +310,25 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/domain:
+    dependencies:
+      '@Stratford-city-motorcars-Ltd/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@Stratford-city-motorcars-Ltd/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.4.2
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
