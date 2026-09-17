@@ -1,7 +1,7 @@
-import { and, eq, inArray, tables } from "@Stratford-city-motorcars-Ltd/db";
+import { and, eq, inArray, ne, tables } from "@Stratford-city-motorcars-Ltd/db";
 import { OPEN_ENQUIRY_STATUSES } from "@Stratford-city-motorcars-Ltd/core/enquiry";
 import { NotFoundError, ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
-import type { TeamMember } from "@Stratford-city-motorcars-Ltd/core/team";
+import { PASSWORD_LENGTH, passwordProblem, type TeamMember } from "@Stratford-city-motorcars-Ltd/core/team";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { hashPassword } from "better-auth/crypto";
 import { Hono } from "hono";
@@ -19,9 +19,11 @@ import { loadMembers, logActivity, toMember, type Executor } from "./data";
 /**
  * The team — see "Team" in docs/STRATFORD_ADMIN_CONTRACT.md.
  *
- * Members join by invitation: the owner invites them, they receive a
- * single-use link to the admin's /accept-invitation page, and setting a
- * password there activates the account. There must always be one active owner.
+ * The owner creates accounts directly (name, email, role and a password)
+ * and passes the details on; the account is active at once and no email is
+ * sent. The owner can set a new password for anyone later. Members created by
+ * the older invitation flow can still accept their link at /accept-invitation.
+ * There must always be one active owner.
  */
 
 const { user, session, account, lead, teamInvitation } = tables;
@@ -29,16 +31,45 @@ const { user, session, account, lead, teamInvitation } = tables;
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const password = z.string().max(PASSWORD_LENGTH.max, `Use at most ${PASSWORD_LENGTH.max} characters.`);
+
 const inviteBody = z.object({
   name: z.string().max(120, "Keep the name under 120 characters."),
   email: z.string().max(160),
   role: z.enum(["owner", "staff"]),
+  password,
 });
 
 const updateBody = z.object({
   role: z.enum(["owner", "staff"]).optional(),
   status: z.enum(["active", "deactivated"]).optional(),
+  password: password.optional(),
 });
+
+/** Creates or replaces the member's email-and-password login. */
+async function setCredential(executor: Executor, userId: string, plain: string): Promise<void> {
+  const hashed = await hashPassword(plain);
+  const now = new Date();
+  const [existing] = await executor
+    .select({ id: account.id })
+    .from(account)
+    .where(and(eq(account.userId, userId), eq(account.providerId, "credential")))
+    .limit(1);
+  if (existing) {
+    await executor.update(account).set({ password: hashed, updatedAt: now }).where(eq(account.id, existing.id));
+  } else {
+    await executor.insert(account).values({
+      id: crypto.randomUUID(),
+      issuer: "local:credential",
+      accountId: userId,
+      providerId: "credential",
+      userId,
+      password: hashed,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
 
 const idParam = z.object({ id: z.string().min(1).max(64) });
 
@@ -83,7 +114,7 @@ export const teamRoutes = new Hono<AdminEnv>()
   .get("/", async (c) => c.json((await loadMembers()) satisfies TeamMember[]))
 
   .post("/", validate("json", inviteBody), async (c) => {
-    const inviter = requireCapability(c, "team.manage");
+    requireCapability(c, "team.manage");
     const input = c.req.valid("json");
     const name = input.name.trim();
     const email = input.email.trim().toLowerCase();
@@ -95,23 +126,19 @@ export const teamRoutes = new Hono<AdminEnv>()
       const [taken] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
       if (taken) fields.email = "Someone on the team already uses this email address.";
     }
+    const weak = passwordProblem(input.password);
+    if (weak) fields.password = weak;
     if (Object.keys(fields).length) throw new ValidationError(fields);
 
-    const member = await db
-      .transaction(async (tx) => {
-        const now = new Date();
-        const [row] = await tx
-          .insert(user)
-          .values({ id: crypto.randomUUID(), name, email, emailVerified: false, role: input.role, status: "invited", createdAt: now, updatedAt: now })
-          .returning();
-        await issueInvitation(tx, row!, inviter.name);
-        return toMember(row!);
-      })
-      .catch((error: unknown) => {
-        if (error instanceof ValidationError) throw error;
-        console.error("[team] invitation failed:", error instanceof Error ? error.message : error);
-        failSending();
-      });
+    const member = await db.transaction(async (tx) => {
+      const now = new Date();
+      const [row] = await tx
+        .insert(user)
+        .values({ id: crypto.randomUUID(), name, email, emailVerified: true, role: input.role, status: "active", createdAt: now, updatedAt: now })
+        .returning();
+      await setCredential(tx, row!.id, input.password);
+      return toMember(row!);
+    });
     return c.json(member, 201);
   })
 
@@ -128,18 +155,39 @@ export const teamRoutes = new Hono<AdminEnv>()
       if (id === actor.id && input.status === "deactivated") {
         throw new ValidationError({}, "You cannot deactivate your own account.");
       }
-      if (member.status === "invited" && input.status === "active") {
-        throw new ValidationError({}, "They become active when they accept their invitation. Send it again if it has expired.");
+      if (input.password !== undefined) {
+        const weak = passwordProblem(input.password);
+        if (weak) throw new ValidationError({ password: weak });
       }
-      const next = { ...member, ...input };
+      if (member.status === "invited" && input.status === "active" && input.password === undefined) {
+        throw new ValidationError({}, "Set a password for them first; that makes the account active.");
+      }
+      const { password: newPassword, ...changes } = input;
+      const next = {
+        ...member,
+        ...changes,
+        // Setting a password is what activates an invited member.
+        status: changes.status ?? (newPassword !== undefined && member.status === "invited" ? "active" : member.status),
+      };
       const owners = members.map((item) => (item.id === id ? next : item)).filter((item) => item.role === "owner" && item.status === "active");
       if (owners.length === 0) throw new ValidationError({}, "There must always be at least one active owner.");
 
       const [row] = await tx
         .update(user)
-        .set({ role: next.role, status: next.status, updatedAt: stamp() })
+        .set({ role: next.role, status: next.status, updatedAt: stamp(), ...(newPassword !== undefined ? { emailVerified: true } : {}) })
         .where(eq(user.id, id))
         .returning();
+
+      if (newPassword !== undefined) {
+        await setCredential(tx, id, newPassword);
+        await tx.delete(teamInvitation).where(eq(teamInvitation.userId, id));
+        // Anyone signed in with the old password is signed out, except the
+        // owner's own current session when they change their own password.
+        const current = c.get("session")?.id;
+        await tx
+          .delete(session)
+          .where(id === actor.id && current ? and(eq(session.userId, id), ne(session.id, current)) : eq(session.userId, id));
+      }
 
       if (input.status === "deactivated" && member.status !== "deactivated") {
         // Signed out everywhere, invitation withdrawn, open enquiries released.
@@ -180,7 +228,10 @@ const acceptThrottle = createRateLimiter({
 
 const tokenParam = z.object({ token: z.string().min(20).max(100) });
 const acceptBody = z.object({
-  password: z.string().min(12, "Use at least 12 characters.").max(128, "Use at most 128 characters."),
+  password: z
+    .string()
+    .min(PASSWORD_LENGTH.min, `Use at least ${PASSWORD_LENGTH.min} characters.`)
+    .max(PASSWORD_LENGTH.max, `Use at most ${PASSWORD_LENGTH.max} characters.`),
 });
 
 const INVALID_LINK = "This invitation link is invalid or has expired. Ask the owner to send a new one.";
@@ -213,30 +264,11 @@ export const invitationRoutes = new Hono<AppEnv>()
   .post("/:token/accept", validate("param", tokenParam), validate("json", acceptBody), async (c) => {
     acceptThrottle(c);
     const { invitation, member } = await findInvitation(c.req.valid("param").token);
-    const password = await hashPassword(c.req.valid("json").password);
     const now = new Date();
 
     await db.transaction(async (tx) => {
       await tx.update(teamInvitation).set({ usedAt: now }).where(eq(teamInvitation.id, invitation.id));
-      const [existing] = await tx
-        .select({ id: account.id })
-        .from(account)
-        .where(and(eq(account.userId, member.id), eq(account.providerId, "credential")))
-        .limit(1);
-      if (existing) {
-        await tx.update(account).set({ password, updatedAt: now }).where(eq(account.id, existing.id));
-      } else {
-        await tx.insert(account).values({
-          id: crypto.randomUUID(),
-          issuer: "local:credential",
-          accountId: member.id,
-          providerId: "credential",
-          userId: member.id,
-          password,
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
+      await setCredential(tx, member.id, c.req.valid("json").password);
       await tx.update(user).set({ status: "active", emailVerified: true, updatedAt: now }).where(eq(user.id, member.id));
     });
     return c.body(null, 204);
