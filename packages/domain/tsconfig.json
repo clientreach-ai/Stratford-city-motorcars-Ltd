@@ -1,0 +1,7 @@
+{
+  "extends": "@Stratford-city-motorcars-Ltd/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src"]
+}
