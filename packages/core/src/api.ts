@@ -84,7 +84,9 @@ export interface AdminApi {
     /**
      * Stores a photograph for this car and returns it as a dealer image.
      * The API re-encodes, strips metadata, records real dimensions and refuses
-     * undersized images. The image is not on the record until the next save.
+     * undersized images. The image is appended to the record's media at once
+     * WITHOUT changing `updatedAt`, so an open editor can still save; the
+     * editor's next save sets its order, category, description and cover.
      */
     uploadImage(
       id: string,
