@@ -1,18 +1,18 @@
 import { ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
+import { meetsPhotoSize, MINIMUM_PHOTO_SIZE } from "@Stratford-city-motorcars-Ltd/core/visibility";
 import sharp, { type Metadata } from "sharp";
 
 /**
  * Photograph processing for uploads.
  *
- * Accepts JPEG, PNG, WebP or AVIF up to 25 MB and at least 1200 × 800 (either
- * orientation). The image is turned upright from its EXIF orientation, reduced
+ * Accepts JPEG, PNG, WebP or AVIF up to 25 MB and at least 400 × 300 (either
+ * orientation; see MINIMUM_PHOTO_SIZE). Photos under the recommended
+ * 1200 × 800 are kept — the listing checklist suggests replacing them. The image is turned upright from its EXIF orientation, reduced
  * to at most 2400 px on the long side and re-encoded as WebP. Re-encoding drops
  * every piece of metadata, including GPS location from phone cameras.
  */
 
 export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
-const MIN_LONG_SIDE = 1200;
-const MIN_SHORT_SIDE = 800;
 const MAX_LONG_SIDE = 2400;
 const ACCEPTED_FORMATS = new Set(["jpeg", "png", "webp", "heif", "avif"]);
 
@@ -40,10 +40,10 @@ export async function processPhoto(file: File): Promise<{ bytes: Uint8Array; wid
   const turned = (metadata.orientation ?? 1) >= 5;
   const width = turned ? metadata.height : metadata.width;
   const height = turned ? metadata.width : metadata.height;
-  if (Math.max(width, height) < MIN_LONG_SIDE || Math.min(width, height) < MIN_SHORT_SIDE) {
+  if (!meetsPhotoSize({ width, height }, MINIMUM_PHOTO_SIZE)) {
     throw new ValidationError(
       {
-        file: `“${name}” is ${width}×${height}. Photographs need to be at least ${MIN_LONG_SIDE}×${MIN_SHORT_SIDE} to look sharp on the website.`,
+        file: `“${name}” is ${width}×${height}. Photographs need to be at least ${MINIMUM_PHOTO_SIZE.long}×${MINIMUM_PHOTO_SIZE.short}.`,
       },
       "This photograph is too small.",
     );
