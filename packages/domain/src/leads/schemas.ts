@@ -168,11 +168,15 @@ export const partExchangeSchema = z.object({
     .int()
     .min(1900, "Please enter a valid year")
     .max(currentYear + 1, "Please enter a valid year"),
-  mileage: z.coerce
-    .number({ message: "Please enter the mileage" })
-    .int()
-    .min(0, "Please enter the mileage")
-    .max(1_000_000, "Please enter a valid mileage"),
+  // An empty box must be asked for again, not coerced to a car with no miles.
+  mileage: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.coerce
+      .number({ message: "Please enter the mileage" })
+      .int()
+      .min(0, "Please enter the mileage")
+      .max(1_000_000, "Please enter a valid mileage"),
+  ),
   serviceHistory: z.enum(SERVICE_HISTORY_OPTIONS, { message: "Please choose an option" }),
   motStatus: z.enum(MOT_STATUSES, { message: "Please choose an option" }),
   keys: z.enum(KEY_COUNTS, { message: "Please choose how many keys" }),
