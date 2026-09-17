@@ -78,7 +78,10 @@ export function EnquiryList({ mode = "all" }: { mode?: "all" | "part-exchange" }
   const setParams = (next: Record<string, string | undefined>, resetPage = true) => {
     const query = new URLSearchParams(params.toString());
     for (const [key, value] of Object.entries(next)) {
-      if (value === undefined || value === "" || value === "all" || (key === "status" && value === (partExchange ? "all" : "open"))) query.delete(key);
+      // Only a key's own default leaves the URL: "all" is a real status here,
+      // and dropping it would read back as the default tab instead.
+      const isDefault = key === "status" ? value === (partExchange ? "all" : "open") : value === "all";
+      if (value === undefined || value === "" || isDefault) query.delete(key);
       else query.set(key, value);
     }
     if (resetPage && !("page" in next)) query.delete("page");

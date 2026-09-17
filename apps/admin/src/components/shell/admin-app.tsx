@@ -100,17 +100,15 @@ function Frame({ children }: { children: ReactNode }) {
           {isSampleData ? <SampleModeButton compact className="ml-auto border-brass/70 bg-transparent text-brass" /> : null}
         </header>
 
-        {/* Large screens: a quiet bar for what is not navigation. */}
-        <header className="sticky top-0 z-20 hidden h-12 items-center justify-end gap-3 border-b border-border bg-background/95 px-10 backdrop-blur-sm lg:flex">
-          {isSampleData ? (
-            <>
-              <p className="mr-auto text-xs text-muted-foreground">
-                Sample data — changes stay in this browser tab. Nothing is saved or sent.
-              </p>
-              <SampleModeButton />
-            </>
-          ) : null}
-        </header>
+        {/* Large screens: a quiet bar for what is not navigation. Nothing to say on real data, so no bar. */}
+        {isSampleData ? (
+          <header className="sticky top-0 z-20 hidden h-12 items-center justify-end gap-3 border-b border-border bg-background/95 px-10 backdrop-blur-sm lg:flex">
+            <p className="mr-auto text-xs text-muted-foreground">
+              Sample data — changes stay in this browser tab. Nothing is saved or sent.
+            </p>
+            <SampleModeButton />
+          </header>
+        ) : null}
 
         <main id="admin-content" tabIndex={-1} className="outline-none">
           {children}

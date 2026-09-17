@@ -56,11 +56,16 @@ import { ContactActions, KindTag, Waiting } from "./parts";
 export function EnquiryDetail({ id }: { id: string }) {
   const query = useQuery({ queryKey: queryKeys.enquiry(id), queryFn: () => api.enquiries.get(id) });
 
-  if (query.error) {
+  if (query.error && !query.data) {
+    const missing = query.error instanceof NotFoundError;
     return (
       <PageBody>
-        <PageHeader back={{ label: "Enquiries", href: routes.enquiries }} title={query.error instanceof NotFoundError ? "Enquiry not found" : "This enquiry could not be loaded"} />
-        <ErrorState error={query.error} onRetry={query.error instanceof NotFoundError ? undefined : () => void query.refetch()} />
+        <PageHeader
+          back={{ label: "Enquiries", href: routes.enquiries }}
+          title={missing ? "Enquiry not found" : "This enquiry could not be loaded"}
+          description={missing ? query.error.message : undefined}
+        />
+        {missing ? null : <ErrorState error={query.error} onRetry={() => void query.refetch()} />}
       </PageBody>
     );
   }
@@ -343,11 +348,20 @@ function VehicleContext({ enquiry }: { enquiry: Enquiry }) {
   const named = "vehicleTitle" in payload ? payload.vehicleTitle : payload.kind === "finance" ? payload.vehicle : payload.kind === "part-exchange" ? payload.interestedIn : undefined;
 
   if (!vehicle) {
-    if (!enquiry.vehicleSlug && !named) return null;
+    // Only a form that named a car by its web address can point at a car that has gone.
+    if (enquiry.vehicleSlug) {
+      return (
+        <Notice tone="warning" title="The car they asked about is no longer in stock">
+          They asked about {named ? <strong className="font-medium">{named}</strong> : "a car"} (/vehicles/{enquiry.vehicleSlug}), which does not
+          match any car in the system now. Suggest something similar when you reply.
+        </Notice>
+      );
+    }
+    // Everything else is free text the customer typed, so it is not expected to match stock.
+    if (!named) return null;
     return (
-      <Notice tone="warning" title="The car they asked about is no longer in stock">
-        They asked about {named ? <strong className="font-medium">{named}</strong> : "a car"}
-        {enquiry.vehicleSlug ? ` (/vehicles/${enquiry.vehicleSlug})` : ""}, which does not match any car in the system now. Suggest something similar when you reply.
+      <Notice title={payload.kind === "part-exchange" ? "What they are looking for" : "The car they mentioned"}>
+        They wrote <strong className="font-medium">{named}</strong>. It is typed in by hand, so it may not be a car you have.
       </Notice>
     );
   }
@@ -658,6 +672,8 @@ function DeleteDialog({
   const [typed, setTyped] = useState("");
   const mutation = useAdminMutation(() => api.enquiries.remove(enquiry.id, reason as "spam" | "erasure-request"), {
     success: "Enquiry deleted",
+    // Erasing the person as well is a separate decision, taken on their page.
+    successDetail: reason === "erasure-request" ? "Their customer record is still here — erase it from their customer page too." : undefined,
     failure: "The enquiry was not deleted",
     onSuccess: onDeleted,
   });

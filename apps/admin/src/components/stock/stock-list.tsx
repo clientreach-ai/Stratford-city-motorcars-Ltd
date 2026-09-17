@@ -28,6 +28,7 @@ import {
   Star,
   StarOff,
   Tag as TagIcon,
+  Trash2,
   Undo2,
   Unlock,
 } from "lucide-react";
@@ -48,7 +49,7 @@ import { api, SITE_URL } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
 
-import { useVehicleActions, vehicleName } from "./vehicle-actions";
+import { canDeleteDraft, useVehicleActions, vehicleName } from "./vehicle-actions";
 
 type StatusFilter = VehicleStatus | "all" | "not-showing";
 const STATUS_VALUES: StatusFilter[] = ["all", "published", "draft", "sold", "archived", "not-showing"];
@@ -151,6 +152,7 @@ export function StockList() {
         disabled: archiveBlocked,
         reason: archiveBlocked ? deniedReason("stock.archive") : undefined,
       },
+      { label: "Delete this draft", icon: <Trash2 />, tone: "danger", onSelect: () => void actions.discard(vehicle), hidden: !canDeleteDraft(vehicle) },
     ];
     // Roles without stock.edit can only open and view.
     return actions.can("stock.edit") ? all : all.filter((action) => action !== "separator" && (action.label === "Edit" || action.label === "View on website"));
@@ -180,8 +182,8 @@ export function StockList() {
       header: "Car",
       sortValue: (vehicle) => vehicleName(vehicle),
       cell: (vehicle) => (
-        <div className="min-w-0">
-          <GuardedLink href={routes.vehicle(vehicle.id)} className={rowLinkClass}>
+        <div className="min-w-0 max-w-md">
+          <GuardedLink href={routes.vehicle(vehicle.id)} className={cn(rowLinkClass, "block truncate")}>
             {vehicleName(vehicle)}
           </GuardedLink>
           <p className="mt-0.5 truncate text-xs text-ink-500" data-numeric>

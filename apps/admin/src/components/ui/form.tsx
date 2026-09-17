@@ -167,7 +167,8 @@ export function NumberInput({
 export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="relative">
-      <select className={cn(controlClass, "h-11 cursor-pointer appearance-none pr-9 sm:h-10", className)} {...props}>
+      {/* `items-center` holds the chosen option on the middle line: a select lays its value out as a flex item. */}
+      <select className={cn(controlClass, "h-11 cursor-pointer appearance-none items-center pr-9 sm:h-10", className)} {...props}>
         {children}
       </select>
       <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-500" />
