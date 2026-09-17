@@ -16,6 +16,8 @@ function useUpdateParams() {
   return (mutate: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
     mutate(params);
+    // Re-sorting or removing a filter reorders the whole list: start at page one.
+    params.delete("page");
     const search = params.toString();
     startTransition(() => {
       router.push((search ? `/vehicles?${search}` : "/vehicles") as Route, {

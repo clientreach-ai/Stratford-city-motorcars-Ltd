@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
@@ -7,6 +6,7 @@ import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
 import { whatsappForVehicle } from "@/lib/whatsapp";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
 
 /**
  * The stock card. Carries only what a buyer scans for — photograph, what it
@@ -41,7 +41,7 @@ export function VehicleCard({
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-ink-950">
-        <Image
+        <VehiclePhoto
           src={cover.src}
           alt={cover.alt}
           fill

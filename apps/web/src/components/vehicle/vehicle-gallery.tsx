@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { useDialogFocus } from "@/components/ui/use-dialog-focus";
+import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
 import type { VehicleImage } from "@/lib/inventory/types";
 
 /**
@@ -93,7 +93,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
         >
           {images.map((image, index) => (
             <button
-              key={image.src}
+              key={image.id}
               type="button"
               onClick={() => {
                 setActive(index);
@@ -104,7 +104,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
               aria-label={`${image.alt}. Photograph ${index + 1} of ${count}, view full screen`}
               className="relative aspect-[4/3] w-full shrink-0 snap-center cursor-zoom-in bg-ink-950 md:aspect-[16/10]"
             >
-              <Image
+              <VehiclePhoto
                 src={image.src}
                 alt={image.alt}
                 fill
@@ -155,7 +155,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
         <div className="mt-1 flex flex-wrap justify-center md:hidden">
           {images.map((image, index) => (
             <button
-              key={image.src}
+              key={image.id}
               type="button"
               onClick={() => go(index)}
               aria-label={`Go to photograph ${index + 1}`}
@@ -178,7 +178,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       {count > 1 ? (
         <ul className="mt-3 hidden gap-3 md:grid md:grid-cols-5 lg:grid-cols-6">
           {images.map((image, index) => (
-            <li key={image.src}>
+            <li key={image.id}>
               <button
                 type="button"
                 onClick={() => go(index)}
@@ -191,7 +191,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
                     : "border-transparent opacity-65 hover:opacity-100",
                 )}
               >
-                <Image
+                <VehiclePhoto
                   src={image.src}
                   alt=""
                   fill
@@ -273,6 +273,7 @@ function Lightbox({
       role="dialog"
       aria-modal="true"
       aria-label={`${title} — photograph ${active + 1} of ${images.length}`}
+      data-surface="dark"
       className="fixed inset-0 z-100 flex flex-col bg-ink-950/97"
     >
       <div className="flex shrink-0 items-center justify-between px-5 py-4">
@@ -291,7 +292,7 @@ function Lightbox({
       </div>
 
       <div className="relative flex-1">
-        <Image
+        <VehiclePhoto
           src={image.src}
           alt={image.alt}
           fill

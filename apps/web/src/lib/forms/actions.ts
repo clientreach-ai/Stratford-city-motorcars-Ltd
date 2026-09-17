@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import type { z } from "zod";
 
+import { resolveVehicleBySlug } from "@/lib/inventory/repository";
 import { deliverLead } from "@/lib/leads/deliver";
 import { allowSubmission } from "@/lib/leads/rate-limit";
 
@@ -39,6 +40,21 @@ async function clientKey(): Promise<string | null> {
 }
 
 /**
+ * The car an enquiry is about comes from stock, never from the page that
+ * posted it: the hidden fields are only a browser's word for which car it was
+ * showing. The slug is resolved against current and previous slugs, and the
+ * car's own title is stored. A slug that matches nothing keeps the slug and no
+ * title at all, rather than a headline typed by whoever sent the form.
+ */
+async function withStoredVehicle(lead: LeadInput): Promise<LeadInput> {
+  if (lead.kind !== "vehicle-enquiry") return lead;
+  const vehicle = await resolveVehicleBySlug(lead.vehicleSlug);
+  return vehicle
+    ? { ...lead, vehicleSlug: vehicle.slug, vehicleTitle: vehicle.title }
+    : { ...lead, vehicleTitle: "" };
+}
+
+/**
  * One pipeline for every form: throttle → parse → validate → deliver. Keeping
  * it in one place means every form behaves identically on failure, which is
  * what makes the error states trustworthy.
@@ -64,7 +80,7 @@ async function submit<Schema extends z.ZodType<LeadInput>>(
     return { status: "unavailable", message: THROTTLED_MESSAGE, values };
   }
 
-  const result = await deliverLead(parsed.data);
+  const result = await deliverLead(await withStoredVehicle(parsed.data));
   if (!result.delivered) {
     return { status: "unavailable", message: UNAVAILABLE_MESSAGE, values };
   }

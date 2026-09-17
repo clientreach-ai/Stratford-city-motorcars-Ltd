@@ -90,6 +90,20 @@ export async function resolvePreviousSlug(slug: string): Promise<string | null> 
   return resolveSlug(await loadPublicVehicles(), slug);
 }
 
+/**
+ * The car a slug names, current or previous slug, or null when no car matches.
+ *
+ * Every slug that arrives from a browser — the hidden field on the enquiry
+ * form, `?vehicle=` on a finance or part-exchange link — is resolved through
+ * here, so what is stored and shown is the car we hold rather than whatever
+ * the page was asked to say.
+ */
+export async function resolveVehicleBySlug(slug: string | null | undefined): Promise<PublicVehicle | null> {
+  if (!slug || !/^[a-z0-9-]{1,120}$/.test(slug)) return null;
+  const all = await loadPublicVehicles();
+  return all.find((vehicle) => vehicle.slug === slug || vehicle.previousSlugs.includes(slug)) ?? null;
+}
+
 /** Slugs for `generateStaticParams`, so every public vehicle page prerenders. */
 export async function getVehicleSlugs(): Promise<string[]> {
   const all = await loadPublicVehicles();
