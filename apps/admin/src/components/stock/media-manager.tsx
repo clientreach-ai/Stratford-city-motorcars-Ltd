@@ -337,7 +337,7 @@ export function MediaManager({
                       </Button>
                     ) : null}
                   </div>
-                  <Field label="Description" description={image.alt ? undefined : "Describe the car and the angle, for screen readers and Google Images."}>
+                  <Field label={`Photo ${index + 1} description`} description={image.alt ? undefined : "Describe the car and the angle, for screen readers and Google Images."}>
                     {(control) => (
                       <TextInput
                         {...control}
