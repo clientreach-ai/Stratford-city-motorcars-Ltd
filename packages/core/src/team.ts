@@ -54,13 +54,32 @@ export interface SessionUser {
   role: Role;
 }
 
+/** Passwords set by the owner or chosen by a member: 12 to 128 characters. */
+export const PASSWORD_LENGTH = { min: 12, max: 128 } as const;
+
+export function passwordProblem(password: string): string | null {
+  if (password.length < PASSWORD_LENGTH.min) return `Use at least ${PASSWORD_LENGTH.min} characters.`;
+  if (password.length > PASSWORD_LENGTH.max) return `Use at most ${PASSWORD_LENGTH.max} characters.`;
+  return null;
+}
+
+/**
+ * A new account created by the owner. It is active at once and signs in with
+ * this email and password; the owner passes them on. No email is sent.
+ */
 export interface InviteMemberInput {
   name: string;
   email: string;
   role: Role;
+  password: string;
 }
 
 export interface UpdateMemberInput {
   role?: Role;
   status?: Extract<MemberStatus, "active" | "deactivated">;
+  /**
+   * A new password set by the owner. Ends the member's other sessions, and
+   * activates a member who was still `invited`.
+   */
+  password?: string;
 }
