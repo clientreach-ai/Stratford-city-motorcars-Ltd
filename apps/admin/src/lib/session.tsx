@@ -2,6 +2,7 @@
 
 import { can as roleCan, type Capability, type SessionUser } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
 
@@ -42,7 +43,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   const toSignIn = useCallback(() => {
     const next = pathname && pathname !== "/dashboard" ? `?next=${encodeURIComponent(pathname)}` : "";
-    router.replace(`/sign-in${next}`);
+    router.replace(`/sign-in${next}` as Route);
   }, [pathname, router]);
 
   useEffect(() => {

@@ -63,6 +63,7 @@ export function Panel({
   children,
   className,
   bodyClassName,
+  flush,
   id,
 }: {
   title?: ReactNode;
@@ -70,6 +71,8 @@ export function Panel({
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
+  /** No body padding: for lists whose rows run edge to edge. */
+  flush?: boolean;
   id?: string;
 }) {
   return (
@@ -84,7 +87,7 @@ export function Panel({
           {action}
         </header>
       ) : null}
-      <div className={cn("p-4 sm:p-5", bodyClassName)}>{children}</div>
+      <div className={cn(!flush && "p-4 sm:p-5", bodyClassName)}>{children}</div>
     </section>
   );
 }
