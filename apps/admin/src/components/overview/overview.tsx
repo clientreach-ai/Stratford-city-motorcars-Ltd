@@ -308,6 +308,13 @@ function ListingsNeedingWork({ data, loading }: Props) {
             </li>
           ))}
         </ul>
+      ) : data && data.stock.live + data.stock.drafts === 0 ? (
+        <div className="px-5 py-6">
+          <p className="text-sm text-muted-foreground">No cars for sale or in draft yet.</p>
+          <GuardedLink href={routes.newVehicle} className="mt-2 inline-flex h-9 items-center gap-1.5 text-sm underline decoration-brass underline-offset-4">
+            Add the first car
+          </GuardedLink>
+        </div>
       ) : (
         <p className="px-5 py-6 text-sm text-muted-foreground">Every listing meets the standard. Nothing to finish.</p>
       )}
