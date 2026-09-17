@@ -76,7 +76,9 @@ export function Dialog({
     if (open && !dialog.open) {
       dialog.showModal();
       document.documentElement.style.overflow = "hidden";
-      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+      // Focus the requested control, or the dialog itself — never the first
+      // link or button by accident, which would read as already selected.
+      (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog).focus();
     } else if (!open && dialog.open) {
       dialog.close();
     }
@@ -89,6 +91,7 @@ export function Dialog({
     <dialog
       ref={ref}
       data-variant={variant}
+      tabIndex={-1}
       data-surface={surface}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
@@ -102,7 +105,7 @@ export function Dialog({
       }}
       style={{ "--dialog-width": width } as CSSProperties}
       className={cn(
-        "flex-col overflow-hidden bg-background p-0 text-foreground shadow-[0_24px_64px_rgba(10,10,11,0.28)] open:flex",
+        "flex-col overflow-hidden bg-background p-0 outline-none text-foreground shadow-[0_24px_64px_rgba(10,10,11,0.28)] open:flex",
         variantClass[variant],
         className,
       )}
