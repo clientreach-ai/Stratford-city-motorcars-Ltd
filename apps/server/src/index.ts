@@ -1,26 +1,16 @@
-import { auth } from "@Stratford-city-motorcars-Ltd/auth";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 
-const app = new Hono();
+import { createApp } from "./app";
+import { getMediaStorage } from "./modules/media/storage";
 
-app.use(logger());
-app.use(
-  "/*",
-  cors({
-    origin: env.CORS_ORIGIN,
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  }),
-);
+const app = createApp();
 
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+// Report the upload configuration once at start-up rather than on first use.
+getMediaStorage();
 
-app.get("/", (c) => {
-  return c.text("OK");
-});
+export type { AppType } from "./app";
 
-export default app;
+export default {
+  port: env.PORT,
+  fetch: app.fetch,
+};
