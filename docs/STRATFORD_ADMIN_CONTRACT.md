@@ -262,7 +262,35 @@ because they are regulated.
 The website caches stock under the `inventory` tag. The admin cannot reach it
 (another origin), so after every stock change the API should call a
 revalidation route on the website, protected by a shared secret, that runs
-`revalidateTag("inventory", { expire: 0 })`. That route does not exist yet.
+`revalidateTag("inventory", { expire: 0 })`. It is `POST /api/revalidate` on
+the website (bearer `REVALIDATE_SECRET`), called by the API when
+`WEB_REVALIDATE_URL` and `REVALIDATE_SECRET` are set.
+
+## Implementation notes (apps/server)
+
+- **Invitations.** `POST /team` creates the member as `invited` and emails a
+  single-use link (7 days) to `ADMIN_URL/accept-invitation?token=…`. That page
+  calls two routes that need no session: `GET /invitations/:token` →
+  `{ name, email }` and `POST /invitations/:token/accept` `{ password }` → 204
+  (410 when the link is used, replaced or expired). Email goes through Resend
+  (`RESEND_API_KEY`, `EMAIL_FROM`); without it, development prints the link to
+  the server console. The first owner is created with
+  `pnpm --filter server staff:create -- --email … --name "…" --role owner`.
+- **Photos** are re-encoded to WebP (≤ 2400 px, metadata removed) with `sharp`
+  and stored in R2 under `vehicles/<vehicleId>/`. With a public bucket URL the
+  record holds that URL; otherwise it holds `/media/<vehicleId>/<file>`, served
+  by the API's `GET /media/*` and, on the website, by `/media` forwarding to
+  `MEDIA_PROXY_ORIGIN`.
+- **Storage.** Migration `0001_admin` adds `user.role/status/last_active_at`,
+  `vehicle.reservation/sale`, the enquiry follow-up columns on `lead`, and the
+  `lead_activity`, `customer`, `appointment`, `setting` and `team_invitation`
+  tables. Existing `closed` enquiries become `not-proceeding` (`other`).
+  Website enquiries are recorded through `recordWebsiteEnquiry()`
+  (packages/db), which adds the first activity entry and the customer link.
+- **Settings** are stored, but the website still reads `apps/web/src/lib/site.ts`;
+  saved business details do not reach public pages until it reads storage.
+- Lists are computed in memory from whole tables — fine for a dealership's
+  volumes; move filtering into SQL if enquiries grow into the tens of thousands.
 
 ## Not covered by the admin yet
 
