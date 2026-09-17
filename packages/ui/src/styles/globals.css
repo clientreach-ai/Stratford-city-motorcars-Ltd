@@ -208,6 +208,151 @@
     color: var(--color-ink-950);
   }
 
+  /*
+   * Native controls in the brand, on both surfaces. Without this the browser
+   * paints radios, range sliders, the text caret, date pickers, dropdown
+   * highlights, autofill and scrollbars in its own blue and grey.
+   */
+  :root {
+    color-scheme: light;
+    accent-color: var(--color-ink-950);
+    caret-color: var(--color-brass-deep);
+    scrollbar-color: var(--color-ink-300) transparent;
+    -webkit-tap-highlight-color: color-mix(in oklab, var(--color-brass) 22%, transparent);
+  }
+
+  [data-surface="dark"] {
+    color-scheme: dark;
+    accent-color: var(--color-brass);
+    caret-color: var(--color-brass);
+    scrollbar-color: var(--color-ink-600) transparent;
+  }
+
+  /* Dropdown lists: the chosen and hovered option in ink, never system blue. */
+  option {
+    background-color: var(--surface-raised);
+    color: var(--foreground);
+  }
+
+  option:checked {
+    background-color: var(--color-ink-950);
+    color: var(--color-bone);
+  }
+
+  [data-surface="dark"] option:checked {
+    background-color: var(--color-brass);
+    color: var(--color-ink-950);
+  }
+
+  /* Calendar and clock icons in date and time inputs follow the text colour. */
+  input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+
+  input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Autofilled fields keep the field's own colours instead of pale blue/yellow. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--rule);
+    box-shadow: 0 0 0 1000px var(--surface-raised) inset;
+    transition: background-color 9999s ease-out 0s;
+  }
+
+  /* Highlighted search matches (Ctrl+F, text fragments) in brass as well. */
+  ::target-text,
+  mark {
+    background-color: color-mix(in oklab, var(--color-brass) 40%, transparent);
+    color: inherit;
+  }
+}
+
+/*
+ * Chromium's customisable <select>: where supported, the open list is drawn in
+ * the brand too (paper panel, ink selection, brass hover) instead of the
+ * operating system's menu. Other browsers keep the native list, styled above
+ * as far as they allow.
+ */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+
+  /* Both apps draw their own chevron beside the select. */
+  select::picker-icon {
+    display: none;
+  }
+
+  ::picker(select) {
+    margin-block: 4px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+    box-shadow: 0 12px 32px -12px rgb(10 10 11 / 0.28);
+    padding-block: 4px;
+    max-height: min(60vh, 22rem);
+  }
+
+  select option {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.875rem;
+    background-color: transparent;
+    cursor: pointer;
+  }
+
+  select option::checkmark {
+    color: var(--rule);
+  }
+
+  select option:hover,
+  select option:focus-visible {
+    background-color: color-mix(in oklab, var(--color-brass) 16%, transparent);
+    outline: none;
+  }
+
+  select option:checked {
+    background-color: var(--color-ink-950);
+    color: var(--color-bone);
+  }
+
+  select option:checked::checkmark {
+    color: var(--color-brass-bright);
+  }
+
+  [data-surface="dark"] select option:checked {
+    background-color: var(--color-brass);
+    color: var(--color-ink-950);
+  }
+
+  [data-surface="dark"] select option:checked::checkmark {
+    color: var(--color-ink-950);
+  }
+
+  select option:disabled {
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+
+  /* The closed control shows the chosen text only, as before. */
+  select selectedcontent {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@layer base {
+
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 3px;
