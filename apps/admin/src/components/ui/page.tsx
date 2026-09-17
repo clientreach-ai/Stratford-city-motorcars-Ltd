@@ -238,18 +238,21 @@ export function Notice({
 export function DefinitionList({
   items,
   className,
+  stacked,
 }: {
   items: { label: string; value: ReactNode; hidden?: boolean }[];
   className?: string;
+  /** Label above value — for narrow side panels, where long emails need the full width. */
+  stacked?: boolean;
 }) {
   return (
     <dl className={cn("divide-y divide-border", className)}>
       {items
         .filter((item) => !item.hidden)
         .map((item) => (
-          <div key={item.label} className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-4 py-2.5 first:pt-0 last:pb-0">
+          <div key={item.label} className={cn("py-2.5 first:pt-0 last:pb-0", stacked ? "flex flex-col gap-1" : "grid grid-cols-[minmax(0,7.5rem)_1fr] gap-4")}>
             <dt className="admin-label pt-0.5">{item.label}</dt>
-            <dd data-numeric className="min-w-0 text-sm break-words">
+            <dd data-numeric className="min-w-0 text-sm [overflow-wrap:anywhere]">
               {item.value === null || item.value === undefined || item.value === "" ? (
                 <span className="text-ink-400">Not recorded</span>
               ) : (

@@ -195,6 +195,7 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
 
           <Panel title="Contact">
             <DefinitionList
+                  stacked
               items={[
                 { label: "Name", value: enquiry.name },
                 { label: "Phone", value: enquiry.phone ? <CopyValue value={enquiry.phone} label="phone number" /> : <span className="text-ink-500">Not given</span> },
