@@ -34,6 +34,9 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     qualities: [75],
+    // In development the website runs on localhost, which the optimiser
+    // refuses by default.
+    dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production",
     localPatterns: [{ pathname: "/sample/**", search: "" }, { pathname: "/*.webp", search: "" }],
     remotePatterns: [
       new URL(`${siteUrl}/media/**`),
