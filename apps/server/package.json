@@ -8,7 +8,8 @@
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bun run --hot src/index.ts",
     "start": "node dist/index.mjs",
-    "staff:create": "bun scripts/create-staff.ts"
+    "staff:create": "bun scripts/create-staff.ts",
+    "staff:password": "bun scripts/reset-password.ts"
   },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
