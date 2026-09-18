@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "check-types": "tsc --noEmit",
+    "check-types": "next typegen && tsc --noEmit",
     "check-content": "node scripts/check-content.mjs",
     "check-inventory": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-inventory.mjs",
     "start": "next start",
