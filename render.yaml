@@ -1,110 +1,29 @@
 # =============================================================================
-# Stratford City Motorcars — Render blueprint
+# Stratford City Motorcars — Render blueprint (website + admin)
 #
-# Three apps out of one monorepo, so each gets its own service with its own
-# build, start command and environment. Every service builds from the repo
-# root (no rootDir) so pnpm can resolve the workspace, and `turbo --filter`
-# narrows the build to the one app plus the packages it depends on.
+# The API and its Postgres are already deployed and are NOT described here, so
+# that applying this blueprint can never create a second API or a second,
+# empty database:
 #
-# Values marked `sync: false` are not in this file on purpose: they are either
-# secrets, or a URL that points at another service in this same blueprint
-# (Render cannot resolve those in a circle). Fill them in on the dashboard
-# after the first deploy, then redeploy. Every one of them is listed under
-# "After the first deploy" in the README.
+#     API   https://stratford-city-motorcars-ltd.onrender.com
+#
+# Both services below are built from the repo root (no rootDir) so pnpm can
+# resolve the workspace, and `turbo --filter` narrows each build to one app
+# plus the packages it depends on. Without the filter, Render builds all three
+# apps in every service and the admin fails on its missing environment.
 #
 # NEXT_PUBLIC_* values are compiled into the JavaScript at build time, not read
 # at runtime, so changing one needs a redeploy, not just a restart.
+#
+# Values marked `sync: false` must be filled in on the dashboard: they are
+# secrets, or they must be copied from the existing API service so that both
+# sides agree. See "After applying" in the notes that came with this file.
 # =============================================================================
-
-databases:
-  - name: scm-postgres
-    databaseName: stratford
-    user: stratford
-    region: frankfurt
-    plan: basic-256mb
-
-envVarGroups:
-  # REVALIDATE_SECRET has to be the identical string in the API and the
-  # website: the API signs cache-refresh calls with it and the website checks
-  # them. A shared group is the only way to generate it once.
-  - name: scm-shared
-    envVars:
-      - key: REVALIDATE_SECRET
-        generateValue: true
 
 services:
   # ---------------------------------------------------------------------------
-  # API — Hono on Node, serving the admin and the website's enquiry forms.
-  # ---------------------------------------------------------------------------
-  - type: web
-    name: scm-api
-    runtime: node
-    region: frankfurt
-    plan: starter
-    branch: master
-    autoDeploy: true
-    buildCommand: pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=server
-    startCommand: pnpm --filter server start
-    healthCheckPath: /health
-    envVarGroups:
-      - scm-shared
-    envVars:
-      - key: NODE_VERSION
-        value: 24.21.0
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: scm-postgres
-          property: connectionString
-      - key: BETTER_AUTH_SECRET
-        generateValue: true
-      # This service's own public URL, e.g. https://scm-api.onrender.com.
-      - key: BETTER_AUTH_URL
-        sync: false
-      # Comma-separated browser origins allowed to call the API with cookies.
-      # Both the website and the admin must be listed, or staff cannot sign in.
-      - key: CORS_ORIGIN
-        sync: false
-      # The admin's URL: staff invitation emails link here.
-      - key: ADMIN_URL
-        sync: false
-      # The website's revalidation endpoint, e.g. https://<web>/api/revalidate.
-      # Without it, published changes take up to 5 minutes to appear.
-      - key: WEB_REVALIDATE_URL
-        sync: false
-
-      # Photographs (Cloudflare R2). Uploads stay switched off until the bucket
-      # and both keys are set; the admin then reports "local-disk" instead.
-      - key: UPLOAD_BUCKET
-        sync: false
-      - key: UPLOAD_REGION
-        value: auto
-      - key: UPLOAD_ACCESS_KEY_ID
-        sync: false
-      - key: UPLOAD_SECRET_ACCESS_KEY
-        sync: false
-      - key: UPLOAD_ENDPOINT
-        sync: false
-      - key: UPLOAD_PUBLIC_BASE_URL
-        sync: false
-
-      # Invitation and enquiry emails (Resend). All three are needed.
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: ENQUIRY_EMAIL_TO
-        sync: false
-
-      # Optional: POST each new enquiry to a CRM/Zapier/Make endpoint.
-      - key: LEADS_WEBHOOK_URL
-        sync: false
-      - key: LEADS_WEBHOOK_TOKEN
-        sync: false
-
-  # ---------------------------------------------------------------------------
-  # Website — the public showroom. Reads stock from the database directly.
+  # Website — the public showroom. Reads stock from the database directly and
+  # only calls the API for photographs it cannot find on local disk.
   # ---------------------------------------------------------------------------
   - type: web
     name: scm-web
@@ -115,37 +34,44 @@ services:
     autoDeploy: true
     buildCommand: pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=web
     startCommand: pnpm --filter web start
-    envVarGroups:
-      - scm-shared
     envVars:
       - key: NODE_VERSION
         value: 24.21.0
       - key: NODE_ENV
         value: production
-      # The website reads stock at build time as well as at runtime, so this
-      # must be the same database the API writes to.
+
+      # MUST be the same database the API writes to, or the website will show
+      # different stock from the admin. Copy the value from the API service's
+      # DATABASE_URL (Internal Database URL). The website reads stock at build
+      # time as well as at runtime, so this is needed for the build to be right.
       - key: DATABASE_URL
-        fromDatabase:
-          name: scm-postgres
-          property: connectionString
+        sync: false
+
+      # The live API.
       - key: NEXT_PUBLIC_SERVER_URL
-        fromService:
-          type: web
-          name: scm-api
-          property: url
-      # Where /media/... falls back to when the file is not on local disk.
+        value: https://stratford-city-motorcars-ltd.onrender.com
+      # Where /media/... requests go when the file is not on local disk: the
+      # API serves photographs out of the R2 bucket.
       - key: MEDIA_PROXY_ORIGIN
-        fromService:
-          type: web
-          name: scm-api
-          property: url
+        value: https://stratford-city-motorcars-ltd.onrender.com
+
       # The canonical origin: drives canonical tags, Open Graph, sitemap.xml
-      # and robots.txt. Set this to the real domain once DNS is pointed, not
-      # the onrender.com URL, or search engines will index the wrong host.
+      # and robots.txt. Until DNS points at Render, set this on the dashboard
+      # to the service's own onrender.com URL instead, or search engines are
+      # told to index a host that does not resolve yet.
       - key: NEXT_PUBLIC_SITE_URL
         value: https://www.stratfordcitymotorcars.com
 
-      # Enquiry notifications, as on the API.
+      # Must match the API's REVALIDATE_SECRET exactly: the API signs cache
+      # refresh calls with it and the website checks them. Copy the value from
+      # the API service. If they differ, /api/revalidate rejects every call and
+      # published changes take up to 5 minutes to appear instead of being
+      # immediate.
+      - key: REVALIDATE_SECRET
+        sync: false
+
+      # Enquiry notifications. Optional: without them the enquiry still saves
+      # to the database and shows in the admin, it just is not emailed.
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
@@ -177,15 +103,18 @@ services:
         value: 24.21.0
       - key: NODE_ENV
         value: production
+
       # Never `mock`: the build refuses it in production so that invented cars
       # and customers can never be served to the dealership.
       - key: NEXT_PUBLIC_ADMIN_DATA
         value: api
+      # The live API. Staff sign-in cookies are set by this origin, so it must
+      # also appear in the API's CORS_ORIGIN.
       - key: NEXT_PUBLIC_ADMIN_API_URL
-        fromService:
-          type: web
-          name: scm-api
-          property: url
-      # Used for "view on website" links and site-relative photographs.
+        value: https://stratford-city-motorcars-ltd.onrender.com
+
+      # Used for "view on website" links and for photographs recorded as
+      # site-relative paths. Keep this in step with the website's own
+      # NEXT_PUBLIC_SITE_URL.
       - key: NEXT_PUBLIC_SITE_URL
         value: https://www.stratfordcitymotorcars.com
