@@ -18,19 +18,20 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { PencilLine, UserRound } from "lucide-react";
+import { PencilLine, Trash2, UserRound } from "lucide-react";
 
 import { EnquiryLine, ContactActions } from "@/components/enquiries/parts";
 import { routes } from "@/components/shell/routes";
 import { AppointmentStatusBadge, Tag } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Field, FieldGrid, Select, TextArea, TextInput } from "@/components/ui/form";
 import { DefinitionList, EmptyState, ErrorState, LoadingBlock, LoadingRows, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { DataTable, rowLinkClass, type Column } from "@/components/ui/table";
 import { Pagination, SearchField, SegmentedFilter, Toolbar } from "@/components/ui/toolbar";
 import { GuardedLink, useUnsavedChanges } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
-import { formatDateTime, formatRelative } from "@/lib/format";
+import { formatDateTime, formatRelative, plural } from "@/lib/format";
 import { queryKeys, useAdminMutation } from "@/lib/query";
 import { useSession } from "@/lib/session";
 
@@ -100,7 +101,7 @@ export function CustomerList() {
           <Tag>
             {customer.enquiryCount} {customer.enquiryCount === 1 ? "enquiry" : "enquiries"}
           </Tag>
-          {customer.appointmentCount ? <Tag>{customer.appointmentCount} visits</Tag> : null}
+          {customer.appointmentCount ? <Tag>{plural(customer.appointmentCount, "visit")}</Tag> : null}
           {customer.purchaseCount ? <Tag className="border-ink-900 text-foreground">Bought {customer.purchaseCount}</Tag> : null}
         </div>
       ),
@@ -187,11 +188,18 @@ export function CustomerList() {
 
 export function CustomerProfile({ id }: { id: string }) {
   const query = useQuery({ queryKey: queryKeys.customer(id), queryFn: () => api.customers.get(id) });
-  if (query.error) {
+  // Only when there is nothing to show: a background refresh that fails — or a
+  // customer erased from this page — must not flash an error on the way out.
+  if (query.error && !query.data) {
+    const missing = query.error instanceof NotFoundError;
     return (
       <PageBody>
-        <PageHeader back={{ label: "Customers", href: routes.customers }} title={query.error instanceof NotFoundError ? "Customer not found" : "This customer could not be loaded"} />
-        <ErrorState error={query.error} onRetry={query.error instanceof NotFoundError ? undefined : () => void query.refetch()} />
+        <PageHeader
+          back={{ label: "Customers", href: routes.customers }}
+          title={missing ? "Customer not found" : "This customer could not be loaded"}
+          description={missing ? query.error.message : undefined}
+        />
+        {missing ? null : <ErrorState error={query.error} onRetry={() => void query.refetch()} />}
       </PageBody>
     );
   }
@@ -208,7 +216,9 @@ export function CustomerProfile({ id }: { id: string }) {
 function Profile({ detail }: { detail: CustomerDetail }) {
   const { customer, enquiries, appointments, purchases } = detail;
   const { can } = useSession();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [erasing, setErasing] = useState(false);
 
   return (
     <PageBody>
@@ -217,7 +227,7 @@ function Profile({ detail }: { detail: CustomerDetail }) {
         title={customer.name}
         meta={
           <>
-            {customer.openEnquiryCount ? <Tag className="border-brass/60 text-brass-deep">{customer.openEnquiryCount} open enquiries</Tag> : null}
+            {customer.openEnquiryCount ? <Tag className="border-brass/60 text-brass-deep">{plural(customer.openEnquiryCount, "open enquiry", "open enquiries")}</Tag> : null}
             {customer.purchaseCount ? <Tag className="border-ink-900 text-foreground">Customer · bought {customer.purchaseCount}</Tag> : null}
             <span className="text-xs text-ink-500">First seen {formatDate(customer.createdAt)}</span>
           </>
@@ -319,9 +329,61 @@ function Profile({ detail }: { detail: CustomerDetail }) {
           <p className="text-xs leading-relaxed text-ink-500">
             Contact customers only about their own enquiries and purchases. Nobody here has agreed to marketing.
           </p>
+
+          {can("enquiries.delete") ? (
+            <div className="border-t border-border pt-4">
+              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/8 hover:text-destructive" onClick={() => setErasing(true)}>
+                <Trash2 aria-hidden />
+                Erase this customer
+              </Button>
+              <p className="mt-1 text-xs text-ink-500">For when someone asks for everything you hold about them to be removed.</p>
+            </div>
+          ) : null}
         </aside>
       </div>
+
+      {erasing ? <EraseDialog customer={customer} onClose={() => setErasing(false)} onErased={() => router.replace(routes.customers)} /> : null}
     </PageBody>
+  );
+}
+
+function EraseDialog({ customer, onClose, onErased }: { customer: Customer; onClose: () => void; onErased: () => void }) {
+  const [typed, setTyped] = useState("");
+  const mutation = useAdminMutation(() => api.customers.erase(customer.id), {
+    success: "Customer erased",
+    failure: "The customer was not erased",
+    onSuccess: onErased,
+  });
+  const ready = typed.trim().toLowerCase() === customer.name.trim().toLowerCase();
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="Erase this customer?"
+      description="This permanently deletes the person, their enquiries, and their details on any viewings. It cannot be undone."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Keep them
+          </Button>
+          <Button variant="danger" disabled={!ready} busy={mutation.isPending} onClick={() => mutation.mutate(undefined)}>
+            Erase permanently
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <p className="text-sm leading-relaxed text-ink-700">
+          Their enquiries and the notes on them go with them. Viewings and test drives stay in the diary so the day is not lost, with their name and
+          number taken off.
+        </p>
+        <Field label={`Type ${customer.name} to confirm`}>
+          {(c) => <TextInput {...c} value={typed} autoComplete="off" spellCheck={false} onChange={(event) => setTyped(event.target.value)} />}
+        </Field>
+        <p className="text-xs text-ink-600">Also remove them from anything held outside this system, such as WhatsApp chats or the enquiry email inbox.</p>
+      </div>
+    </Dialog>
   );
 }
 

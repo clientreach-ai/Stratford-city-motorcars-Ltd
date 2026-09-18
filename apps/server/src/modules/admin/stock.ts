@@ -1,7 +1,14 @@
 import { enquiryStatusLabel } from "@Stratford-city-motorcars-Ltd/core/enquiry";
 import { NotFoundError, ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import { can } from "@Stratford-city-motorcars-Ltd/core/permissions";
-import type { AdminVehicle, SaveVehicleResult } from "@Stratford-city-motorcars-Ltd/core/stock";
+import {
+  discardVehicleRefusal,
+  statusAfterRestore,
+  stockActionRefusal,
+  type AdminVehicle,
+  type SaveVehicleResult,
+  type StockAction,
+} from "@Stratford-city-motorcars-Ltd/core/stock";
 import type { SessionUser } from "@Stratford-city-motorcars-Ltd/core/team";
 import {
   PHOTO_CATEGORIES,
@@ -76,6 +83,16 @@ async function result(stored: StoredVehicle, member: SessionUser): Promise<SaveV
 }
 
 const notFound = () => new NotFoundError("This car could not be found. It may have been removed.");
+
+/**
+ * Refuses a lifecycle action the car's status does not allow (see
+ * `STOCK_ACTION_RULES`). Without it "put back on sale" and "take off the
+ * website" become back doors into publishing and un-archiving.
+ */
+function guardStatus(action: StockAction, record: VehicleRecord): void {
+  const refusal = stockActionRefusal(action, record.status);
+  if (refusal) throw new ValidationError({}, refusal);
+}
 
 /**
  * Loads the car with its row locked, checks the version, applies `change`, and
@@ -160,6 +177,13 @@ function reconcileMedia(stored: VehicleMedia[], submitted: VehicleMedia[]): Vehi
   });
 }
 
+/** Why this draft cannot simply be deleted (see `discardVehicleRefusal`). */
+function discardRefusal(record: VehicleRecord, leads: { vehicleSlug: string | null }[]): string | undefined {
+  const slugs = new Set([record.slug, ...record.previousSlugs]);
+  const hasEnquiries = leads.some((lead) => lead.vehicleSlug && slugs.has(lead.vehicleSlug));
+  return discardVehicleRefusal(record, { hasEnquiries });
+}
+
 function storedFiles(media: VehicleMedia[]): string[] {
   return media.flatMap((item) => {
     if (item.kind === "image") return [item.src];
@@ -233,6 +257,7 @@ export const stockRoutes = new Hono<AdminEnv>()
     const saved = await withLockedVehicle(id, async (stored, tx) => {
       if (!stored) throw notFound();
       checkVersion(stored.record.updatedAt, expectedUpdatedAt);
+      guardStatus("edit", stored.record);
 
       const parsed = vehicleRecordSchema.safeParse({ ...input, id, createdAt: stored.record.createdAt, updatedAt: stored.record.updatedAt });
       if (!parsed.success) {
@@ -283,7 +308,7 @@ export const stockRoutes = new Hono<AdminEnv>()
     c.json(
       await update(c, (stored) => {
         const record = stored.record;
-        if (record.status === "archived") throw new ValidationError({}, "Restore this car before publishing it.");
+        guardStatus("publish", record);
         const issues = publicationIssues(record);
         if (issues.length) throw new ValidationError({}, "This car cannot go on the website yet.", issues);
         record.status = "published";
@@ -295,6 +320,7 @@ export const stockRoutes = new Hono<AdminEnv>()
   .post("/:id/unpublish", validate("param", idParam), async (c) =>
     c.json(
       await update(c, (stored) => {
+        guardStatus("unpublish", stored.record);
         stored.record.status = "draft";
         stored.record.featured = false;
       }),
@@ -303,7 +329,10 @@ export const stockRoutes = new Hono<AdminEnv>()
 
   .post("/:id/featured", validate("param", idParam), async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { featured?: unknown };
-    const featured = body.featured === true;
+    if (typeof body.featured !== "boolean") {
+      throw new ValidationError({ featured: "Say whether this car should be featured." });
+    }
+    const featured = body.featured;
     return c.json(
       await update(c, (stored) => {
         if (featured && stored.record.status !== "published") {
@@ -348,7 +377,14 @@ export const stockRoutes = new Hono<AdminEnv>()
       await update(c, async (stored, member, tx) => {
         const record = stored.record;
         if (record.status !== "published") throw new ValidationError({}, "Only cars for sale can be marked sold.");
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(input.soldOn) || Number.isNaN(Date.parse(input.soldOn)) || new Date(input.soldOn).getTime() > Date.now()) {
+        // A real calendar day: "2026-02-31" parses but rolls over to March.
+        const day = new Date(`${input.soldOn}T12:00:00Z`);
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(input.soldOn) ||
+          Number.isNaN(day.getTime()) ||
+          day.toISOString().slice(0, 10) !== input.soldOn ||
+          day.getTime() > Date.now()
+        ) {
           throw new ValidationError({ soldOn: "Choose today or an earlier date." });
         }
         const soldAt = new Date(`${input.soldOn}T12:00:00Z`).toISOString();
@@ -389,6 +425,7 @@ export const stockRoutes = new Hono<AdminEnv>()
   .delete("/:id/sale", validate("param", idParam), async (c) =>
     c.json(
       await update(c, (stored) => {
+        guardStatus("undoSale", stored.record);
         stored.record.status = "published";
         stored.record.soldAt = undefined;
         stored.sale = null;
@@ -401,6 +438,7 @@ export const stockRoutes = new Hono<AdminEnv>()
       await update(
         c,
         (stored) => {
+          guardStatus("archive", stored.record);
           stored.record.status = "archived";
           stored.record.featured = false;
           stored.record.reserved = false;
@@ -416,7 +454,9 @@ export const stockRoutes = new Hono<AdminEnv>()
       await update(
         c,
         (stored) => {
-          stored.record.status = "draft";
+          guardStatus("restore", stored.record);
+          // A car archived while sold goes back to sold, so its sale survives.
+          stored.record.status = statusAfterRestore(Boolean(stored.sale));
         },
         "stock.archive",
       ),
@@ -463,12 +503,39 @@ export const stockRoutes = new Hono<AdminEnv>()
     return c.json(await respond(saved, member), 201);
   })
 
+  /**
+   * Discards a draft that never reached the website, with its photographs.
+   * Opening "Add a car" creates a record straight away, so without this every
+   * abandoned start stays in the stock list for good. Anything with a history
+   * — listed once, or asked about — is archived instead, never deleted.
+   */
+  .delete("/:id", validate("param", idParam), async (c) => {
+    requireCapability(c, "stock.edit");
+    const { id } = c.req.valid("param");
+    const body = (await c.req.json().catch(() => ({}))) as { expectedUpdatedAt?: string };
+
+    const stored = await findVehicle(id);
+    if (!stored) throw notFound();
+    checkVersion(stored.record.updatedAt, body.expectedUpdatedAt);
+
+    const reason = discardRefusal(stored.record, await loadLeads());
+    if (reason) throw new ValidationError({}, reason);
+
+    const files = storedFiles(stored.record.media);
+    await db.delete(tables.vehicle).where(eq(tables.vehicle.id, id));
+    stockChanged();
+    await removeStoredMedia(files);
+    return c.body(null, 204);
+  })
+
   .post("/:id/media", validate("param", idParam), async (c) => {
     requireCapability(c, "stock.edit");
     const { id } = c.req.valid("param");
     const storage = getMediaStorage();
     if (!storage) throw new ValidationError({ file: "Photo storage is not set up on the server yet." }, "Photos cannot be uploaded yet.");
-    if (!(await findVehicle(id))) throw notFound();
+    const target = await findVehicle(id);
+    if (!target) throw notFound();
+    guardStatus("edit", target.record);
 
     const form = await c.req.parseBody();
     const file = form.file;

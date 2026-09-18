@@ -66,6 +66,8 @@ export const sessionRoutes = new Hono<AppEnv>()
     if (!response.ok) throw new ValidationError({}, WRONG_CREDENTIALS);
 
     forwardCookies(c, response);
+    // A successful sign-in clears the count: only failures are throttled.
+    throttle.reset(c);
     await db.update(tables.user).set({ lastActiveAt: new Date() }).where(eq(tables.user.id, member.id));
     return c.json({ id: member.id, name: member.name, email: member.email, role: toRole(member.role) } satisfies SessionUser);
   })

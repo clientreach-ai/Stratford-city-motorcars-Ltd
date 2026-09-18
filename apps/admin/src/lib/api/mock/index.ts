@@ -17,6 +17,10 @@ import {
   passwordProblem,
   meetsPhotoSize,
   MINIMUM_PHOTO_SIZE,
+  statusAfterRestore,
+  stockActionRefusal,
+  discardVehicleRefusal,
+  type StockAction,
   type AdminApi,
   type AdminVehicle,
   type Appointment,
@@ -104,6 +108,12 @@ function stamp(previous?: string): string {
 
 function checkVersion(record: { updatedAt: string }, expected: string) {
   if (record.updatedAt !== expected) throw new ConflictError(undefined, record.updatedAt);
+}
+
+/** The same lifecycle rules the API enforces (`STOCK_ACTION_RULES`). */
+function guardStatus(action: StockAction, stored: StoredVehicle) {
+  const refusal = stockActionRefusal(action, stored.status);
+  if (refusal) throw new ValidationError({}, refusal);
 }
 
 // ---- Stock ----------------------------------------------------------------------------------
@@ -525,7 +535,7 @@ export function createMockApi(): AdminApi {
           const user = requireCapability(db, "stock.edit");
           const stored = findVehicle(db, id);
           checkVersion(stored, expectedUpdatedAt);
-          if (stored.status === "archived") throw new ValidationError({}, "Restore this car before publishing it.");
+          guardStatus("publish", stored);
           const issues = publicationIssues(stored);
           if (issues.length) {
             throw new ValidationError({}, "This car cannot go on the website yet.", issues);
@@ -541,6 +551,7 @@ export function createMockApi(): AdminApi {
           const user = requireCapability(db, "stock.edit");
           const stored = findVehicle(db, id);
           checkVersion(stored, expectedUpdatedAt);
+          guardStatus("unpublish", stored);
           stored.status = "draft";
           stored.featured = false;
           stored.updatedAt = stamp(stored.updatedAt);
@@ -624,6 +635,7 @@ export function createMockApi(): AdminApi {
           const user = requireCapability(db, "stock.edit");
           const stored = findVehicle(db, id);
           checkVersion(stored, expectedUpdatedAt);
+          guardStatus("undoSale", stored);
           stored.status = "published";
           stored.soldAt = undefined;
           stored.sale = null;
@@ -636,6 +648,7 @@ export function createMockApi(): AdminApi {
           const user = requireCapability(db, "stock.archive");
           const stored = findVehicle(db, id);
           checkVersion(stored, expectedUpdatedAt);
+          guardStatus("archive", stored);
           stored.status = "archived";
           stored.featured = false;
           stored.reserved = false;
@@ -649,7 +662,8 @@ export function createMockApi(): AdminApi {
           const user = requireCapability(db, "stock.archive");
           const stored = findVehicle(db, id);
           checkVersion(stored, expectedUpdatedAt);
-          stored.status = "draft";
+          guardStatus("restore", stored);
+          stored.status = statusAfterRestore(Boolean(stored.sale));
           stored.updatedAt = stamp(stored.updatedAt);
           return saveResult(db, stored, user);
         }),
@@ -684,6 +698,18 @@ export function createMockApi(): AdminApi {
           };
           db.vehicles.unshift(copy);
           return toAdminVehicle(db, copy, user);
+        }),
+
+      discard: (id, { expectedUpdatedAt }) =>
+        call((db) => {
+          requireCapability(db, "stock.edit");
+          const stored = findVehicle(db, id);
+          checkVersion(stored, expectedUpdatedAt);
+          const slugs = new Set([stored.slug, ...stored.previousSlugs]);
+          const hasEnquiries = db.enquiries.some((item) => item.vehicleSlug && slugs.has(item.vehicleSlug));
+          const refusal = discardVehicleRefusal(stored, { hasEnquiries });
+          if (refusal) throw new ValidationError({}, refusal);
+          db.vehicles = db.vehicles.filter((item) => item.id !== id);
         }),
 
       uploadImage: async (id, file, input, onProgress) => {
@@ -950,6 +976,26 @@ export function createMockApi(): AdminApi {
             updatedAt: stamp(stored.updatedAt),
           });
           return toCustomer(db, stored);
+        }),
+
+      erase: (id) =>
+        call((db) => {
+          requireCapability(db, "enquiries.delete");
+          const stored = db.customers.find((item) => item.id === id);
+          if (!stored) throw new NotFoundError("This customer could not be found.");
+          const enquiryIds = new Set(db.enquiries.filter((item) => item.customerId === id).map((item) => item.id));
+          db.enquiries = db.enquiries.filter((item) => !enquiryIds.has(item.id));
+          for (const enquiryId of enquiryIds) delete db.activity[enquiryId];
+          for (const appointment of db.appointments) {
+            if (appointment.customerId !== id) continue;
+            Object.assign(appointment, {
+              customerId: null,
+              customerName: "Erased at their request",
+              customerPhone: null,
+              notes: "",
+            });
+          }
+          db.customers = db.customers.filter((item) => item.id !== id);
         }),
     },
 

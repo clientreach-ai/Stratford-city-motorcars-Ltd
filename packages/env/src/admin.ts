@@ -23,4 +23,28 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   emptyStringAsUndefined: true,
+  /**
+   * Sample data must never ship. `mock` is the default so the admin runs with
+   * no configuration at all, which makes a forgotten setting in production
+   * silently serve invented cars and customers to the dealership — so a
+   * production build refuses it, and `api` without an API origin cannot work.
+   */
+  createFinalSchema: (shape) =>
+    z.object(shape).superRefine((value, context) => {
+      const production = process.env.NODE_ENV === "production";
+      if (production && value.NEXT_PUBLIC_ADMIN_DATA !== "api") {
+        context.addIssue({
+          code: "custom",
+          path: ["NEXT_PUBLIC_ADMIN_DATA"],
+          message: "Set NEXT_PUBLIC_ADMIN_DATA=api for production: sample data must never be served to the dealership.",
+        });
+      }
+      if (value.NEXT_PUBLIC_ADMIN_DATA === "api" && !value.NEXT_PUBLIC_ADMIN_API_URL) {
+        context.addIssue({
+          code: "custom",
+          path: ["NEXT_PUBLIC_ADMIN_API_URL"],
+          message: "NEXT_PUBLIC_ADMIN_API_URL is required when NEXT_PUBLIC_ADMIN_DATA=api.",
+        });
+      }
+    }),
 });

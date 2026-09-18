@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { formatMileage } from "./format";
-import { site } from "./site";
+import { site, type Site } from "./site";
 import type { PublicVehicle } from "./inventory/types";
 
 const DEFAULT_OG = "/brand/og-default.jpg";
@@ -59,44 +59,48 @@ export function pageMetadata({
 
 // ---- Structured data ------------------------------------------------------
 
-const postalAddress = {
-  "@type": "PostalAddress",
-  streetAddress: site.address.street,
-  addressLocality: site.address.locality,
-  postalCode: site.address.postcode,
-  addressCountry: site.address.country,
-};
+function postalAddressFor(details: Site) {
+  return {
+    "@type": "PostalAddress",
+    streetAddress: details.address.street,
+    addressLocality: details.address.locality,
+    postalCode: details.address.postcode,
+    addressCountry: details.address.country,
+  };
+}
+
+const postalAddress = postalAddressFor(site);
 
 /**
  * The dealership itself. Emitted once, from the root layout, with an @id that
  * the vehicle offers point back to so search engines connect seller to stock.
  */
-export function autoDealerSchema() {
+export function autoDealerSchema(details: Site = site) {
   return {
     "@type": "AutoDealer",
-    "@id": `${site.url}/#dealer`,
-    name: site.name,
-    legalName: site.company.legalName,
-    description: site.tagline,
-    url: site.url,
-    telephone: site.phone.e164,
-    email: site.email,
-    image: `${site.url}${DEFAULT_OG}`,
-    logo: `${site.url}/brand/logo.webp`,
-    address: postalAddress,
+    "@id": `${details.url}/#dealer`,
+    name: details.name,
+    legalName: details.company.legalName,
+    description: details.tagline,
+    url: details.url,
+    telephone: details.phone.e164,
+    email: details.email,
+    image: `${details.url}${DEFAULT_OG}`,
+    logo: `${details.url}/brand/logo.webp`,
+    address: postalAddressFor(details),
     geo: {
       "@type": "GeoCoordinates",
-      latitude: site.geo.latitude,
-      longitude: site.geo.longitude,
+      latitude: details.geo.latitude,
+      longitude: details.geo.longitude,
     },
     // Regular hours only. Weekend and bank-holiday viewings are by appointment,
     // which Schema.org cannot express, so no entries are published for them.
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",
-        dayOfWeek: site.hours.open.days.map((day) => `https://schema.org/${day}`),
-        opens: site.hours.open.opens,
-        closes: site.hours.open.closes,
+        dayOfWeek: details.hours.open.days.map((day) => `https://schema.org/${day}`),
+        opens: details.hours.open.opens,
+        closes: details.hours.open.closes,
       },
     ],
     // The showroom is in London; cars are delivered nationwide.
@@ -107,7 +111,7 @@ export function autoDealerSchema() {
     paymentAccepted: "Cash, Bank transfer, Debit card, Credit card, Finance, Part exchange",
     currenciesAccepted: "GBP",
     priceRange: "££££",
-    hasMap: `${site.url.replace(/\/$/, "")}/contact`,
+    hasMap: `${details.url.replace(/\/$/, "")}/contact`,
   };
 }
 
@@ -115,18 +119,18 @@ export function autoDealerSchema() {
  * The dealer plus a WebSite node, emitted once per page from the site layout.
  * No `sameAs`: the client's Instagram and TikTok handles have not been supplied.
  */
-export function dealerGraph() {
+export function dealerGraph(details: Site = site) {
   return {
     "@context": "https://schema.org",
     "@graph": [
-      autoDealerSchema(),
+      autoDealerSchema(details),
       {
         "@type": "WebSite",
-        "@id": `${site.url}/#website`,
-        name: site.name,
-        url: site.url,
+        "@id": `${details.url}/#website`,
+        name: details.name,
+        url: details.url,
         inLanguage: "en-GB",
-        publisher: { "@id": `${site.url}/#dealer` },
+        publisher: { "@id": `${details.url}/#dealer` },
       },
     ],
   };

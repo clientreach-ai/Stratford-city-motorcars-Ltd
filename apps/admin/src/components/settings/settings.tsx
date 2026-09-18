@@ -70,6 +70,9 @@ function SettingsView({ settings }: { settings: SettingsData }) {
       },
     });
 
+  // A failed save can be tried again even when the values are back as they were.
+  const canSave = dirty || Boolean(mutation.error);
+
   const notifications = settings.integrations.notifications;
   const anyNotification = notifications.some((item) => item.configured);
   const failure =
@@ -87,7 +90,7 @@ function SettingsView({ settings }: { settings: SettingsData }) {
         description="The dealership’s details and how the website is set up."
         actions={
           canEdit ? (
-            <Button variant="primary" onClick={save} busy={mutation.isPending} disabled={!dirty} className="max-sm:hidden">
+            <Button variant="primary" onClick={save} busy={mutation.isPending} disabled={!canSave} className="max-sm:hidden">
               Save changes
             </Button>
           ) : null
@@ -170,7 +173,7 @@ function SettingsView({ settings }: { settings: SettingsData }) {
                         type="button"
                         aria-pressed={on}
                         onClick={() => setHours("days", on ? form.hours.days.filter((item) => item !== day) : WEEK.filter((item) => item === day || form.hours.days.includes(item)))}
-                        className={cn("h-10 min-w-12 border px-3 text-[0.8125rem] transition-colors", on ? "border-ink-950 bg-ink-950 text-bone" : "border-border-strong bg-surface-raised text-ink-700 hover:border-ink-500")}
+                        className={cn("h-11 min-w-12 border px-3 text-[0.8125rem] transition-colors sm:h-10", on ? "border-ink-950 bg-ink-950 text-bone" : "border-border-strong bg-surface-raised text-ink-700 hover:border-ink-500")}
                       >
                         {day.slice(0, 3)}
                       </button>
@@ -246,8 +249,8 @@ function SettingsView({ settings }: { settings: SettingsData }) {
 
       {canEdit ? (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:hidden">
-          <Button variant="primary" className="w-full" onClick={save} busy={mutation.isPending} disabled={!dirty}>
-            {dirty ? "Save changes" : "No changes"}
+          <Button variant="primary" className="w-full" onClick={save} busy={mutation.isPending} disabled={!canSave}>
+            {canSave ? "Save changes" : "No changes"}
           </Button>
         </div>
       ) : null}

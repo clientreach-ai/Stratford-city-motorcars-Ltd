@@ -7,7 +7,7 @@ import { submitVehicleEnquiry } from "@/lib/forms/actions";
 import { PREFERRED_TIMES, REQUEST_TYPES, type FormState, type RequestType } from "@/lib/forms/options";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
-import { useFormFeedbackFocus } from "./use-form-feedback";
+import { useFormFeedbackFocus, useSubmissionKey } from "./use-form-feedback";
 
 const initial: FormState = { status: "idle" };
 
@@ -47,12 +47,13 @@ export function VehicleEnquiryForm({
   vehicleYear: number;
 }) {
   const [state, action] = useActionState(submitVehicleEnquiry, initial);
-  const formRef = useFormFeedbackFocus(state);
+  const { formRef, successRef } = useFormFeedbackFocus(state);
   const values = state.status === "invalid" || state.status === "unavailable" ? state.values : {};
   const [requestType, setRequestType] = useState<RequestType>(
     (values.requestType as RequestType | undefined) ?? "question",
   );
   const [minDate, setMinDate] = useState<string>();
+  const selectKey = useSubmissionKey(state);
 
   useEffect(() => {
     setMinDate(new Date().toISOString().slice(0, 10));
@@ -66,7 +67,14 @@ export function VehicleEnquiryForm({
 
   if (state.status === "success") {
     const copy = SUCCESS_COPY[requestType];
-    return <SuccessPanel reference={state.reference} heading={copy.heading} detail={copy.detail} />;
+    return (
+      <SuccessPanel
+        ref={successRef}
+        reference={state.reference}
+        heading={copy.heading}
+        detail={copy.detail}
+      />
+    );
   }
 
   const errors = state.status === "invalid" ? state.fieldErrors : undefined;
@@ -77,6 +85,8 @@ export function VehicleEnquiryForm({
     <form ref={formRef} action={action} className="relative space-y-5" noValidate>
       <Honeypot />
       <input type="hidden" name="vehicleSlug" value={vehicleSlug} />
+      {/* The car is resolved from the slug when the enquiry is stored, so this
+          title is only what the page was showing, never what is kept. */}
       <input type="hidden" name="vehicleTitle" value={name} />
       {/*
         The submitted request type comes from state, not from the radios: React
@@ -156,7 +166,11 @@ export function VehicleEnquiryForm({
             />
           </Field>
           <Field label="Preferred time" name="preferredTime" error={errors?.preferredTime}>
-            <Select {...fieldProps("preferredTime", errors?.preferredTime)} defaultValue={values.preferredTime ?? ""}>
+            <Select
+              key={selectKey}
+              {...fieldProps("preferredTime", errors?.preferredTime)}
+              defaultValue={values.preferredTime ?? ""}
+            >
               <option value="">No preference</option>
               {PREFERRED_TIMES.map((time) => (
                 <option key={time} value={time}>

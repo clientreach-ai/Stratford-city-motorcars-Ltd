@@ -12,6 +12,7 @@ import { Container, Eyebrow, Section } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
+import { getSite } from "@/lib/settings";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 export const metadata: Metadata = pageMetadata({
@@ -25,7 +26,9 @@ const crumbs = [
   { name: "Contact", path: "/contact" },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const site = await getSite();
+
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />

@@ -22,19 +22,20 @@ import { Dialog } from "@/components/ui/dialog";
 import { Checkbox, ChoiceGroup, Field, FieldGrid, Select, TextArea, TextInput } from "@/components/ui/form";
 import { GuardedLink } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
-import { fromDateTimeInput, showroomClock, toDateTimeInput } from "@/lib/format";
+import { dateKey, fromDateTimeInput, showroomClock, toDateTimeInput } from "@/lib/format";
 import { queryKeys, useAdminMutation } from "@/lib/query";
 import { useSession } from "@/lib/session";
 
 export type AppointmentPrefill = Partial<Pick<AppointmentInput, "type" | "vehicleId" | "customerId" | "customerName" | "customerPhone" | "enquiryId" | "handledBy" | "startsAt" | "notes">>;
 
-/** The next weekday slot on the hour inside opening hours, as a sensible default. */
+/**
+ * The next weekday slot on the hour inside opening hours, as a sensible
+ * default — 1pm in Stratford, whatever the laptop is set to.
+ */
 function nextSlot(): string {
   const date = new Date(Date.now() + 86_400_000);
-  date.setMinutes(0, 0, 0);
-  date.setHours(13);
-  while (date.getDay() === 0 || date.getDay() === 6) date.setDate(date.getDate() + 1);
-  return date.toISOString();
+  while ([0, 6].includes(showroomClock(date.toISOString()).getDay())) date.setDate(date.getDate() + 1);
+  return fromDateTimeInput(`${dateKey(date)}T13:00`);
 }
 
 /**
