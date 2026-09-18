@@ -245,7 +245,7 @@ function Appointments({ data, loading }: Props) {
   const today = data?.appointments.today ?? [];
   const upcoming = data?.appointments.upcoming ?? [];
   return (
-    <Panel title="Viewings & test drives" action={<ViewAll href={routes.viewings}>Diary</ViewAll>} flush>
+    <Panel title="Viewings & test drives" action={<ViewAll href={routes.viewings}>Calendar</ViewAll>} flush>
       {loading ? (
         <PanelRows />
       ) : (
