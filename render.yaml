@@ -1,0 +1,191 @@
+# =============================================================================
+# Stratford City Motorcars — Render blueprint
+#
+# Three apps out of one monorepo, so each gets its own service with its own
+# build, start command and environment. Every service builds from the repo
+# root (no rootDir) so pnpm can resolve the workspace, and `turbo --filter`
+# narrows the build to the one app plus the packages it depends on.
+#
+# Values marked `sync: false` are not in this file on purpose: they are either
+# secrets, or a URL that points at another service in this same blueprint
+# (Render cannot resolve those in a circle). Fill them in on the dashboard
+# after the first deploy, then redeploy. Every one of them is listed under
+# "After the first deploy" in the README.
+#
+# NEXT_PUBLIC_* values are compiled into the JavaScript at build time, not read
+# at runtime, so changing one needs a redeploy, not just a restart.
+# =============================================================================
+
+databases:
+  - name: scm-postgres
+    databaseName: stratford
+    user: stratford
+    region: frankfurt
+    plan: basic-256mb
+
+envVarGroups:
+  # REVALIDATE_SECRET has to be the identical string in the API and the
+  # website: the API signs cache-refresh calls with it and the website checks
+  # them. A shared group is the only way to generate it once.
+  - name: scm-shared
+    envVars:
+      - key: REVALIDATE_SECRET
+        generateValue: true
+
+services:
+  # ---------------------------------------------------------------------------
+  # API — Hono on Node, serving the admin and the website's enquiry forms.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: scm-api
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: master
+    autoDeploy: true
+    buildCommand: pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=server
+    startCommand: pnpm --filter server start
+    healthCheckPath: /health
+    envVarGroups:
+      - scm-shared
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scm-postgres
+          property: connectionString
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      # This service's own public URL, e.g. https://scm-api.onrender.com.
+      - key: BETTER_AUTH_URL
+        sync: false
+      # Comma-separated browser origins allowed to call the API with cookies.
+      # Both the website and the admin must be listed, or staff cannot sign in.
+      - key: CORS_ORIGIN
+        sync: false
+      # The admin's URL: staff invitation emails link here.
+      - key: ADMIN_URL
+        sync: false
+      # The website's revalidation endpoint, e.g. https://<web>/api/revalidate.
+      # Without it, published changes take up to 5 minutes to appear.
+      - key: WEB_REVALIDATE_URL
+        sync: false
+
+      # Photographs (Cloudflare R2). Uploads stay switched off until the bucket
+      # and both keys are set; the admin then reports "local-disk" instead.
+      - key: UPLOAD_BUCKET
+        sync: false
+      - key: UPLOAD_REGION
+        value: auto
+      - key: UPLOAD_ACCESS_KEY_ID
+        sync: false
+      - key: UPLOAD_SECRET_ACCESS_KEY
+        sync: false
+      - key: UPLOAD_ENDPOINT
+        sync: false
+      - key: UPLOAD_PUBLIC_BASE_URL
+        sync: false
+
+      # Invitation and enquiry emails (Resend). All three are needed.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: ENQUIRY_EMAIL_TO
+        sync: false
+
+      # Optional: POST each new enquiry to a CRM/Zapier/Make endpoint.
+      - key: LEADS_WEBHOOK_URL
+        sync: false
+      - key: LEADS_WEBHOOK_TOKEN
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Website — the public showroom. Reads stock from the database directly.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: scm-web
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: master
+    autoDeploy: true
+    buildCommand: pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=web
+    startCommand: pnpm --filter web start
+    envVarGroups:
+      - scm-shared
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      # The website reads stock at build time as well as at runtime, so this
+      # must be the same database the API writes to.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scm-postgres
+          property: connectionString
+      - key: NEXT_PUBLIC_SERVER_URL
+        fromService:
+          type: web
+          name: scm-api
+          property: url
+      # Where /media/... falls back to when the file is not on local disk.
+      - key: MEDIA_PROXY_ORIGIN
+        fromService:
+          type: web
+          name: scm-api
+          property: url
+      # The canonical origin: drives canonical tags, Open Graph, sitemap.xml
+      # and robots.txt. Set this to the real domain once DNS is pointed, not
+      # the onrender.com URL, or search engines will index the wrong host.
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://www.stratfordcitymotorcars.com
+
+      # Enquiry notifications, as on the API.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: ENQUIRY_EMAIL_TO
+        sync: false
+      - key: LEADS_WEBHOOK_URL
+        sync: false
+      - key: LEADS_WEBHOOK_TOKEN
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Admin — the staff screens. A browser-only app: it holds no secrets and
+  # talks to the API, which owns the session cookie.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: scm-admin
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: master
+    autoDeploy: true
+    buildCommand: pnpm install --frozen-lockfile && pnpm exec turbo run build --filter=admin
+    # `next start` is pinned to port 3002 in package.json for local use, which
+    # would ignore the port Render assigns — so the port is passed explicitly.
+    startCommand: pnpm --filter admin exec next start --port $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      # Never `mock`: the build refuses it in production so that invented cars
+      # and customers can never be served to the dealership.
+      - key: NEXT_PUBLIC_ADMIN_DATA
+        value: api
+      - key: NEXT_PUBLIC_ADMIN_API_URL
+        fromService:
+          type: web
+          name: scm-api
+          property: url
+      # Used for "view on website" links and site-relative photographs.
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://www.stratfordcitymotorcars.com
