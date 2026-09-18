@@ -116,6 +116,7 @@ export function createHttpApi(origin: string): AdminApi {
       archive: (id, options) => post(`/vehicles/${id}/archive`, options),
       restore: (id, options) => post(`/vehicles/${id}/restore`, options),
       duplicate: (id) => post(`/vehicles/${id}/duplicate`),
+      discard: (id, options) => request("DELETE", `/vehicles/${id}`, options),
       uploadImage: (id, file, input, onProgress) =>
         new Promise((resolve, reject) => {
           // XMLHttpRequest, not fetch: fetch cannot report upload progress.
@@ -163,6 +164,7 @@ export function createHttpApi(origin: string): AdminApi {
       list: (query) => get(`/customers${toQuery(query)}`),
       get: (id) => get(`/customers/${id}`),
       update: (id, input, options) => put(`/customers/${id}`, { ...input, ...options }),
+      erase: (id) => request("DELETE", `/customers/${id}`),
     },
 
     team: {

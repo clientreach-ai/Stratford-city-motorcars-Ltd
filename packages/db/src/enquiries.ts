@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 
 import type { Database } from "./index";
-import { customer, lead, leadActivity } from "./schema";
+import { appointment, customer, lead, leadActivity } from "./schema";
 
 /**
  * Records one website enquiry: the `lead` row, its first activity entry and
@@ -24,6 +24,18 @@ export interface WebsiteEnquiry {
   vehicleSlug: string | null;
   /** The validated submission, without the honeypot. */
   payload: unknown;
+  /**
+   * A viewing or test drive the customer asked for, when they gave a date and
+   * time. Recorded as `requested` in the diary so staff confirm it — without
+   * this the request was only ever text inside the enquiry and had to be typed
+   * into the diary by hand.
+   */
+  appointment?: {
+    type: "viewing" | "test-drive";
+    startsAt: Date;
+    durationMinutes: number;
+    vehicleId: string | null;
+  };
 }
 
 export const emailKey = (email: string | null | undefined) => email?.trim().toLowerCase() || null;
@@ -84,6 +96,35 @@ export async function recordWebsiteEnquiry(db: Database, enquiry: WebsiteEnquiry
       authorName: "Website",
       createdAt: now,
     });
+
+    if (enquiry.appointment) {
+      const { type, startsAt, durationMinutes, vehicleId } = enquiry.appointment;
+      await tx.insert(appointment).values({
+        id: randomUUID(),
+        type,
+        // Requested, never confirmed: the dealership agrees the time itself.
+        status: "requested",
+        startsAt,
+        durationMinutes,
+        vehicleId,
+        customerId,
+        customerName: enquiry.name,
+        customerPhone: enquiry.phone,
+        enquiryId: id,
+        checks: {},
+        createdAt: now,
+        updatedAt: now,
+      });
+      await tx.insert(leadActivity).values({
+        id: randomUUID(),
+        leadId: id,
+        type: "appointment",
+        body: `${type === "test-drive" ? "Test drive" : "Viewing"} requested from the website for ${startsAt.toISOString()}.`,
+        authorId: null,
+        authorName: "Website",
+        createdAt: now,
+      });
+    }
 
     return { id, customerId };
   });

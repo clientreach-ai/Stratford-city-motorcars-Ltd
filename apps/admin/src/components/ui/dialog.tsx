@@ -29,9 +29,31 @@ import { Button } from "./button";
 
 type Variant = "center" | "sheet" | "drawer";
 
+/** Controls a dialog can hand focus back to; a menu item goes with its menu, so it is not one. */
+const RETURNABLE = "button, a[href], input, select, textarea";
+
+/**
+ * The last such control to hold focus. A dialog opened from a row menu is
+ * opened by a menu item that disappears with the menu, and the button that
+ * opened the menu is where the user should land when the dialog closes.
+ */
+let lastFocused: HTMLElement | null = null;
+if (typeof document !== "undefined") {
+  document.addEventListener(
+    "focusin",
+    (event) => {
+      const target = event.target as HTMLElement;
+      if (target.matches?.(RETURNABLE)) lastFocused = target;
+    },
+    true,
+  );
+}
+
 const variantClass: Record<Variant, string> = {
+  // `h-fit`, not `h-auto`: the browser pins a dialog top and bottom, and an auto
+  // height then fills the screen for two lines of text.
   center:
-    "m-0 mt-auto h-auto max-h-[92dvh] w-full max-w-none border-t border-border-strong " +
+    "m-0 mt-auto h-fit max-h-[92dvh] w-full max-w-none border-t border-border-strong " +
     "sm:m-auto sm:max-h-[calc(100dvh-4rem)] sm:w-[min(calc(100vw-2rem),var(--dialog-width))] sm:border",
   sheet:
     "my-0 mr-0 ml-auto h-dvh max-h-none w-full max-w-none border-l border-border-strong sm:w-[min(100vw,var(--dialog-width))]",
@@ -67,13 +89,21 @@ export function Dialog({
   bodyClassName?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
+    // Whether the browser closed the dialog or React unmounted it, the control
+    // that opened it is where the user was, so that is where focus goes back.
+    const restoreFocus = () => {
+      if (opener.current?.isConnected) opener.current.focus();
+    };
     if (open && !dialog.open) {
+      const active = document.activeElement as HTMLElement | null;
+      opener.current = active?.matches(RETURNABLE) ? active : lastFocused;
       dialog.showModal();
       document.documentElement.style.overflow = "hidden";
       // Focus the requested control, or the dialog itself — never the first
@@ -81,9 +111,13 @@ export function Dialog({
       (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog).focus();
     } else if (!open && dialog.open) {
       dialog.close();
+      restoreFocus();
     }
     return () => {
-      if (open) document.documentElement.style.overflow = "";
+      if (!open) return;
+      document.documentElement.style.overflow = "";
+      // Still in the document means the branch above is about to close it.
+      if (!dialog.isConnected) restoreFocus();
     };
   }, [open]);
 

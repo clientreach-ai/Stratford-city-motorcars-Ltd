@@ -1,8 +1,9 @@
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowRight, Banknote, CalendarCheck, Repeat } from "lucide-react";
+import { ArrowRight, Banknote, CalendarCheck, ChevronLeft, ChevronRight, Repeat } from "lucide-react";
 
+import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { JsonLd } from "@/components/ui/json-ld";
@@ -15,13 +16,17 @@ import {
 } from "@/components/vehicle/vehicle-filters";
 import { ActiveFilterChips, VehicleSort } from "@/components/vehicle/vehicle-sort";
 import {
+  PAGE_SIZE,
   countActiveFilters,
   describeQuery,
   isNonCanonicalQuery,
+  parsePage,
   parseSearchParams,
+  toPageSearchString,
 } from "@/lib/inventory/query-params";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { searchVehicles } from "@/lib/inventory/repository";
+import type { VehicleQuery } from "@/lib/inventory/types";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
 
@@ -61,7 +66,12 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
   const { results, total, facets } = await searchVehicles(query);
 
   const activeCount = countActiveFilters(query);
-  const summary = describeQuery(query);
+  const summary = describeQuery(query, facets);
+  // Stock is listed a page at a time. A page beyond the last one — a stale link
+  // or a hand-edited URL — lands on the last page rather than on nothing.
+  const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const page = Math.min(parsePage(searchParams), pageCount);
+  const onThisPage = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   // With no published stock there is nothing to filter or sort: the rail, the
   // filter sheet and the sort control are left out and the empty state takes
   // the full width.
@@ -71,8 +81,8 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
     <>
       <JsonLd
         data={
-          results.length > 0
-            ? [breadcrumbSchema(crumbs), itemListSchema(results)]
+          onThisPage.length > 0
+            ? [breadcrumbSchema(crumbs), itemListSchema(onThisPage)]
             : breadcrumbSchema(crumbs)
         }
       />
@@ -142,7 +152,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
               ) : null}
               {results.length > 0 ? (
                 <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {results.map((vehicle, index) => (
+                  {onThisPage.map((vehicle, index) => (
                     <VehicleCard
                       key={vehicle.id}
                       vehicle={vehicle}
@@ -158,6 +168,8 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
               ) : (
                 <StockEmptyState />
               )}
+
+              {pageCount > 1 ? <Pagination query={query} page={page} pageCount={pageCount} /> : null}
 
               {results.length > 0 ? (
                 <p className="mt-10 text-xs leading-relaxed text-[var(--muted-foreground)]">
@@ -243,6 +255,74 @@ function FiltersFallback() {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * Paging through stock. Plain links: page two works with JavaScript switched
+ * off and a crawler can follow it, and the filters and sort travel with every
+ * link so a paged view stays the view the customer set up.
+ */
+function Pagination({
+  query,
+  page,
+  pageCount,
+}: {
+  query: VehicleQuery;
+  page: number;
+  pageCount: number;
+}) {
+  const href = (target: number) => `/vehicles${toPageSearchString(query, target)}` as Route;
+  const step =
+    "flex size-11 items-center justify-center border border-[var(--border-strong)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]";
+
+  return (
+    <nav aria-label="Stock pages" className="mt-10 border-t border-[var(--border)] pt-6">
+      <ul className="flex flex-wrap items-center justify-center gap-1.5">
+        <li>
+          {page > 1 ? (
+            <Link href={href(page - 1)} rel="prev" aria-label="Previous page" className={step}>
+              <ChevronLeft className="size-4" />
+            </Link>
+          ) : (
+            <span aria-hidden className={cn(step, "border-[var(--border)] text-[var(--muted-foreground)] opacity-40")}>
+              <ChevronLeft className="size-4" />
+            </span>
+          )}
+        </li>
+
+        {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
+          <li key={number}>
+            <Link
+              href={href(number)}
+              aria-current={number === page ? "page" : undefined}
+              data-numeric
+              className={cn(
+                "flex size-11 items-center justify-center border text-sm transition-colors",
+                number === page
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                  : "border-[var(--border-strong)] hover:border-[var(--primary)]",
+              )}
+            >
+              <span className="sr-only">Page </span>
+              {number}
+            </Link>
+          </li>
+        ))}
+
+        <li>
+          {page < pageCount ? (
+            <Link href={href(page + 1)} rel="next" aria-label="Next page" className={step}>
+              <ChevronRight className="size-4" />
+            </Link>
+          ) : (
+            <span aria-hidden className={cn(step, "border-[var(--border)] text-[var(--muted-foreground)] opacity-40")}>
+              <ChevronRight className="size-4" />
+            </span>
+          )}
+        </li>
+      </ul>
+    </nav>
   );
 }
 

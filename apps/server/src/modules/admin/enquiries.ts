@@ -97,7 +97,9 @@ export function filterEnquiries(items: Enquiry[], query: Partial<ListQuery>): En
     if (query.customerId && item.customerId !== query.customerId) return false;
     if (query.vehicleId && item.vehicle?.id !== query.vehicleId) return false;
     const exchange = item.payload.kind === "part-exchange" ? `${item.payload.registration} ${item.payload.make} ${item.payload.model}` : "";
-    return matches(query.search ?? "", item.name, item.email, item.phone, item.reference, item.vehicle?.title, exchange);
+    // The finance form lets the customer name a car in their own words.
+    const named = item.payload.kind === "finance" ? (item.payload.vehicle ?? "") : "";
+    return matches(query.search ?? "", item.name, item.email, item.phone, item.reference, item.vehicle?.title, exchange, named);
   });
 }
 
@@ -252,11 +254,22 @@ export const enquiryRoutes = new Hono<AdminEnv>()
       await logActivity(tx, current.id, member, "valuation", `Valuation: ${input.status}${money}${note ? ` — ${note}` : ""}`);
 
       const leavingNew = current.status === "new";
+      // A valuation moves the enquiry on, so it follows the same rules as any
+      // other status change: the move is recorded and the enquiry gets an owner.
+      let handledBy = current.handledBy;
+      if (leavingNew) {
+        await logActivity(tx, current.id, member, "status", `Status changed from ${enquiryStatusLabel("new")} to ${enquiryStatusLabel("contacted")}.`);
+        if (!handledBy) {
+          handledBy = member.id;
+          await logActivity(tx, current.id, member, "assigned", `Assigned to ${member.name}.`);
+        }
+      }
       const [updated] = await tx
         .update(lead)
         .set({
           valuation: { status: input.status, amount: input.amount, note, updatedAt: new Date().toISOString() },
           status: leavingNew ? "contacted" : current.status,
+          handledBy,
           firstRepliedAt: current.firstRepliedAt ?? (leavingNew ? new Date() : null),
           updatedAt: stamp(current.updatedAt),
         })

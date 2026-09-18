@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Check, Phone } from "lucide-react";
 
-import { PartExchangeForm, PartExchangeFormFromLink } from "@/components/forms/part-exchange-form";
+import { PartExchangeForm } from "@/components/forms/part-exchange-form";
 import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ExternalButtonLink } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { partExchangeChecklist, partExchangeSteps } from "@/lib/content/services";
+import { resolveVehicleBySlug } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
@@ -27,7 +28,7 @@ const crumbs = [
   { name: "Part Exchange", path: "/part-exchange" },
 ];
 
-export default function PartExchangePage() {
+export default function PartExchangePage(props: PageProps<"/part-exchange">) {
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
@@ -120,7 +121,7 @@ export default function PartExchangePage() {
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
               <Suspense fallback={<PartExchangeForm />}>
-                <PartExchangeFormFromLink />
+                <PartExchangeFormForLinkedCar searchParams={props.searchParams} />
               </Suspense>
             </div>
           </div>
@@ -174,6 +175,23 @@ export default function PartExchangePage() {
       />
     </>
   );
+}
+
+/**
+ * The car comes from `?vehicle=` on a car's part-exchange link, looked up in
+ * stock: a slug we do not hold prefills nothing, rather than a title made up
+ * from the URL. Reading the query renders this part of the page per request,
+ * so it sits inside <Suspense> with the empty form as its fallback.
+ */
+async function PartExchangeFormForLinkedCar({
+  searchParams,
+}: {
+  searchParams: PageProps<"/part-exchange">["searchParams"];
+}) {
+  const { vehicle } = await searchParams;
+  const car = await resolveVehicleBySlug(Array.isArray(vehicle) ? vehicle[0] : vehicle);
+  if (!car) return <PartExchangeForm />;
+  return <PartExchangeForm vehicleSlug={car.slug} vehicleName={`${car.year} ${car.title}`} />;
 }
 
 function NextStep({ title, detail }: { title: string; detail: string }) {

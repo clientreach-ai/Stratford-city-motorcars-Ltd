@@ -116,4 +116,33 @@ export const customerRoutes = new Hono<AdminEnv>()
     const [rows, leads, appointments, vehicles] = await Promise.all([loadCustomers(), loadLeads(), loadAppointments(), listVehicles()]);
     const row = rows.find((item) => item.id === c.req.valid("param").id)!;
     return c.json(toCustomer(row, leads, appointments, vehicles) satisfies Customer);
+  })
+
+  /**
+   * Erases a person: their customer record, their enquiries and the personal
+   * details on their viewings. Deleting an enquiry alone left the customer
+   * behind, so an erasure request could never actually be completed.
+   *
+   * Appointments and sales are kept as anonymous records so the diary and the
+   * sales history stay intact.
+   */
+  .delete("/:id", validate("param", idParam), async (c) => {
+    requireCapability(c, "enquiries.delete");
+    const { id } = c.req.valid("param");
+
+    await db.transaction(async (tx) => {
+      const [current] = await tx.select().from(customer).where(eq(customer.id, id)).limit(1);
+      if (!current) throw new NotFoundError("This customer could not be found.");
+
+      // Enquiries (and their activity, by cascade) go with the person.
+      await tx.delete(tables.lead).where(eq(tables.lead.customerId, id));
+      // The diary keeps the slot, without the person's details.
+      await tx
+        .update(tables.appointment)
+        .set({ customerId: null, customerName: "Erased at their request", customerPhone: null, notes: "" })
+        .where(eq(tables.appointment.customerId, id));
+      await tx.delete(customer).where(eq(customer.id, id));
+    });
+
+    return c.body(null, 204);
   });

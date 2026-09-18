@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import { db } from "../../lib/db";
+import { revalidateWebsite } from "../../lib/revalidate";
 import { validate } from "../../lib/validation";
 import { getMediaStorage } from "../media/storage";
 import { checkVersion, requireCapability, stamp, type AdminEnv } from "./context";
@@ -14,9 +15,9 @@ import { checkVersion, requireCapability, stamp, type AdminEnv } from "./context
  * Business settings — see "Settings" in the contract.
  *
  * Until they are first saved, the business details are the published facts in
- * apps/web/src/lib/site.ts (copied below). NOTE: the website still reads
- * site.ts, so a change saved here is stored but does not yet reach public
- * pages; site.ts must be moved to read from the `setting` table for that.
+ * apps/web/src/lib/site.ts (copied below). A save is stored here and the
+ * website reads it through `apps/web/src/lib/settings.ts`, so the header,
+ * footer, contact page and structured data follow the owner's edits.
  *
  * `integrations` is reported from this server's configuration; `compliance`
  * mirrors the developer-controlled switches in site.ts and is read-only.
@@ -87,8 +88,8 @@ function toSettings(business: BusinessDetails, updatedAt: Date): Settings {
       storage: "connected",
       notifications: [
         { channel: "webhook", configured: Boolean(env.LEADS_WEBHOOK_URL) },
-        // Invitation email only; enquiry emails and texts need a provider.
-        { channel: "email", configured: false },
+        { channel: "email", configured: Boolean(env.RESEND_API_KEY && env.EMAIL_FROM && env.ENQUIRY_EMAIL_TO) },
+        // Texts still need a provider (or the webhook above).
         { channel: "sms", configured: false },
       ],
       media: getMediaStorage() ? "object-storage" : "local-disk",
@@ -152,5 +153,7 @@ export const settingsRoutes = new Hono<AdminEnv>()
         .onConflictDoUpdate({ target: setting.key, set: { value: business, updatedAt } });
       return updatedAt;
     });
+    // The website caches these facts; drop that cache so the change shows now.
+    revalidateWebsite("settings");
     return c.json(toSettings(business, saved));
   });

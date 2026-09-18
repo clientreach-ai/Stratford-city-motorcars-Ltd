@@ -71,79 +71,83 @@ export function DataTable<T>({
 
   return (
     <div className={cn("border border-border bg-surface-raised transition-opacity duration-200", busy && "opacity-60")} aria-busy={busy || undefined}>
-      <table className="hidden w-full border-collapse text-left md:table">
-        <caption className="sr-only">{caption}</caption>
-        <thead>
-          <tr className="border-b border-border bg-surface/60">
-            {columns.map((item) => {
-              const active = sort?.id === item.id;
-              return (
-                <th
-                  key={item.id}
-                  scope="col"
-                  aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : undefined}
-                  className={cn(
-                    "admin-label h-10 px-3 first:pl-4 last:pr-4",
-                    item.minWidth ? hiddenBelow[item.minWidth] : "",
-                    item.align === "right" && "text-right",
-                    item.className,
-                  )}
-                >
-                  {item.hideHeader ? (
-                    <span className="sr-only">{item.header}</span>
-                  ) : sortable && item.sortValue ? (
-                    <button
-                      type="button"
-                      onClick={() => toggle(item.id)}
-                      className={cn("inline-flex items-center gap-1.5 uppercase transition-colors hover:text-foreground", active && "text-foreground")}
-                    >
-                      {item.header}
-                      {active ? (
-                        sort.direction === "asc" ? <ArrowUp className="size-3" aria-hidden /> : <ArrowDown className="size-3" aria-hidden />
-                      ) : (
-                        <ArrowUpDown className="size-3 opacity-40" aria-hidden />
-                      )}
-                    </button>
-                  ) : (
-                    item.header
-                  )}
+      {/* A wide table scrolls inside its own panel — never the whole page sideways.
+          `relative` keeps the visually hidden headers anchored here, so they scroll with it. */}
+      <div className="relative hidden overflow-x-auto scrollbar-thin md:block">
+        <table className="w-full border-collapse text-left">
+          <caption className="sr-only">{caption}</caption>
+          <thead>
+            <tr className="border-b border-border bg-surface/60">
+              {columns.map((item) => {
+                const active = sort?.id === item.id;
+                return (
+                  <th
+                    key={item.id}
+                    scope="col"
+                    aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : undefined}
+                    className={cn(
+                      "admin-label h-10 px-3 first:pl-4 last:pr-4",
+                      item.minWidth ? hiddenBelow[item.minWidth] : "",
+                      item.align === "right" && "text-right",
+                      item.className,
+                    )}
+                  >
+                    {item.hideHeader ? (
+                      <span className="sr-only">{item.header}</span>
+                    ) : sortable && item.sortValue ? (
+                      <button
+                        type="button"
+                        onClick={() => toggle(item.id)}
+                        className={cn("inline-flex items-center gap-1.5 uppercase transition-colors hover:text-foreground", active && "text-foreground")}
+                      >
+                        {item.header}
+                        {active ? (
+                          sort.direction === "asc" ? <ArrowUp className="size-3" aria-hidden /> : <ArrowDown className="size-3" aria-hidden />
+                        ) : (
+                          <ArrowUpDown className="size-3 opacity-40" aria-hidden />
+                        )}
+                      </button>
+                    ) : (
+                      item.header
+                    )}
+                  </th>
+                );
+              })}
+              {actions ? (
+                <th scope="col" className="w-12 pr-2">
+                  <span className="sr-only">Actions</span>
                 </th>
-              );
-            })}
-            {actions ? (
-              <th scope="col" className="w-12 pr-2">
-                <span className="sr-only">Actions</span>
-              </th>
-            ) : null}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((row) => (
-            <tr
-              key={rowKey(row)}
-              className={cn(
-                "group relative border-b border-border transition-colors duration-150 last:border-b-0 hover:bg-ink-50",
-                rowClassName?.(row),
-              )}
-            >
-              {columns.map((item) => (
-                <td
-                  key={item.id}
-                  className={cn(
-                    "px-3 py-3 align-middle text-sm first:pl-4 last:pr-4",
-                    item.minWidth ? hiddenBelow[item.minWidth] : "",
-                    item.align === "right" && "text-right",
-                    item.className,
-                  )}
-                >
-                  {item.cell(row)}
-                </td>
-              ))}
-              {actions ? <td className="relative z-10 py-2 pr-2 text-right align-middle">{actions(row)}</td> : null}
+              ) : null}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((row) => (
+              <tr
+                key={rowKey(row)}
+                className={cn(
+                  "group relative border-b border-border transition-colors duration-150 last:border-b-0 hover:bg-ink-50",
+                  rowClassName?.(row),
+                )}
+              >
+                {columns.map((item) => (
+                  <td
+                    key={item.id}
+                    className={cn(
+                      "px-3 py-3 align-middle text-sm first:pl-4 last:pr-4",
+                      item.minWidth ? hiddenBelow[item.minWidth] : "",
+                      item.align === "right" && "text-right",
+                      item.className,
+                    )}
+                  >
+                    {item.cell(row)}
+                  </td>
+                ))}
+                {actions ? <td className="relative z-10 py-2 pr-2 text-right align-middle">{actions(row)}</td> : null}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <ul className="divide-y divide-border md:hidden" aria-label={caption}>
         {sorted.map((row) => (

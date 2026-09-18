@@ -1,14 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { useSearchParams } from "next/navigation";
 
 import { Checkbox, Field, fieldProps, Honeypot, Input } from "@/components/ui/field";
 import { submitFinanceEnquiry } from "@/lib/forms/actions";
 import type { FormState } from "@/lib/forms/options";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
-import { humaniseSlug, useFormFeedbackFocus, validVehicleSlug } from "./use-form-feedback";
+import { useFormFeedbackFocus } from "./use-form-feedback";
 
 const initial: FormState = { status: "idle" };
 
@@ -18,13 +17,22 @@ const initial: FormState = { status: "idle" };
  * credit history — no lender is set up to use it, and none of it is needed to
  * start a conversation.
  */
-export function FinanceForm({ vehicleSlug }: { vehicleSlug?: string }) {
+export function FinanceForm({
+  vehicleSlug,
+  vehicleName,
+}: {
+  /** Set only when `?vehicle=` named a car we actually hold. */
+  vehicleSlug?: string;
+  /** That car as we list it, e.g. "2016 Mercedes-Benz SL63 AMG". */
+  vehicleName?: string;
+}) {
   const [state, action] = useActionState(submitFinanceEnquiry, initial);
-  const formRef = useFormFeedbackFocus(state);
+  const { formRef, successRef } = useFormFeedbackFocus(state);
 
   if (state.status === "success") {
     return (
       <SuccessPanel
+        ref={successRef}
         reference={state.reference}
         heading="Finance enquiry received"
         detail="Thanks — we'll come back to you personally about your finance enquiry."
@@ -78,7 +86,7 @@ export function FinanceForm({ vehicleSlug }: { vehicleSlug?: string }) {
       >
         <Input
           {...fieldProps("vehicle", errors?.vehicle, "Optional")}
-          defaultValue={values.vehicle ?? (slug ? humaniseSlug(slug) : undefined)}
+          defaultValue={values.vehicle ?? vehicleName}
         />
       </Field>
 
@@ -114,10 +122,4 @@ export function FinanceForm({ vehicleSlug }: { vehicleSlug?: string }) {
       <DirectContactNote />
     </form>
   );
-}
-
-/** Reads `?vehicle=<slug>` from a car's finance link. Render inside <Suspense>. */
-export function FinanceFormFromLink() {
-  const slug = validVehicleSlug(useSearchParams().get("vehicle"));
-  return <FinanceForm vehicleSlug={slug} />;
 }

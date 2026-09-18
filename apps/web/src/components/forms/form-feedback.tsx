@@ -16,16 +16,21 @@ export function SuccessPanel({
   reference,
   heading,
   detail,
+  ref,
 }: {
   reference: string;
   heading: string;
   detail: string;
+  /** The form that has just been replaced by this panel moves focus here. */
+  ref?: React.Ref<HTMLDivElement>;
 }) {
   return (
     <div
+      ref={ref}
       role="status"
       aria-live="polite"
-      className="border border-[var(--border)] bg-[var(--surface-raised)] p-8 text-center md:p-10"
+      tabIndex={-1}
+      className="border border-[var(--border)] bg-[var(--surface-raised)] p-8 text-center focus-visible:outline-2 focus-visible:outline-offset-2 md:p-10"
     >
       <span
         aria-hidden

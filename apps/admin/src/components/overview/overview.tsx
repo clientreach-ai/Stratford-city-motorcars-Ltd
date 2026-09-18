@@ -107,6 +107,8 @@ function Figures({ data }: { data: OverviewData | undefined }) {
     );
   }
   const { stock, enquiries, appointments } = data;
+  // The tile is about today, so its subtitle counts today's appointments only.
+  const toConfirmToday = appointments.today.filter((appointment) => appointment.status === "requested").length;
   return (
     <div className="grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-3 xl:grid-cols-6">
       <Metric
@@ -119,9 +121,9 @@ function Figures({ data }: { data: OverviewData | undefined }) {
       <Metric
         label="Viewings today"
         value={appointments.today.length}
-        hint={appointments.toConfirm ? `${appointments.toConfirm} still to confirm` : "All confirmed"}
+        hint={toConfirmToday ? `${toConfirmToday} still to confirm` : appointments.today.length ? "All confirmed" : "Nobody booked in"}
         href={routes.viewings}
-        tone={appointments.toConfirm ? "attention" : undefined}
+        tone={toConfirmToday ? "attention" : undefined}
       />
       <Metric label="On the website" value={stock.live} hint={`${stock.featured} featured · ${stock.reserved} reserved`} href={withQuery(routes.stock, { status: "published" })} />
       <Metric label="Drafts" value={stock.drafts} hint={stock.readyToPublish ? `${stock.readyToPublish} ready to publish` : "None ready to publish"} href={withQuery(routes.stock, { status: "draft" })} />

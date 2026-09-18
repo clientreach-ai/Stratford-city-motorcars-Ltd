@@ -93,6 +93,8 @@ function useFilterParams() {
     (mutate: (params: URLSearchParams) => void) => {
       const params = new URLSearchParams(searchParams.toString());
       mutate(params);
+      // A changed filter is a new list: page three of the old one is meaningless.
+      params.delete("page");
       const search = params.toString();
       startTransition(() => {
         // scroll:false keeps the customer's place in a long results list.

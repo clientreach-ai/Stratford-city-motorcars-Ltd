@@ -9,7 +9,7 @@ import { Menu, Phone, X } from "lucide-react";
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { site } from "@/lib/site";
+import type { Site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { navItems } from "./nav-config";
 
@@ -19,7 +19,7 @@ import { navItems } from "./nav-config";
  * block with the utility strip above and the hero below. Once the page scrolls
  * past that band it resolves to the bone surface with a hairline beneath.
  */
-export function SiteHeader() {
+export function SiteHeader({ site }: { site: Site }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -38,7 +38,7 @@ export function SiteHeader() {
 
   return (
     <>
-      <UtilityStrip />
+      <UtilityStrip site={site} />
 
       <header
         data-surface={solid ? undefined : "dark"}
@@ -124,13 +124,13 @@ export function SiteHeader() {
         </div>
       </header>
 
-      <MobileNav open={open} onClose={() => setOpen(false)} />
+      <MobileNav open={open} onClose={() => setOpen(false)} site={site} />
     </>
   );
 }
 
 /** Thin ink strip above the header — phone, hours and WhatsApp, always visible. */
-function UtilityStrip() {
+function UtilityStrip({ site }: { site: Site }) {
   return (
     <aside
       aria-label="Showroom address and contact"
@@ -169,7 +169,7 @@ function UtilityStrip() {
   );
 }
 
-function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void; site: Site }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
