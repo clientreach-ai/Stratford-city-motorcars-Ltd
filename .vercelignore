@@ -1,0 +1,10 @@
+# Local settings and secrets never leave this machine; each host has its own.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build output and local data.
+**/.next
+**/.turbo
+**/dist
+**/.data

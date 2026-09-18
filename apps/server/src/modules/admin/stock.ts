@@ -194,17 +194,46 @@ function storedFiles(media: VehicleMedia[]): string[] {
   });
 }
 
+/**
+ * What to tell the dealership when a field fails the record schema — every
+ * field the editor sends, so the schema's own wording ("Too small: expected
+ * number to be >=50") never reaches the screen.
+ */
 const TEXT_MESSAGES: Record<string, string> = {
   title: "Keep the title under 160 characters.",
   make: "Keep the make under 60 characters.",
   model: "Keep the model under 80 characters.",
+  variant: "Keep the variant under 120 characters.",
+  registration: "Keep the registration under 12 characters.",
+  registrationDate: "Choose a real date.",
   colour: "Keep the colour under 80 characters.",
   description: "Keep the description under 6,000 characters.",
   seoTitle: "Search titles are cut off after about 70 characters.",
   seoDescription: "Search descriptions are cut off after about 170 characters.",
   slug: "Use lowercase letters, numbers and single hyphens only.",
   price: "Enter a price in whole pounds.",
+  adminFee: "Enter the fee in whole pounds.",
   mileage: "Enter the mileage in whole miles.",
+  fuel: "Choose the fuel from the list.",
+  transmission: "Choose the gearbox from the list.",
+  bodyType: "Choose the body style from the list.",
+  interior: "Keep the interior description under 160 characters.",
+  engine: "Keep the engine description under 80 characters.",
+  engineSizeCc: "Enter the engine size in cc, between 50 and 20,000 — for example 2,981 for a 3.0-litre engine.",
+  power: "Keep the power under 40 characters, for example 450 PS.",
+  doors: "Enter a number of doors between 1 and 9.",
+  seats: "Enter a number of seats between 1 and 12.",
+  previousOwners: "Enter a number of previous owners between 0 and 99.",
+  insuranceGroup: "Keep the insurance group under 10 characters.",
+  roadTaxBand: "Keep the road tax band under 40 characters.",
+  serviceHistory: "Keep the service history under 200 characters.",
+  motExpiry: "Choose a real date.",
+  motHistory: "Check each MOT test: a real date, a result, and the mileage in whole miles.",
+  documentation: "Keep the documents note under 300 characters.",
+  hpiStatus: "Choose the history check result from the list.",
+  warranty: "Enter a warranty term between 1 and 120 months, and keep the note under 300 characters.",
+  ulezCompliant: "Choose whether the car is ULEZ compliant.",
+  financeExample: "Check the finance example: every figure is needed.",
 };
 
 function friendlyFields(fields: Record<string, string>, record: Partial<VehicleRecord>): Record<string, string> {
@@ -219,7 +248,8 @@ function friendlyFields(fields: Record<string, string>, record: Partial<VehicleR
     } else if (head === "year") {
       out.year = `Enter a year between 1886 and ${new Date().getFullYear() + 1}.`;
     } else {
-      out[head!] ??= TEXT_MESSAGES[head!] ?? message;
+      // Never the schema's own wording: it reads like code to the dealership.
+      out[head!] ??= TEXT_MESSAGES[head!] ?? (message.includes("expected") ? "Check this value and try again." : message);
     }
   }
   return out;

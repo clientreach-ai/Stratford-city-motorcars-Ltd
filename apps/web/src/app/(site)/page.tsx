@@ -26,8 +26,17 @@ export const metadata: Metadata = pageMetadata({
   path: "/",
 });
 
+/** One row of cars on the homepage: four across on desktop. */
+const STOCK_ROW = 4;
+
 export default async function HomePage() {
-  const [featured, available] = await Promise.all([getFeaturedVehicles(4), getAvailableVehicles()]);
+  const [featured, available] = await Promise.all([getFeaturedVehicles(STOCK_ROW), getAvailableVehicles()]);
+  // Hand-picked cars lead; the rest of the row is topped up from stock so the
+  // homepage never shows a half-empty row while there are cars for sale.
+  const row = [...featured, ...available.filter((vehicle) => !featured.some((pick) => pick.id === vehicle.id))].slice(
+    0,
+    STOCK_ROW,
+  );
 
   return (
     <>
@@ -36,39 +45,47 @@ export default async function HomePage() {
       {/* ---- Current stock ------------------------------------------------ */}
       <Section size="md">
         <Container>
-          {featured.length > 0 ? (
+          {row.length > 0 ? (
             <>
               <SectionHeading
                 eyebrow="Current stock"
                 title="On the floor right now"
-                lede="Hand-picked from our current stock. Take your time, and ask us anything you'd like to know."
+                lede="A few of the cars in stock right now. Take your time, and ask us anything you'd like to know."
                 action={<ViewAllLink />}
               />
 
-              <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {featured.map((vehicle) => (
+              {/* One row: swiped sideways on phones (bleeding to the screen
+                  edge, the next car peeking in), a grid from tablet up. */}
+              <div className="-mx-5 mt-12 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
+                {row.map((vehicle) => (
                   <VehicleCard
                     key={vehicle.id}
                     vehicle={vehicle}
                     // Below the hero on every viewport; the headline is the LCP.
-                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 92vw"
-                    className="reveal"
+                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 82vw"
+                    className="reveal w-[82%] shrink-0 snap-start sm:w-auto"
                   />
                 ))}
               </div>
 
-              <p className="mt-8 text-sm text-[var(--muted-foreground)]">
-                Stock moves and we don&rsquo;t list everything online.{" "}
-                <a
-                  href={whatsappLinks.sourcing}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="border-b border-[var(--rule)] pb-0.5 transition-colors hover:text-[var(--rule)]"
-                >
-                  Tell us what you&rsquo;re looking for
-                </a>{" "}
-                and we&rsquo;ll let you know what we have.
-              </p>
+              <div className="mt-10 flex flex-col items-start gap-6 border-t border-[var(--border)] pt-8 sm:flex-row sm:items-center sm:justify-between">
+                <ButtonLink href="/vehicles" size="lg" className="w-full sm:w-auto">
+                  View all {available.length} {available.length === 1 ? "car" : "cars"}
+                  <ArrowRight />
+                </ButtonLink>
+                <p className="text-sm text-[var(--muted-foreground)] sm:max-w-md sm:text-right">
+                  Stock moves and we don&rsquo;t list everything online.{" "}
+                  <a
+                    href={whatsappLinks.sourcing}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-b border-[var(--rule)] pb-0.5 transition-colors hover:text-[var(--rule)]"
+                  >
+                    Tell us what you&rsquo;re looking for
+                  </a>{" "}
+                  and we&rsquo;ll let you know what we have.
+                </p>
+              </div>
             </>
           ) : (
             // Nothing hand-picked: other stock is deliberately not promoted

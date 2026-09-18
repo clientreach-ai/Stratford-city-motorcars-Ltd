@@ -71,24 +71,56 @@ function toRecord(vehicle: AdminVehicle): VehicleRecord {
   return record;
 }
 
-/** Field paths the API reports, mapped to the section they live in. */
-const FIELD_SECTION: Record<string, SectionId> = {
-  title: "identity",
-  make: "identity",
-  model: "identity",
-  variant: "identity",
-  year: "identity",
-  registration: "identity",
-  price: "price",
-  adminFee: "price",
-  mileage: "specification",
-  colour: "specification",
-  description: "description",
-  features: "description",
-  slug: "visibility",
-  seoTitle: "visibility",
-  seoDescription: "visibility",
+/** Field paths the API reports: the section they live in, and their name on screen. */
+const FIELDS: Record<string, { section: SectionId; label: string }> = {
+  title: { section: "identity", label: "Listing title" },
+  make: { section: "identity", label: "Make" },
+  model: { section: "identity", label: "Model" },
+  variant: { section: "identity", label: "Variant" },
+  year: { section: "identity", label: "Year" },
+  registration: { section: "identity", label: "Registration" },
+  registrationDate: { section: "identity", label: "First registered" },
+  price: { section: "price", label: "Cash price" },
+  adminFee: { section: "price", label: "Admin or delivery fee" },
+  mileage: { section: "specification", label: "Mileage" },
+  fuel: { section: "specification", label: "Fuel" },
+  transmission: { section: "specification", label: "Gearbox" },
+  bodyType: { section: "specification", label: "Body style" },
+  colour: { section: "specification", label: "Colour" },
+  interior: { section: "specification", label: "Interior" },
+  engine: { section: "specification", label: "Engine" },
+  engineSizeCc: { section: "specification", label: "Engine size" },
+  power: { section: "specification", label: "Power" },
+  doors: { section: "specification", label: "Doors" },
+  seats: { section: "specification", label: "Seats" },
+  previousOwners: { section: "specification", label: "Previous owners" },
+  insuranceGroup: { section: "specification", label: "Insurance group" },
+  roadTaxBand: { section: "specification", label: "Road tax band" },
+  serviceHistory: { section: "history", label: "Service history" },
+  motExpiry: { section: "history", label: "MOT expires" },
+  motHistory: { section: "history", label: "MOT history" },
+  documentation: { section: "history", label: "Documents" },
+  warranty: { section: "history", label: "Warranty" },
+  description: { section: "description", label: "Description" },
+  features: { section: "description", label: "Features" },
+  slug: { section: "visibility", label: "Web address" },
+  seoTitle: { section: "visibility", label: "Search title" },
+  seoDescription: { section: "visibility", label: "Search description" },
 };
+
+/**
+ * The toast for a rejected save: which fields, in the words on screen, so the
+ * dealership knows where to look without reading every section.
+ */
+function saveProblem(fields: Record<string, string>): string {
+  const entries = Object.entries(fields);
+  const name = (key: string) => FIELDS[key]?.label ?? (key.startsWith("media") ? "Photographs" : "A field");
+  if (entries.length === 1) {
+    const [key, message] = entries[0]!;
+    return `${name(key)}: ${message}`;
+  }
+  return `${entries.length} fields need attention: ${entries.map(([key]) => name(key)).join(", ")}. Each is marked below.`;
+}
 
 /** A test date as the API stores it. */
 const MOT_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -102,7 +134,7 @@ function errorAnchor(field: string, record: VehicleRecord): string | undefined {
     const index = record.motHistory.findIndex((row) => !MOT_DATE.test(row.date));
     return index < 0 ? "history" : `mot-test-${index}`;
   }
-  return FIELD_SECTION[field] ?? (field.startsWith("media") ? "media" : undefined);
+  return FIELDS[field]?.section ?? (field.startsWith("media") ? "media" : undefined);
 }
 
 export function VehicleEditor({ id }: { id: string }) {
@@ -205,7 +237,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
         setFieldErrors(error.fields);
         const first = Object.keys(error.fields)[0];
         const anchor = first ? errorAnchor(first, draft) : undefined;
-        notify.error("Not saved", Object.values(error.fields)[0] ?? error.message);
+        notify.error("Not saved", Object.keys(error.fields).length ? saveProblem(error.fields) : error.message);
         if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
         notify.error("Not saved", errorMessage(error));
@@ -338,10 +370,10 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
               >
                 {(c) => <TextInput {...c} value={draft.title} disabled={!canEdit} onChange={(e) => set("title", e.target.value)} />}
               </Field>
-              <Field label="Registration" description="Kept for your records; not shown on the website.">
+              <Field label="Registration" description="Kept for your records; not shown on the website." error={fieldErrors.registration}>
                 {(c) => <TextInput {...c} value={draft.registration ?? ""} disabled={!canEdit} maxLength={12} autoCapitalize="characters" onChange={(e) => set("registration", e.target.value.toUpperCase() || undefined)} />}
               </Field>
-              <Field label="First registered">
+              <Field label="First registered" error={fieldErrors.registrationDate}>
                 {(c) => <TextInput {...c} type="date" value={draft.registrationDate ?? ""} disabled={!canEdit} onChange={(e) => set("registrationDate", e.target.value || undefined)} />}
               </Field>
             </FieldGrid>
@@ -378,7 +410,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                 >
                   {(c) => <NumberInput {...c} prefix="£" value={draft.price} disabled={!canEdit} onValueChange={(v) => set("price", v)} />}
                 </Field>
-                <Field label="Admin or delivery fee" description="Shown next to the price when set.">
+                <Field label="Admin or delivery fee" description="Shown next to the price when set." error={fieldErrors.adminFee}>
                   {(c) => <NumberInput {...c} prefix="£" value={draft.adminFee ?? null} disabled={!canEdit} onValueChange={(v) => set("adminFee", v ?? undefined)} />}
                 </Field>
               </FieldGrid>
@@ -393,7 +425,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
               <Field label="Mileage" required error={fieldErrors.mileage}>
                 {(c) => <NumberInput {...c} suffix="miles" value={draft.mileage} disabled={!canEdit} onValueChange={(v) => set("mileage", v)} />}
               </Field>
-              <Field label="Fuel" required>
+              <Field label="Fuel" required error={fieldErrors.fuel}>
                 {(c) => (
                   <Select {...c} value={draft.fuel ?? ""} disabled={!canEdit} onChange={(e) => set("fuel", (e.target.value || null) as FuelType | null)}>
                     <option value="">Choose…</option>
@@ -403,7 +435,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                   </Select>
                 )}
               </Field>
-              <Field label="Gearbox" required>
+              <Field label="Gearbox" required error={fieldErrors.transmission}>
                 {(c) => (
                   <Select {...c} value={draft.transmission ?? ""} disabled={!canEdit} onChange={(e) => set("transmission", (e.target.value || null) as Transmission | null)}>
                     <option value="">Choose…</option>
@@ -413,7 +445,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                   </Select>
                 )}
               </Field>
-              <Field label="Body style" required>
+              <Field label="Body style" required error={fieldErrors.bodyType}>
                 {(c) => (
                   <Select {...c} value={draft.bodyType ?? ""} disabled={!canEdit} onChange={(e) => set("bodyType", (e.target.value || null) as BodyType | null)}>
                     <option value="">Choose…</option>
@@ -426,31 +458,31 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
               <Field label="Colour" required error={fieldErrors.colour}>
                 {(c) => <TextInput {...c} value={draft.colour} disabled={!canEdit} onChange={(e) => set("colour", e.target.value)} placeholder="As you describe it" />}
               </Field>
-              <Field label="Interior">
+              <Field label="Interior" error={fieldErrors.interior}>
                 {(c) => <TextInput {...c} value={draft.interior ?? ""} disabled={!canEdit} onChange={(e) => set("interior", e.target.value || undefined)} placeholder="e.g. Black leather" />}
               </Field>
-              <Field label="Engine">
+              <Field label="Engine" error={fieldErrors.engine}>
                 {(c) => <TextInput {...c} value={draft.engine ?? ""} disabled={!canEdit} onChange={(e) => set("engine", e.target.value || undefined)} placeholder="e.g. 3.0L Twin-Turbo" />}
               </Field>
-              <Field label="Engine size">
+              <Field label="Engine size" error={fieldErrors.engineSizeCc}>
                 {(c) => <NumberInput {...c} suffix="cc" value={draft.engineSizeCc ?? null} disabled={!canEdit} onValueChange={(v) => set("engineSizeCc", v ?? undefined)} />}
               </Field>
-              <Field label="Power">
+              <Field label="Power" error={fieldErrors.power}>
                 {(c) => <TextInput {...c} value={draft.power ?? ""} disabled={!canEdit} onChange={(e) => set("power", e.target.value || undefined)} placeholder="e.g. 450 PS" />}
               </Field>
-              <Field label="Doors">
+              <Field label="Doors" error={fieldErrors.doors}>
                 {(c) => <NumberInput {...c} value={draft.doors ?? null} disabled={!canEdit} onValueChange={(v) => set("doors", v ?? undefined)} />}
               </Field>
-              <Field label="Seats">
+              <Field label="Seats" error={fieldErrors.seats}>
                 {(c) => <NumberInput {...c} value={draft.seats ?? null} disabled={!canEdit} onValueChange={(v) => set("seats", v ?? undefined)} />}
               </Field>
-              <Field label="Previous owners">
+              <Field label="Previous owners" error={fieldErrors.previousOwners}>
                 {(c) => <NumberInput {...c} value={draft.previousOwners ?? null} disabled={!canEdit} onValueChange={(v) => set("previousOwners", v ?? undefined)} />}
               </Field>
-              <Field label="Insurance group">
+              <Field label="Insurance group" error={fieldErrors.insuranceGroup}>
                 {(c) => <TextInput {...c} value={draft.insuranceGroup ?? ""} disabled={!canEdit} maxLength={10} onChange={(e) => set("insuranceGroup", e.target.value || undefined)} />}
               </Field>
-              <Field label="Road tax band">
+              <Field label="Road tax band" error={fieldErrors.roadTaxBand}>
                 {(c) => <TextInput {...c} value={draft.roadTaxBand ?? ""} disabled={!canEdit} maxLength={40} onChange={(e) => set("roadTaxBand", e.target.value || undefined)} />}
               </Field>
             </FieldGrid>
@@ -459,13 +491,13 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
           <Section id="history" title="History & checks" description="Only enter what your records show. Anything left blank tells buyers to ask you, rather than guessing.">
             <div className="space-y-6">
               <FieldGrid>
-                <Field label="Service history" className="sm:col-span-2">
+                <Field label="Service history" className="sm:col-span-2" error={fieldErrors.serviceHistory}>
                   {(c) => <TextInput {...c} value={draft.serviceHistory ?? ""} disabled={!canEdit} maxLength={200} onChange={(e) => set("serviceHistory", e.target.value || undefined)} placeholder="e.g. Full Porsche main dealer history" />}
                 </Field>
-                <Field label="MOT expires">
+                <Field label="MOT expires" error={fieldErrors.motExpiry}>
                   {(c) => <TextInput {...c} type="date" value={draft.motExpiry ?? ""} disabled={!canEdit} onChange={(e) => set("motExpiry", e.target.value || undefined)} />}
                 </Field>
-                <Field label="Documents">
+                <Field label="Documents" error={fieldErrors.documentation}>
                   {(c) => <TextInput {...c} value={draft.documentation ?? ""} disabled={!canEdit} maxLength={300} onChange={(e) => set("documentation", e.target.value || undefined)} placeholder="e.g. V5C present, two keys" />}
                 </Field>
               </FieldGrid>
@@ -494,10 +526,10 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                 </Field>
                 {draft.warranty.available ? (
                   <>
-                    <Field label="Longest warranty term">
+                    <Field label="Longest warranty term" error={fieldErrors.warranty}>
                       {(c) => <NumberInput {...c} suffix="months" value={draft.warranty.termMonths ?? null} disabled={!canEdit} onValueChange={(v) => set("warranty", { ...draft.warranty, termMonths: v ?? undefined })} />}
                     </Field>
-                    <Field label="Warranty note">
+                    <Field label="Warranty note" error={fieldErrors.warranty}>
                       {(c) => <TextInput {...c} value={draft.warranty.notes ?? ""} disabled={!canEdit} maxLength={300} onChange={(e) => set("warranty", { ...draft.warranty, notes: e.target.value || undefined })} />}
                     </Field>
                   </>
