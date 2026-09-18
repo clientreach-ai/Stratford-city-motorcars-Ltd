@@ -15,6 +15,11 @@ import { site } from "@/lib/site";
  * Excluded: the interim noindex legal pages, sold cars (their pages stay up
  * but are not submitted), and hidden or draft stock.
  */
+
+// Built once at deploy otherwise, so a car published afterwards never reached
+// search engines until the next deploy. Hourly is plenty for crawlers.
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const vehicles = await getSitemapVehicles();
 
