@@ -9,6 +9,15 @@ import type { NextConfig } from "next";
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.stratfordcitymotorcars.com").replace(/\/$/, "");
 const mediaPublicBase = process.env.MEDIA_PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
 
+/**
+ * When the API is on a different site from the admin (two *.vercel.app
+ * domains, say), its session cookie is a third-party cookie, which Safari and
+ * Firefox block. Setting ADMIN_API_PROXY_ORIGIN serves the API through the
+ * admin's own origin instead, so the cookie is first-party everywhere; point
+ * NEXT_PUBLIC_ADMIN_API_URL at the admin's own address. Unset, nothing changes.
+ */
+const apiProxyOrigin = process.env.ADMIN_API_PROXY_ORIGIN?.trim().replace(/\/$/, "");
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "same-origin" },
@@ -29,6 +38,14 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+
+  async rewrites() {
+    if (!apiProxyOrigin) return [];
+    return [
+      { source: "/api/admin/:path*", destination: `${apiProxyOrigin}/api/admin/:path*` },
+      { source: "/api/auth/:path*", destination: `${apiProxyOrigin}/api/auth/:path*` },
+    ];
   },
 
   images: {
