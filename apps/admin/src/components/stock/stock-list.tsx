@@ -359,6 +359,19 @@ function ListingSummary({ vehicle, progress }: { vehicle: AdminVehicle; progress
   if (vehicle.status === "archived" || vehicle.status === "sold") {
     return <span className="text-xs text-ink-500" data-numeric>{progress.dealerPhotos} photographs</span>;
   }
+  // A car that is live is done: say so, rather than asking to publish it again.
+  if (vehicle.status === "published") {
+    return progress.live ? (
+      <span className="inline-flex items-center gap-2 text-xs text-ink-600">
+        <span aria-hidden className="size-1.5 rounded-full bg-success" />
+        On the website
+      </span>
+    ) : (
+      <span className="text-xs text-destructive" data-numeric>
+        Hidden from the website · {progress.issues.length} to fix
+      </span>
+    );
+  }
   const ratio = Math.min(1, progress.dealerPhotos / progress.target);
   return (
     <div className="flex min-w-36 flex-col gap-1.5">
