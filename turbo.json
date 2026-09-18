@@ -5,7 +5,22 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": [
+        "DATABASE_URL",
+        "REVALIDATE_SECRET",
+        "MEDIA_PROXY_ORIGIN",
+        "MEDIA_ROOT",
+        "MEDIA_PUBLIC_BASE_URL",
+        "RESERVATION_CHECKOUT_URL",
+        "ADMIN_API_PROXY_ORIGIN",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "ENQUIRY_EMAIL_TO",
+        "LEADS_WEBHOOK_URL",
+        "LEADS_WEBHOOK_TOKEN",
+        "NEXT_PUBLIC_*"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
