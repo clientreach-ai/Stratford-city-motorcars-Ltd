@@ -1,5 +1,10 @@
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
-import { S3Client } from "bun";
 
 /**
  * Vehicle media in S3-compatible object storage (Cloudflare R2).
@@ -43,11 +48,12 @@ export function getMediaStorage(): MediaStorage | null {
   }
 
   const client = new S3Client({
-    bucket: UPLOAD_BUCKET,
     region: UPLOAD_REGION,
-    accessKeyId: UPLOAD_ACCESS_KEY_ID,
-    secretAccessKey: UPLOAD_SECRET_ACCESS_KEY,
     endpoint,
+    credentials: { accessKeyId: UPLOAD_ACCESS_KEY_ID, secretAccessKey: UPLOAD_SECRET_ACCESS_KEY },
+    // R2 (and most S3-compatible endpoints that are not AWS) address buckets by
+    // path rather than by subdomain of the endpoint host.
+    forcePathStyle: true,
   });
 
   // A genuinely public base URL is used as-is; otherwise media is proxied.
@@ -72,21 +78,39 @@ export function getMediaStorage(): MediaStorage | null {
     async put(vehicleId, extension, bytes, contentType) {
       const path = `${vehicleId}/${crypto.randomUUID()}.${extension}`;
       if (!FILE_PATTERN.test(path)) throw new Error("Invalid media path");
-      await client.write(`${OBJECT_PREFIX}${path}`, bytes, { type: contentType });
+      await client.send(
+        new PutObjectCommand({
+          Bucket: UPLOAD_BUCKET,
+          Key: `${OBJECT_PREFIX}${path}`,
+          Body: bytes,
+          ContentType: contentType,
+        }),
+      );
       return srcFor(path);
     },
 
     async remove(src) {
       const path = pathOf(src);
-      if (path) await client.delete(`${OBJECT_PREFIX}${path}`);
+      if (!path) return;
+      await client.send(
+        new DeleteObjectCommand({ Bucket: UPLOAD_BUCKET, Key: `${OBJECT_PREFIX}${path}` }),
+      );
     },
 
     async open(path) {
       if (!FILE_PATTERN.test(path)) return null;
-      const file = client.file(`${OBJECT_PREFIX}${path}`);
       try {
-        const stats = await file.stat();
-        return { body: file.stream(), size: stats.size, type: stats.type, etag: stats.etag };
+        const object = await client.send(
+          new GetObjectCommand({ Bucket: UPLOAD_BUCKET, Key: `${OBJECT_PREFIX}${path}` }),
+        );
+        if (!object.Body) return null;
+        return {
+          body: object.Body.transformToWebStream(),
+          size: object.ContentLength ?? 0,
+          type: object.ContentType ?? "",
+          // S3 returns the ETag already quoted, which is what the header wants.
+          etag: object.ETag ?? "",
+        };
       } catch {
         return null;
       }
