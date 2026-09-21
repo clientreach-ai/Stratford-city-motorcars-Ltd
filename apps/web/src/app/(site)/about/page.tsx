@@ -229,7 +229,7 @@ export default async function AboutPage() {
 function Fact({ term, value }: { term: string; value: string }) {
   return (
     <div className="p-5">
-      <dt className="font-roman text-[0.5625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+      <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
         {term}
       </dt>
       <dd className="mt-1.5 text-sm leading-relaxed">{value}</dd>

@@ -93,13 +93,13 @@ export default function FinancePage(props: PageProps<"/finance">) {
 
                 <dl className="mt-auto space-y-4 border-t border-[var(--border)] pt-6 text-sm lg:mt-0 lg:self-start">
                   <div>
-                    <dt className="font-roman text-[0.5625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                    <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
                       Ownership
                     </dt>
                     <dd className="mt-1 leading-relaxed">{product.ownership}</dd>
                   </div>
                   <div>
-                    <dt className="font-roman text-[0.5625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                    <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
                       At the end of the term
                     </dt>
                     <dd className="mt-1 leading-relaxed">{product.endOfTerm}</dd>
@@ -132,7 +132,7 @@ export default function FinancePage(props: PageProps<"/finance">) {
                   </th>
                   {financeProducts.map((product) => (
                     <th key={product.key} scope="col" className="p-5 align-bottom">
-                      <span className="block font-roman text-[0.5625rem] uppercase tracking-[0.2em] text-[var(--rule)]">
+                      <span className="block font-roman text-[0.625rem] uppercase tracking-[0.2em] text-[var(--rule)]">
                         {product.abbreviation}
                       </span>
                       <span className="mt-1.5 block font-display text-lg font-normal">{product.name}</span>
