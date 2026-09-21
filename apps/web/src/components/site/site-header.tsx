@@ -11,6 +11,7 @@ import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import type { Site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
+import { useNavStore } from "@/stores/nav";
 import { navItems } from "./nav-config";
 
 /**
@@ -22,7 +23,9 @@ import { navItems } from "./nav-config";
 export function SiteHeader({ site }: { site: Site }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
+  const open = useNavStore((state) => state.open);
+  const openNav = useNavStore((state) => state.openNav);
+  const closeNav = useNavStore((state) => state.closeNav);
 
   const solid = scrolled;
 
@@ -34,7 +37,7 @@ export function SiteHeader({ site }: { site: Site }) {
   }, []);
 
   // Close the drawer whenever the route changes.
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => closeNav(), [pathname, closeNav]);
 
   return (
     <>
@@ -112,7 +115,7 @@ export function SiteHeader({ site }: { site: Site }) {
 
             <button
               type="button"
-              onClick={() => setOpen(true)}
+              onClick={openNav}
               aria-label="Open menu"
               aria-expanded={open}
               aria-controls="mobile-nav"
@@ -124,7 +127,7 @@ export function SiteHeader({ site }: { site: Site }) {
         </div>
       </header>
 
-      <MobileNav open={open} onClose={() => setOpen(false)} site={site} />
+      <MobileNav open={open} onClose={closeNav} site={site} />
     </>
   );
 }
