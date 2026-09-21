@@ -1,0 +1,545 @@
+/*
+ * ---------------------------------------------------------------------------
+ * Stratford City Motorcars — motion
+ * ---------------------------------------------------------------------------
+ * One language for everything that moves on the website. The admin does not
+ * import this file.
+ *
+ *  - One curve for anything that arrives or responds (`--ease-out-expo`, from
+ *    the shared tokens). `--ease-cinema` is kept for crossfades and slides,
+ *    where both ends of the move are on screen.
+ *  - Durations come from five tokens. Nothing snaps and nothing lingers: a
+ *    press answers in 120ms, a reveal settles in under a second, and only
+ *    photography is allowed the long, slow moves.
+ *  - Motion is CSS-first. Content is visible in the server HTML; only
+ *    elements still below the fold after hydration are held back to be
+ *    revealed (see components/ui/reveal.tsx). Above-the-fold entrances use
+ *    CSS animations that need no JavaScript.
+ *  - Reduced motion keeps the polish and drops the movement: things appear in
+ *    place, photographs sit still, crossfades become cuts.
+ * ---------------------------------------------------------------------------
+ */
+
+@theme {
+  --ease-cinema: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --animate-intro-fade: intro-fade var(--dur-cinema) var(--ease-out-expo) both;
+}
+
+:root {
+  --dur-press: 120ms;
+  --dur-ui: 250ms;
+  --dur-state: 450ms;
+  --dur-reveal: 900ms;
+  --dur-cinema: 1400ms;
+
+  --reveal-distance: 28px;
+  /* Between items revealed together; the observer caps the total. */
+  --stagger: 70ms;
+
+  /* Lets <details> and other auto-height boxes animate to their content. */
+  interpolate-size: allow-keywords;
+
+  /* Brass for text: the deep, text-safe tone on bone; the bright one on ink. */
+  --accent-text: var(--color-brass-deep);
+}
+
+[data-surface="dark"] {
+  --accent-text: var(--color-brass-bright);
+}
+
+/* ---- Layout safety ------------------------------------------------------------ */
+
+/*
+ * Grid items default to `min-width: auto`, so one long unbreakable line (a
+ * button label, an email address) can force a single-column grid wider than
+ * a phone and make the whole page scroll sideways. Every grid column on the
+ * site may shrink to the screen instead; `min-w-*` utilities still override.
+ */
+@layer base {
+  .grid > * {
+    min-width: 0;
+  }
+}
+
+/* ---- Smooth scrolling (Lenis, fine pointers only) ------------------------- */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+/* Lenis owns the easing while it runs; CSS smooth scrolling would fight it. */
+html.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* ---- Scroll reveals -------------------------------------------------------- */
+
+@layer utilities {
+  /* Default: rise and fade. */
+  .reveal[data-reveal="pending"] {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-distance), 0);
+  }
+
+  .reveal[data-reveal="shown"] {
+    transition:
+      opacity var(--dur-reveal) var(--ease-out-expo) var(--reveal-delay, 0ms),
+      transform var(--dur-reveal) var(--ease-out-expo) var(--reveal-delay, 0ms);
+  }
+
+  /*
+   * Photograph: the frame opens from a slightly inset mask while the picture
+   * inside settles from a gentle zoom. The frame never moves, so nothing
+   * around it shifts.
+   */
+  .reveal-image[data-reveal="pending"] {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(10% 8% 10% 8%);
+  }
+
+  .reveal-image[data-reveal="pending"] :is(img, video) {
+    transform: scale(1.14);
+  }
+
+  .reveal-image[data-reveal="shown"] {
+    transition: clip-path var(--dur-cinema) var(--ease-out-expo) var(--reveal-delay, 0ms);
+  }
+
+  .reveal-image[data-reveal="shown"] :is(img, video) {
+    transition: transform calc(var(--dur-cinema) + 400ms) var(--ease-out-expo) var(--reveal-delay, 0ms);
+  }
+
+  /*
+   * Headline: each word rises out of its own mask (see SplitText). The block
+   * itself stays put; only the words move.
+   */
+  .reveal-words[data-reveal="pending"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal-words[data-reveal="pending"] .word-inner {
+    transform: translate3d(0, 108%, 0);
+  }
+
+  .reveal-words[data-reveal="shown"] .word-inner {
+    transition: transform var(--dur-reveal) var(--ease-out-expo)
+      calc(var(--reveal-delay, 0ms) + var(--w, 0) * 38ms);
+  }
+
+  /*
+   * Coming back into view from above (the visitor is scrolling up): the
+   * movement follows the scroll, so things settle downwards into place.
+   */
+  .reveal:not(.reveal-image, .reveal-words, .reveal-line)[data-reveal="pending"][data-reveal-from="above"] {
+    transform: translate3d(0, calc(var(--reveal-distance) * -1), 0);
+  }
+
+  .reveal-words[data-reveal="pending"][data-reveal-from="above"] .word-inner {
+    transform: translate3d(0, -108%, 0);
+  }
+
+  /* A hairline drawing itself across, left to right. */
+  .reveal-line[data-reveal="pending"] {
+    opacity: 1;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .reveal-line[data-reveal="shown"] {
+    transform-origin: left;
+    transition: transform var(--dur-cinema) var(--ease-out-expo) var(--reveal-delay, 0ms);
+  }
+}
+
+@layer components {
+/* ---- Split text ------------------------------------------------------------ */
+
+/* The mask. Padding keeps descenders and italics clear of the clip. */
+.word {
+  display: inline-block;
+  overflow: clip;
+  vertical-align: bottom;
+  padding-block: 0.08em 0.14em;
+  margin-block: -0.08em -0.14em;
+  padding-inline: 0.04em;
+  margin-inline: -0.04em;
+}
+
+.word-inner {
+  display: inline-block;
+  will-change: transform;
+}
+
+/*
+ * Above-the-fold headline: plays on load, no JavaScript involved.
+ *
+ * Deliberately not masked. A headline is often the page's largest paint, and
+ * the browser only counts text once it is fully visible; words clipped by a
+ * mask would hold the LCP back until the last one had risen. Here every word
+ * is painted from the first frame (0.01 opacity counts as painted) and simply
+ * rises and brightens in sequence.
+ */
+.intro-words .word {
+  overflow: visible;
+}
+
+.intro-words .word-inner {
+  animation: word-rise var(--dur-reveal) var(--ease-out-expo) both;
+  animation-delay: calc(var(--intro-delay, 120ms) + var(--w, 0) * 42ms);
+}
+
+@keyframes word-rise {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, 0.32em, 0);
+  }
+}
+
+/* Same reasoning: blocks above the fold start painted, not invisible. */
+@keyframes intro-up {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, 22px, 0);
+  }
+}
+
+@keyframes intro-fade {
+  from {
+    opacity: 0.01;
+  }
+}
+
+/* Above-the-fold blocks: `intro` plus an `--intro-delay`. */
+.intro {
+  animation: intro-up var(--dur-reveal) var(--ease-out-expo) both;
+  animation-delay: var(--intro-delay, 0ms);
+}
+
+/*
+ * Resting while scrolled out of view (RevealObserver). Dropping the animation
+ * and adding it back when the element returns replays the entrance.
+ */
+.intro[data-intro="rest"],
+.intro-words[data-intro="rest"] .word-inner {
+  animation: none;
+}
+
+/* ---- Texture --------------------------------------------------------------- */
+
+/*
+ * Film grain over ink. Stops large dark fields from banding and gives them the
+ * depth of a printed page instead of a flat screen colour. Static, so it costs
+ * one paint.
+ */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/*
+ * Pooled light: a soft warm glow where a car stands, as if lit from above in
+ * the showroom. Purely decorative.
+ */
+.pool-light {
+  background: radial-gradient(
+    closest-side at 50% 72%,
+    color-mix(in oklab, var(--color-brass) 16%, transparent) 0%,
+    color-mix(in oklab, var(--color-brass) 5%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+/* ---- Links ----------------------------------------------------------------- */
+
+/*
+ * An underlined link whose rule retracts to the right and redraws from the
+ * left on hover — the line "passes through" rather than just changing colour.
+ */
+.link-line {
+  background-image: linear-gradient(var(--rule), var(--rule));
+  background-repeat: no-repeat;
+  background-position: 100% 100%;
+  background-size: 100% 1px;
+  padding-bottom: 0.3em;
+}
+
+@media (hover: hover) {
+  .link-line:hover {
+    animation: line-pass 900ms var(--ease-out-expo);
+  }
+}
+
+@keyframes line-pass {
+  0% {
+    background-size: 100% 1px;
+    background-position: 100% 100%;
+  }
+  45% {
+    background-size: 0% 1px;
+    background-position: 100% 100%;
+  }
+  46% {
+    background-size: 0% 1px;
+    background-position: 0% 100%;
+  }
+  100% {
+    background-size: 100% 1px;
+    background-position: 0% 100%;
+  }
+}
+
+/* ---- Disclosure (FAQ) ------------------------------------------------------ */
+
+/*
+ * Browsers that can animate <details> open and close it smoothly; others keep
+ * the instant native behaviour.
+ */
+details.disclosure::details-content {
+  block-size: 0;
+  overflow: clip;
+  opacity: 0;
+  transition:
+    block-size var(--dur-state) var(--ease-out-expo),
+    opacity var(--dur-state) var(--ease-out-expo),
+    content-visibility var(--dur-state) allow-discrete;
+}
+
+details.disclosure[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+}
+
+/* ---- View transitions (route changes) -------------------------------------- */
+
+/* Clicks during a transition reach the live page rather than the overlay. */
+::view-transition {
+  pointer-events: none;
+}
+
+/*
+ * Route change (PageTransition): the old page leaves quickly, the new one
+ * arrives gently. Everything else on screen simply cuts.
+ */
+::view-transition-old(root) {
+  display: none;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Anything leaving without a partner (other cards' photographs) goes with
+   the page, on the page's timing, rather than the browser's default fade. */
+::view-transition-old(*):only-child {
+  animation: 180ms var(--ease-exit) both vt-fade-out;
+}
+
+::view-transition-old(.page-exit) {
+  animation: 180ms var(--ease-exit) both vt-fade-out;
+}
+
+::view-transition-new(.page-enter) {
+  animation: 520ms var(--ease-out-expo) 90ms both vt-fade-in;
+}
+
+/* Stock results crossfade in place when the filters or sort change. */
+::view-transition-old(.results) {
+  animation: 160ms var(--ease-exit) both vt-fade-out;
+}
+
+::view-transition-new(.results) {
+  animation: 420ms var(--ease-out-expo) 60ms both vt-fade-in;
+}
+
+/* The header is the fixed reference point: it never animates. */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+/* A stock photograph travelling from its card into the car's gallery. */
+::view-transition-group(.car-photo) {
+  animation-duration: 560ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+
+::view-transition-image-pair(.car-photo) {
+  isolation: isolate;
+}
+
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* ---- Reduced motion --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal[data-reveal],
+  .reveal[data-reveal] :is(img, video),
+  .reveal[data-reveal] .word-inner {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition: none !important;
+  }
+
+  .intro,
+  .intro-words .word-inner {
+    animation: none !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+@layer components {
+/* ---- Buttons ---------------------------------------------------------------- */
+
+/*
+ * The fill sweep behind every button. The variant sets `--sweep`; the fill
+ * grows from the left on hover and withdraws the same way. Text and border
+ * colours follow a touch faster, so the label is always legible.
+ */
+.btn-sweep {
+  background-image: linear-gradient(var(--sweep, transparent), var(--sweep, transparent));
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 0% 100%;
+  transition:
+    background-size 600ms var(--ease-out-expo),
+    color var(--dur-ui) var(--ease-out-expo),
+    border-color var(--dur-ui) var(--ease-out-expo),
+    transform var(--dur-press) var(--ease-out-expo);
+}
+
+@media (hover: hover) {
+  .btn-sweep:hover {
+    background-size: 100% 100%;
+  }
+}
+}
+
+/* ---- Hero -------------------------------------------------------------------- */
+
+/* The featured car settles from a slight push-in while it holds the screen. */
+@keyframes hero-push {
+  from {
+    transform: scale(1.09);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* The brass rail under the hero fills while a car is on screen. */
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---- Photo viewer ---------------------------------------------------------- */
+
+/* The viewer fades up as it opens; each photograph dissolves in as it arrives. */
+.lightbox {
+  transition: opacity var(--dur-state) var(--ease-out-expo);
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.lightbox-frame {
+  animation: lightbox-in 700ms var(--ease-out-expo) both;
+}
+
+@keyframes lightbox-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+/* ---- Forms -------------------------------------------------------------------- */
+
+/* A field's error slides in beneath it rather than popping. */
+.field-error {
+  animation: field-error var(--dur-state) var(--ease-out-expo) both;
+}
+
+@keyframes field-error {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+/* The panel that replaces a sent form, or says it could not be sent. */
+.feedback-in {
+  animation: intro-up var(--dur-reveal) var(--ease-out-expo) both;
+}
+
+/* The tick settles into its frame a beat after the panel arrives. */
+.success-mark svg {
+  animation: success-mark 700ms var(--ease-out-expo) 250ms both;
+}
+
+@keyframes success-mark {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-12deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-error,
+  .feedback-in,
+  .success-mark svg {
+    animation: none !important;
+  }
+}
