@@ -8,6 +8,7 @@ import {
 import { MutationCache, QueryCache, QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { notify } from "@/components/ui/toast";
+import { notifyUnauthorised } from "@/stores/session";
 
 /**
  * Server state for the admin.
@@ -18,15 +19,12 @@ import { notify } from "@/components/ui/toast";
  * those relationships at every call site is how one gets missed.
  */
 
-let onUnauthorised: (() => void) | null = null;
-
-/** The session gate registers here so an expired session anywhere sends you to sign in. */
-export function setUnauthorisedHandler(handler: (() => void) | null) {
-  onUnauthorised = handler;
-}
-
+/**
+ * An expired session anywhere sends you to sign in. The handler itself lives
+ * in `stores/session.ts`; the gate registers it, this reads it.
+ */
 function handleError(error: unknown) {
-  if (error instanceof UnauthorisedError) onUnauthorised?.();
+  if (error instanceof UnauthorisedError) notifyUnauthorised();
 }
 
 export function createQueryClient() {
