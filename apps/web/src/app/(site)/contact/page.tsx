@@ -248,7 +248,7 @@ function ChannelCard({
       >
         {icon}
       </span>
-      <p className="mt-4 font-roman text-[0.5625rem] uppercase tracking-[0.2em] text-bone/50">
+      <p className="mt-4 font-roman text-[0.625rem] uppercase tracking-[0.2em] text-bone/50">
         {label}
       </p>
       <p className="mt-2 break-all font-display text-lg text-bone">{value}</p>
