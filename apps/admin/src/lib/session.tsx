@@ -7,7 +7,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
 
 import { api } from "@/lib/api";
-import { queryKeys, setUnauthorisedHandler } from "@/lib/query";
+import { queryKeys } from "@/lib/query";
+import { useSessionStore } from "@/stores/session";
 
 /**
  * Who is signed in, and what the interface may offer them.
@@ -46,13 +47,15 @@ export function SessionGate({ children }: { children: ReactNode }) {
     router.replace(`/sign-in${next}` as Route);
   }, [pathname, router]);
 
+  const setUnauthorisedHandler = useSessionStore((state) => state.setUnauthorisedHandler);
+
   useEffect(() => {
     setUnauthorisedHandler(() => {
       client.setQueryData(queryKeys.session, null);
       toSignIn();
     });
     return () => setUnauthorisedHandler(null);
-  }, [client, toSignIn]);
+  }, [client, toSignIn, setUnauthorisedHandler]);
 
   useEffect(() => {
     if (!isPending && !error && !user) toSignIn();
