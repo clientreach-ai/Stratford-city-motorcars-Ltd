@@ -13,7 +13,10 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 
 const controlBase =
   "w-full rounded-sm border bg-[var(--surface-raised)] px-4 text-[0.9375rem] text-[var(--foreground)] " +
-  "transition-colors duration-200 placeholder:text-[var(--muted-foreground)]/70 " +
+  "transition-[border-color,background-color,box-shadow] duration-300 ease-[var(--ease-out-expo)] " +
+  "placeholder:text-[var(--muted-foreground)]/70 hover:border-[var(--muted-foreground)] " +
+  // A soft brass halo inside the crisp focus outline.
+  "focus-visible:shadow-[0_0_0_5px_color-mix(in_oklab,var(--color-brass)_16%,transparent)] " +
   "focus-visible:border-[var(--ring)] focus-visible:outline-2 focus-visible:outline-offset-2 " +
   "focus-visible:outline-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-50 " +
   "aria-[invalid=true]:border-[var(--destructive)]";
@@ -74,7 +77,9 @@ export function Select({
       <select
         className={cn(
           controlBase,
-          "h-12 cursor-pointer appearance-none border-[var(--input)] pr-11",
+          // `items-center` holds the chosen option on the middle line where the
+          // browser lays a customisable select out as a flex container.
+          "h-12 cursor-pointer appearance-none items-center border-[var(--input)] pr-11",
           className,
         )}
         {...props}
@@ -150,7 +155,7 @@ export function Field({
         <p
           id={errorId}
           role="alert"
-          className="text-xs text-[var(--destructive)]"
+          className="field-error text-xs text-[var(--destructive)]"
         >
           {error[0]}
         </p>

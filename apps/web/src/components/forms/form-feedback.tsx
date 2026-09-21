@@ -30,13 +30,13 @@ export function SuccessPanel({
       role="status"
       aria-live="polite"
       tabIndex={-1}
-      className="border border-[var(--border)] bg-[var(--surface-raised)] p-8 text-center focus-visible:outline-2 focus-visible:outline-offset-2 md:p-10"
+      className="feedback-in border border-[var(--border)] bg-[var(--surface-raised)] p-8 text-center focus-visible:outline-2 focus-visible:outline-offset-2 md:p-10"
     >
       <span
         aria-hidden
-        className="mx-auto flex size-12 items-center justify-center border border-[var(--rule)] text-[var(--rule)]"
+        className="success-mark mx-auto flex size-14 items-center justify-center border border-[var(--rule)] text-[var(--accent-text)]"
       >
-        <Check className="size-5" />
+        <Check className="size-6" />
       </span>
 
       <h3 className="mt-6 font-display text-2xl">{heading}</h3>
@@ -67,7 +67,7 @@ export function UnavailablePanel({ message }: { message: string }) {
       role="alert"
       tabIndex={-1}
       data-feedback="unavailable"
-      className="border border-[var(--destructive)]/40 bg-[var(--destructive)]/5 p-6 focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="feedback-in border border-[var(--destructive)]/40 bg-[var(--destructive)]/5 p-6 focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <div className="flex gap-3.5">
         <AlertTriangle
@@ -109,14 +109,14 @@ export function DirectContactNote() {
       Prefer to talk? Call{" "}
       <a
         href={site.phone.href}
-        className="border-b border-[var(--rule)] pb-px transition-colors hover:text-[var(--foreground)]"
+        className="link-line transition-colors hover:text-[var(--foreground)]"
       >
         {site.phone.display}
       </a>{" "}
       or email{" "}
       <a
         href={`mailto:${site.email}`}
-        className="break-all border-b border-[var(--rule)] pb-px transition-colors hover:text-[var(--foreground)]"
+        className="link-line break-all transition-colors hover:text-[var(--foreground)]"
       >
         {site.email}
       </a>
