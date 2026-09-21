@@ -207,6 +207,33 @@ Code: `apps/web/src/lib/seo.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`,
   404 — hire is not part of the business.
 - Real 404 status with one `<title>` and `noindex`.
 
+## Design and motion
+
+Code: `packages/ui/src/styles/globals.css` (tokens shared with the admin),
+`apps/web/src/styles/motion.css` (the website's motion layer; the admin does
+not load it), `apps/web/src/components/ui/`.
+
+- **One curve, five durations.** Everything that arrives or responds uses
+  `--ease-out-expo`; durations come from `--dur-press/ui/state/reveal/cinema`.
+- **Content is never held back by JavaScript.** `RevealObserver` hides only
+  elements still below the fold after hydration and reveals them once, in
+  reading order (`reveal`, `reveal-image`, `reveal-words`, `reveal-line`).
+  Above-the-fold entrances are CSS animations that start painted (0.01
+  opacity), so they never delay the largest contentful paint.
+- **Headlines** use `SplitText`: words in the server HTML, whole text in
+  `aria-label`.
+- **Smooth scrolling** (Lenis) runs only for fine pointers without reduced
+  motion; it pauses while a dialog locks the page, and in-page links still set
+  the hash and fire `hashchange`. Nested scrollers carry `data-lenis-prevent`.
+- **Route changes** crossfade through React `<ViewTransition>`
+  (`PageTransition`); a stock card's photograph morphs into the car's gallery
+  (`CardPhoto` / `VehicleGallery` share a name). Browsers without the View
+  Transitions API simply cut.
+- **Reduced motion** keeps the layout and polish and removes movement:
+  reveals show in place, the hero never autoplays, crossfades become cuts.
+- **Photography is never colour-graded**: buyers need the true paint colour.
+  Scrims and grain sit over or around photographs, not in them.
+
 ## Security headers
 
 Set in `next.config.ts` for every route: `X-Content-Type-Options: nosniff`,
