@@ -1,5 +1,7 @@
 import { getSite } from "@/lib/settings";
+import { PageTransition } from "@/components/ui/page-transition";
 import { RevealObserver } from "@/components/ui/reveal";
+import { SmoothScroll } from "@/components/ui/smooth-scroll";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 
@@ -23,12 +25,13 @@ export async function SiteChrome({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-dvh flex-col">
         <SiteHeader site={site} />
         <main id="main" className="flex-1">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
         <SiteFooter />
       </div>
 
       <RevealObserver />
+      <SmoothScroll />
     </>
   );
 }

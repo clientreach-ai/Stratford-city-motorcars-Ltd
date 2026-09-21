@@ -1,5 +1,6 @@
 import type { ComponentProps, ElementType, ReactNode } from "react";
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { SplitText, type TextRun } from "@/components/ui/split-text";
 
 /**
  * Layout primitives. Every page composes from these so vertical rhythm and
@@ -30,7 +31,7 @@ interface SectionProps extends Omit<ComponentProps<"section">, "children"> {
 
 const sizes = {
   sm: "py-14 md:py-20",
-  md: "py-20 md:py-28",
+  md: "py-20 md:py-28 lg:py-32",
   lg: "py-24 md:py-32 lg:py-40",
 };
 
@@ -48,7 +49,8 @@ export function Section({
       data-surface={dark ? "dark" : undefined}
       className={cn(
         sizes[size],
-        dark && "bg-[var(--background)] text-[var(--foreground)]",
+        // Ink bands carry a fine grain so large dark fields never read flat.
+        dark && "grain bg-[var(--background)] text-[var(--foreground)]",
         tinted && !dark && "bg-[var(--surface)]",
         className,
       )}
@@ -59,10 +61,19 @@ export function Section({
   );
 }
 
-/** Roman capitals in brass. The one flourish that echoes the logo. */
+/**
+ * Roman capitals in brass, led by a short brass rule. The one flourish that
+ * echoes the logo.
+ */
 export function Eyebrow({ className, children, ...props }: ComponentProps<"p">) {
   return (
-    <p className={cn("eyebrow", className)} {...props}>
+    <p
+      className={cn(
+        "eyebrow flex items-center gap-3 before:h-px before:w-7 before:shrink-0 before:bg-[var(--rule)] before:content-['']",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </p>
   );
@@ -70,7 +81,11 @@ export function Eyebrow({ className, children, ...props }: ComponentProps<"p">) 
 
 interface SectionHeadingProps {
   eyebrow?: string;
-  title: ReactNode;
+  /**
+   * A string, or runs for a two-tone headline (`tone: "muted"` for the quieter
+   * half). Either way the words rise into place as the heading scrolls in.
+   */
+  title: string | TextRun[];
   lede?: ReactNode;
   align?: "start" | "center";
   className?: string;
@@ -97,16 +112,25 @@ export function SectionHeading({
         className,
       )}
     >
-      <div className={cn("max-w-2xl", align === "center" && "text-center")}>
-        {eyebrow ? <Eyebrow className="mb-5">{eyebrow}</Eyebrow> : null}
-        <Tag className="text-[clamp(2rem,4.4vw,3.25rem)] leading-[1.06]">{title}</Tag>
+      <div className={cn("max-w-3xl", align === "center" && "mx-auto text-center")}>
+        {eyebrow ? <Eyebrow className={cn("reveal mb-6", align === "center" && "justify-center")}>{eyebrow}</Eyebrow> : null}
+        <SplitText
+          as={Tag}
+          runs={title}
+          className="text-[clamp(2.25rem,5vw,4rem)] leading-[1.02] tracking-[-0.025em]"
+        />
         {lede ? (
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--muted-foreground)] md:text-lg">
+          <p
+            className={cn(
+              "reveal mt-6 max-w-xl text-base leading-relaxed text-[var(--muted-foreground)] md:text-lg",
+              align === "center" && "mx-auto",
+            )}
+          >
             {lede}
           </p>
         ) : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="reveal shrink-0">{action}</div> : null}
     </div>
   );
 }

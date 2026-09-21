@@ -147,7 +147,7 @@ function AssuranceCard({
 }) {
   return (
     <div className={`bg-[var(--background)] p-5 ${className ?? ""}`}>
-      <dt className="font-roman text-[0.5625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+      <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
         <span aria-hidden className="mb-3 block text-[var(--rule)]">
           {icon}
         </span>

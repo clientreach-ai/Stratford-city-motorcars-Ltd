@@ -6,7 +6,7 @@ import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
 import { whatsappForVehicle } from "@/lib/whatsapp";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
+import { CardPhoto } from "@/components/vehicle/card-photo";
 
 /**
  * The stock card. Carries only what a buyer scans for — photograph, what it
@@ -15,6 +15,10 @@ import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
  * The whole card is one link (via a stretched overlay) so the tap target on
  * mobile is the entire tile, while the WhatsApp button stays independently
  * clickable above it.
+ *
+ * On hover the photograph turns the car round (see CardPhoto), the title
+ * underlines itself and the arrow tile fills — three quiet signals that the
+ * whole card is live, none of which moves the layout.
  */
 export function VehicleCard({
   vehicle,
@@ -30,26 +34,25 @@ export function VehicleCard({
   className?: string;
 }) {
   const { cover, isSold } = vehicle;
+  // The second look on hover: the next exterior shot, else the interior.
+  const alternate =
+    vehicle.images.find((image) => image.id !== cover.id && image.category === "exterior") ??
+    vehicle.images.find((image) => image.id !== cover.id);
 
   return (
     <article
       className={cn(
         "group relative flex flex-col border border-[var(--border)] bg-[var(--surface-raised)]",
-        "transition-colors duration-300 ease-[var(--ease-out-expo)] hover:border-[var(--border-strong)]",
+        "transition-[border-color,box-shadow] duration-500 ease-[var(--ease-out-expo)]",
+        "hover:border-[var(--border-strong)] hover:shadow-[0_28px_60px_-32px_rgb(10_10_11/0.35)]",
         isSold && "opacity-70",
         className,
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-ink-950">
-        <VehiclePhoto
-          src={cover.src}
-          alt={cover.alt}
-          fill
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          sizes={sizes}
-          className="object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-[1.035]"
-        />
+        <CardPhoto vehicleId={vehicle.id} cover={cover} alternate={alternate} sizes={sizes} priority={priority} />
+        {/* A soft floor so the badges and the frame edge never fight a bright photograph. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-[linear-gradient(to_bottom,rgb(10_10_11/0.35),transparent)]" />
 
         <VehicleBadges vehicle={vehicle} />
       </div>
@@ -64,7 +67,7 @@ export function VehicleCard({
             href={`/vehicles/${vehicle.slug}`}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
-            <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-400 ease-[var(--ease-out-expo)] group-hover:bg-[length:100%_1px]">
+            <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-[var(--ease-out-expo)] group-hover:bg-[length:100%_1px]">
               {vehicle.title}
             </span>
           </Link>
@@ -108,9 +111,14 @@ export function VehicleCard({
               ) : null}
               <span
                 aria-hidden
-                className="flex size-11 items-center justify-center border border-[var(--border-strong)] transition-colors duration-200 group-hover:border-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-[var(--primary-foreground)]"
+                className={cn(
+                  "flex size-11 items-center justify-center overflow-hidden border border-[var(--border-strong)]",
+                  "bg-[linear-gradient(var(--primary),var(--primary))] bg-[length:100%_0%] bg-bottom bg-no-repeat",
+                  "transition-[background-size,color,border-color] duration-500 ease-[var(--ease-out-expo)]",
+                  "group-hover:border-[var(--primary)] group-hover:bg-[length:100%_100%] group-hover:text-[var(--primary-foreground)]",
+                )}
               >
-                <ArrowUpRight className="size-[1.05rem]" />
+                <ArrowUpRight className="size-[1.05rem] transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </span>
             </div>
           </div>
@@ -151,7 +159,7 @@ function VehicleBadges({ vehicle }: { vehicle: PublicVehicle }) {
         <span
           key={badge.label}
           className={cn(
-            "px-3 py-2 font-roman text-[0.5625rem] uppercase tracking-[0.2em]",
+            "px-3 py-2 font-roman text-[0.625rem] uppercase tracking-[0.2em]",
             tones[badge.tone],
           )}
         >
