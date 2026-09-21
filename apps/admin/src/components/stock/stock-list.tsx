@@ -13,7 +13,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
 import {
   Archive,
   BadgeCheck,
@@ -48,6 +47,7 @@ import { GuardedLink } from "@/components/ui/unsaved";
 import { api, SITE_URL } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
+import { useStockFilters } from "@/stores/stock-filters";
 
 import { canDeleteDraft, useVehicleActions, vehicleName } from "./vehicle-actions";
 
@@ -82,9 +82,14 @@ export function StockList() {
 
   const statusParam = params.get("status") as StatusFilter | null;
   const status: StatusFilter = statusParam && STATUS_VALUES.includes(statusParam) ? statusParam : "all";
-  const [search, setSearch] = useState("");
-  const [make, setMake] = useState<string>("all");
-  const [sort, setSort] = useState<StockSort>("updated");
+  // Search, make and sort live in a store so they survive opening a car and
+  // coming back; status stays in the URL so a tab can be linked to.
+  const search = useStockFilters((state) => state.search);
+  const setSearch = useStockFilters((state) => state.setSearch);
+  const make = useStockFilters((state) => state.make);
+  const setMake = useStockFilters((state) => state.setMake);
+  const sort = useStockFilters((state) => state.sort);
+  const setSort = useStockFilters((state) => state.setSort);
 
   const setStatus = (next: StatusFilter) => {
     const query = new URLSearchParams(params.toString());
