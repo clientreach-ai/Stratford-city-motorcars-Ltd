@@ -50,8 +50,8 @@ export async function SiteFooter() {
   const stockLinks = await getStockLinks();
 
   return (
-    <footer data-surface="dark" className="bg-ink-950 text-bone">
-      <div className="container-page py-16 md:py-20">
+    <footer data-surface="dark" className="grain overflow-hidden border-t border-brass/12 bg-ink-950 text-bone">
+      <div className="container-page py-16 md:py-24">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:gap-10">
           <div>
             <Image
@@ -139,7 +139,31 @@ export async function SiteFooter() {
           </FooterColumn>
         </div>
 
-        <div className="mt-14 border-t border-bone/10 pt-8">
+        {/* The name, set across the full measure in the logo's Roman capitals.
+            Decorative: the name is already in the logo and the legal line. */}
+        <div aria-hidden className="reveal mt-16 select-none md:mt-24">
+          <svg viewBox="0 0 1000 92" className="block w-full">
+            <defs>
+              <linearGradient id="footer-wordmark" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-brass)" stopOpacity="0.55" />
+                <stop offset="100%" stopColor="var(--color-brass)" stopOpacity="0.06" />
+              </linearGradient>
+            </defs>
+            <text
+              x="0"
+              y="78"
+              textLength="1000"
+              lengthAdjust="spacingAndGlyphs"
+              fill="url(#footer-wordmark)"
+              className="font-roman"
+              style={{ fontSize: 96, fontWeight: 400, letterSpacing: "0.02em" }}
+            >
+              STRATFORD CITY
+            </text>
+          </svg>
+        </div>
+
+        <div className="mt-10 border-t border-bone/10 pt-8 md:mt-14">
           <div className="flex flex-col justify-between gap-4 text-xs text-bone/60 sm:flex-row sm:items-end">
             <div className="space-y-1.5">
               <p>
@@ -185,10 +209,10 @@ function FooterColumn({
 }) {
   return (
     <div>
-      <h2 className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-brass">
+      <h2 className="font-roman text-[0.625rem] uppercase tracking-[0.24em] text-brass">
         {title}
       </h2>
-      <ul className="mt-5 space-y-3">{children}</ul>
+      <ul className="mt-4 space-y-1">{children}</ul>
     </div>
   );
 }
@@ -204,8 +228,13 @@ function FooterLink({
     <li>
       <Link
         href={href}
-        className="inline-block py-1 text-sm text-bone/60 transition-colors duration-200 hover:text-bone"
+        className="group inline-flex min-h-9 items-center py-1.5 text-sm text-bone/60 transition-colors duration-300 hover:text-bone"
       >
+        {/* A brass dash draws in ahead of the label on hover. */}
+        <span
+          aria-hidden
+          className="mr-0 h-px w-0 bg-brass transition-[width,margin] duration-500 ease-[var(--ease-out-expo)] group-hover:mr-2.5 group-hover:w-3"
+        />
         {children}
       </Link>
     </li>
