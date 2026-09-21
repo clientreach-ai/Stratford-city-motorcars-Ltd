@@ -86,7 +86,7 @@ export function StockList() {
   // coming back; status stays in the URL so a tab can be linked to.
   const search = useStockFilters((state) => state.search);
   const setSearch = useStockFilters((state) => state.setSearch);
-  const make = useStockFilters((state) => state.make);
+  const storedMake = useStockFilters((state) => state.make);
   const setMake = useStockFilters((state) => state.setMake);
   const sort = useStockFilters((state) => state.sort);
   const setSort = useStockFilters((state) => state.setSort);
@@ -101,6 +101,10 @@ export function StockList() {
   const vehicles = (data ?? []).map((vehicle) => ({ vehicle, progress: listingProgress(vehicle) }));
   const count = (predicate: (item: (typeof vehicles)[number]) => boolean) => vehicles.filter(predicate).length;
   const makes = [...new Set(vehicles.map((item) => item.vehicle.make).filter(Boolean))].sort();
+  // A remembered make outlives the last car of that make — once the final
+  // Ferrari is sold, the stored filter would show an empty list with no visible
+  // control to clear it. Fall back to the full list instead.
+  const make = storedMake === "all" || makes.includes(storedMake) ? storedMake : "all";
 
   const needle = search.trim().toLowerCase();
   const filtered = sortVehicles(
