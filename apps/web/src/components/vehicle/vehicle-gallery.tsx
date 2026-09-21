@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { useDialogFocus } from "@/components/ui/use-dialog-focus";
 import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
 import type { VehicleImage } from "@/lib/inventory/types";
+import { useGalleryStore } from "@/stores/gallery";
 
 /**
  * Vehicle gallery.
@@ -28,12 +29,23 @@ import type { VehicleImage } from "@/lib/inventory/types";
  * publishing rules require them), so there is no placeholder state here.
  */
 export function VehicleGallery({ images, title }: { images: VehicleImage[]; title: string }) {
-  const [active, setActive] = useState(0);
-  const [lightbox, setLightbox] = useState(false);
+  const active = useGalleryStore((state) => state.active);
+  const setActive = useGalleryStore((state) => state.setActive);
+  const lightbox = useGalleryStore((state) => state.lightbox);
+  const openLightbox = useGalleryStore((state) => state.openLightbox);
+  const closeLightbox = useGalleryStore((state) => state.closeLightbox);
+  const reset = useGalleryStore((state) => state.reset);
   const trackRef = useRef<HTMLDivElement>(null);
-  const closeLightbox = useCallback(() => setLightbox(false), []);
 
   const count = images.length;
+
+  // One store serves the page, so a new car must start from its first
+  // photograph — car B may not have a sixth. Keyed on the first photograph's
+  // id, which is stable across renders in a way the array prop is not.
+  const galleryKey = images[0]?.id ?? title;
+  useEffect(() => {
+    reset();
+  }, [galleryKey, reset]);
 
   const go = useCallback(
     (index: number) => {
@@ -57,7 +69,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const index = Math.round(track.scrollLeft / track.clientWidth);
-        setActive((current) => (current === index ? current : index));
+        setActive(index);
       });
     };
     track.addEventListener("scroll", onScroll, { passive: true });
@@ -97,7 +109,7 @@ export function VehicleGallery({ images, title }: { images: VehicleImage[]; titl
               type="button"
               onClick={() => {
                 setActive(index);
-                setLightbox(true);
+                openLightbox();
               }}
               // The accessible name starts with what is visible (the photograph's
               // description), then says what the button does.
