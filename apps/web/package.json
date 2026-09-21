@@ -26,7 +26,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sharp": "^0.35.4",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@Stratford-city-motorcars-Ltd/config": "workspace:*",

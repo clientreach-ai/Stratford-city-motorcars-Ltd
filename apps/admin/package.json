@@ -18,7 +18,8 @@
     "next": "^16.3.0",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "sonner": "catalog:"
+    "sonner": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@Stratford-city-motorcars-Ltd/config": "workspace:*",
