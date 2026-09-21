@@ -2,7 +2,7 @@
 
 import { TooltipProvider } from "@Stratford-city-motorcars-Ltd/ui/components/tooltip";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
@@ -12,12 +12,11 @@ import { AdminToaster } from "@/components/ui/toast";
 import { GuardedLink, UnsavedChangesProvider } from "@/components/ui/unsaved";
 import { isSampleData } from "@/lib/api";
 import { SessionGate } from "@/lib/session";
+import { useShellHydration, useShellStore } from "@/stores/shell";
 
 import { routes } from "./routes";
 import { SampleModeButton } from "./sample-controls";
 import { AccountPanel, Sidebar, SidebarNav, ViewWebsiteLink, Wordmark } from "./sidebar";
-
-const COLLAPSED_KEY = "scm-admin:sidebar-collapsed";
 
 /**
  * The admin shell: providers, the session gate, the sidebar and top bar.
@@ -40,33 +39,18 @@ export function AdminApp({ children }: { children: ReactNode }) {
   );
 }
 
-function useCollapsed() {
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => {
-    try {
-      setCollapsed(window.localStorage.getItem(COLLAPSED_KEY) === "1");
-    } catch {
-      // Storage blocked: keep the default.
-    }
-  }, []);
-  const toggle = () =>
-    setCollapsed((current) => {
-      try {
-        window.localStorage.setItem(COLLAPSED_KEY, current ? "0" : "1");
-      } catch {
-        // Not worth reporting.
-      }
-      return !current;
-    });
-  return [collapsed, toggle] as const;
-}
-
 function Frame({ children }: { children: ReactNode }) {
-  const [collapsed, toggle] = useCollapsed();
-  const [drawer, setDrawer] = useState(false);
+  // The remembered sidebar preference is applied after mount, never during the
+  // first render — see stores/shell.ts.
+  useShellHydration();
+  const collapsed = useShellStore((state) => state.sidebarCollapsed);
+  const toggle = useShellStore((state) => state.toggleSidebar);
+  const drawer = useShellStore((state) => state.drawerOpen);
+  const openDrawer = useShellStore((state) => state.openDrawer);
+  const closeDrawer = useShellStore((state) => state.closeDrawer);
   const pathname = usePathname();
 
-  useEffect(() => setDrawer(false), [pathname]);
+  useEffect(() => closeDrawer(), [pathname, closeDrawer]);
 
   return (
     <div data-admin className="min-h-dvh bg-background font-sans text-foreground">
@@ -87,7 +71,7 @@ function Frame({ children }: { children: ReactNode }) {
         >
           <button
             type="button"
-            onClick={() => setDrawer(true)}
+            onClick={openDrawer}
             aria-label="Open navigation"
             aria-expanded={drawer}
             className="flex size-11 items-center justify-center text-bone/85 hover:text-bone"
@@ -115,12 +99,12 @@ function Frame({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <Dialog open={drawer} onClose={() => setDrawer(false)} title="Navigation" variant="drawer" hideHeader surface="dark" bodyClassName="flex flex-col p-0" className="bg-ink-950 text-bone">
+      <Dialog open={drawer} onClose={closeDrawer} title="Navigation" variant="drawer" hideHeader surface="dark" bodyClassName="flex flex-col p-0" className="bg-ink-950 text-bone">
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-bone/10 pr-2 pl-4">
           <Wordmark className="h-7" />
           <button
             type="button"
-            onClick={() => setDrawer(false)}
+            onClick={closeDrawer}
             aria-label="Close navigation"
             className="flex size-11 items-center justify-center text-bone/70 hover:text-bone"
           >
@@ -128,7 +112,7 @@ function Frame({ children }: { children: ReactNode }) {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-4">
-          <SidebarNav onNavigate={() => setDrawer(false)} />
+          <SidebarNav onNavigate={closeDrawer} />
         </div>
         <div className="flex flex-col gap-2 border-t border-bone/10 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <AccountPanel collapsed={false} />
