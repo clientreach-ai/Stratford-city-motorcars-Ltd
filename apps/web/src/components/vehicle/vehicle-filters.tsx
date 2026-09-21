@@ -31,7 +31,9 @@ export function VehicleFilterRail({
 }) {
   return (
     <aside className="hidden lg:block">
-      <div className="sticky top-28 max-h-[calc(100dvh-9rem)] overflow-y-auto pr-2">
+      {/* Scrolls on its own when the lists outgrow the screen; smooth page
+          scrolling leaves it alone. */}
+      <div data-lenis-prevent className="sticky top-28 max-h-[calc(100dvh-9rem)] overflow-y-auto pr-2">
         <FilterControls facets={facets} activeCount={activeCount} idPrefix="rail" />
       </div>
     </aside>
@@ -324,7 +326,7 @@ function MobileSheet({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-6">{children}</div>
+        <div data-lenis-prevent className="flex-1 overflow-y-auto px-5 py-6">{children}</div>
 
         <div className="shrink-0 border-t border-[var(--border)] p-4">
           <Button type="button" onClick={onClose} size="lg" className="w-full">

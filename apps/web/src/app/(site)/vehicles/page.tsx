@@ -1,12 +1,13 @@
 import type { Metadata, Route } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, ViewTransition } from "react";
 import { ArrowRight, Banknote, CalendarCheck, ChevronLeft, ChevronRight, Repeat } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { JsonLd } from "@/components/ui/json-ld";
+import { ExternalTextLink, TextLink } from "@/components/ui/text-link";
 import { Container, Section } from "@/components/ui/section";
 import { StockEmptyState } from "@/components/vehicle/listing-promise";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
@@ -150,24 +151,29 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                   {results.length === 1 ? "1 car" : `${results.length} cars`} for sale
                 </h2>
               ) : null}
-              {results.length > 0 ? (
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {onThisPage.map((vehicle, index) => (
-                    <VehicleCard
-                      key={vehicle.id}
-                      vehicle={vehicle}
-                      // Only the first card can be the LCP element on a phone.
-                      priority={index === 0}
-                      sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
-                      className="reveal"
-                    />
-                  ))}
+              {/* A new filter, sort or page crossfades the results in place. */}
+              <ViewTransition key={`${toPageSearchString(query, page)}`} enter="results" exit="results" default="none">
+                <div>
+                  {results.length > 0 ? (
+                    <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                      {onThisPage.map((vehicle, index) => (
+                        <VehicleCard
+                          key={vehicle.id}
+                          vehicle={vehicle}
+                          // Only the first card can be the LCP element on a phone.
+                          priority={index === 0}
+                          sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
+                          className="reveal"
+                        />
+                      ))}
+                    </div>
+                  ) : hasStock ? (
+                    <NoMatches />
+                  ) : (
+                    <StockEmptyState />
+                  )}
                 </div>
-              ) : hasStock ? (
-                <NoMatches />
-              ) : (
-                <StockEmptyState />
-              )}
+              </ViewTransition>
 
               {pageCount > 1 ? <Pagination query={query} page={page} pageCount={pageCount} /> : null}
 
@@ -187,19 +193,27 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
           <h2 className="sr-only">Buying from us</h2>
           <ul className="grid gap-px border border-[var(--border)] bg-[var(--border)] md:grid-cols-3">
             {nextSteps.map((item) => (
-              <li key={item.title} className="bg-[var(--background)]">
+              <li key={item.title} className="reveal bg-[var(--background)]">
                 <Link
                   href={item.href}
-                  className="group flex h-full flex-col p-7 transition-colors hover:bg-[var(--surface)] md:p-8"
+                  className={cn(
+                    "group flex h-full flex-col p-7 md:p-9",
+                    // Ink rises through the tile on hover.
+                    "bg-[linear-gradient(var(--color-ink-950),var(--color-ink-950))] bg-[length:100%_0%] bg-bottom bg-no-repeat",
+                    "transition-[background-size,color] duration-700 ease-[var(--ease-out-expo)]",
+                    "hover:bg-[length:100%_100%] hover:text-bone",
+                  )}
                 >
-                  <span aria-hidden className="text-[var(--rule)]">
+                  <span aria-hidden className="text-[var(--accent-text)] transition-colors duration-500 group-hover:text-brass-bright">
                     {item.icon}
                   </span>
-                  <span className="mt-4 font-display text-xl leading-snug">{item.title}</span>
-                  <span className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">{item.detail}</span>
-                  <span className="mt-5 inline-flex items-center gap-2 text-sm">
+                  <span className="mt-5 font-display text-2xl leading-snug">{item.title}</span>
+                  <span className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)] transition-colors duration-500 group-hover:text-bone/65">
+                    {item.detail}
+                  </span>
+                  <span className="mt-6 inline-flex items-center gap-2 text-sm">
                     {item.cta}
-                    <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    <ArrowRight className="size-4 transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-1" />
                   </span>
                 </Link>
               </li>
@@ -341,20 +355,12 @@ function NoMatches() {
         have.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link
-          href="/vehicles"
-          className="inline-flex items-center gap-2 border-b border-[var(--rule)] pb-1 text-sm transition-colors hover:text-[var(--rule)]"
-        >
+        <TextLink href="/vehicles" arrow={false}>
           Clear filters
-        </Link>
-        <a
-          href={whatsappLinks.sourcing}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 border-b border-[var(--rule)] pb-1 text-sm transition-colors hover:text-[var(--rule)]"
-        >
+        </TextLink>
+        <ExternalTextLink href={whatsappLinks.sourcing} target="_blank" rel="noopener noreferrer">
           Tell us what you want on WhatsApp
-        </a>
+        </ExternalTextLink>
       </div>
     </div>
   );

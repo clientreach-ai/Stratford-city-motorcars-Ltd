@@ -433,35 +433,12 @@
 }
 
 /*
- * Scroll-reveal: opt-in, once, and inert when the user prefers reduced motion.
- *
- * Content is visible by default. Only elements that are still below the fold
- * when the page hydrates are marked pending (hidden) by RevealObserver and fade
- * up as they scroll into view. Nothing above the fold ever waits for
- * JavaScript, so the largest contentful paint is never held back, and without
- * JavaScript every section simply shows.
+ * Reduced motion, for both apps: every CSS transition and animation collapses
+ * to an instant change. The website's own motion layer (apps/web
+ * src/styles/motion.css) adds its reduced-motion treatment on top.
  */
 @layer utilities {
-  .reveal[data-reveal="pending"] {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  .reveal[data-reveal="shown"] {
-    opacity: 1;
-    transform: none;
-    transition:
-      opacity 0.7s var(--ease-out-expo),
-      transform 0.7s var(--ease-out-expo);
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .reveal[data-reveal] {
-      opacity: 1;
-      transform: none;
-      transition: none;
-    }
-
     *,
     *::before,
     *::after {

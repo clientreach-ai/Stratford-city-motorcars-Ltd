@@ -14,26 +14,52 @@ import { whatsappLinks } from "@/lib/whatsapp";
 import { useNavStore } from "@/stores/nav";
 import { navItems } from "./nav-config";
 
+/** Past this far down the page, scrolling down tucks the header away. */
+const HIDE_AFTER = 480;
+
 /**
  * Every route opens with a dark band — the homepage hero, or the PageHero on
- * interior pages — so the header starts in ink and reads as one continuous
- * block with the utility strip above and the hero below. Once the page scrolls
- * past that band it resolves to the bone surface with a hairline beneath.
+ * interior pages — so the header is ink and reads as one continuous block with
+ * the utility strip above and the hero below.
+ *
+ * Once the page moves it condenses into a translucent, blurred ink bar with a
+ * brass hairline, so the stock photography runs beneath it. Scrolling down a
+ * long page tucks it away; the smallest scroll back up returns it. Keyboard
+ * focus inside the header always brings it back.
+ *
+ * It is the fixed point of reference during route transitions
+ * (`view-transition-name: site-header`), so it never animates with the page.
  */
 export function SiteHeader({ site }: { site: Site }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [tucked, setTucked] = useState(false);
   const open = useNavStore((state) => state.open);
   const openNav = useNavStore((state) => state.openNav);
   const closeNav = useNavStore((state) => state.closeNav);
 
-  const solid = scrolled;
-
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    let last = window.scrollY;
+    let frame = 0;
+    const update = () => {
+      const y = window.scrollY;
+      setScrolled(y > 24);
+      // A few pixels of dead zone so trackpad jitter never flickers it.
+      if (Math.abs(y - last) > 6) {
+        setTucked(y > last && y > HIDE_AFTER);
+        last = y;
+      }
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   // Close the drawer whenever the route changes.
@@ -44,22 +70,31 @@ export function SiteHeader({ site }: { site: Site }) {
       <UtilityStrip site={site} />
 
       <header
-        data-surface={solid ? undefined : "dark"}
+        data-surface="dark"
+        style={{ viewTransitionName: "site-header" }}
+        onFocus={() => setTucked(false)}
         className={cn(
-          "sticky top-0 z-50 transition-[background-color,border-color,box-shadow] duration-300 ease-[var(--ease-out-expo)]",
-          solid
-            ? "border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-sm"
-            : "border-b border-transparent bg-ink-950 text-bone",
+          "sticky top-0 z-50 border-b text-bone",
+          "transition-[background-color,border-color,translate] duration-500 ease-[var(--ease-out-expo)]",
+          scrolled
+            ? "border-brass/15 bg-ink-950/82 backdrop-blur-xl backdrop-saturate-150"
+            : "border-transparent bg-ink-950",
+          tucked && !open ? "-translate-y-full" : "translate-y-0",
         )}
       >
-        <div className="container-page flex h-18 items-center justify-between gap-6 md:h-20">
+        <div
+          className={cn(
+            "container-page flex items-center justify-between gap-6 transition-[height] duration-500 ease-[var(--ease-out-expo)]",
+            scrolled ? "h-16 md:h-[4.25rem]" : "h-18 md:h-20",
+          )}
+        >
           <Link
             href="/"
             className="relative block shrink-0"
             aria-label={`${site.name} — home`}
           >
             <Image
-              src={solid ? "/brand/logo.webp" : "/brand/logo-bone.webp"}
+              src="/brand/logo-bone.webp"
               alt={site.name}
               width={900}
               height={269}
@@ -68,7 +103,10 @@ export function SiteHeader({ site }: { site: Site }) {
               // Above the fold but tiny and never the LCP element: load it
               // straight away without a preload competing with the headline.
               loading="eager"
-              className="h-9 w-auto md:h-11"
+              className={cn(
+                "w-auto transition-[height] duration-500 ease-[var(--ease-out-expo)]",
+                scrolled ? "h-8 md:h-9" : "h-9 md:h-11",
+              )}
             />
           </Link>
 
@@ -173,6 +211,7 @@ function UtilityStrip({ site }: { site: Site }) {
 }
 
 function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void; site: Site }) {
+  const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -231,9 +270,14 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
       // transitioned `visibility` still computes as hidden on the frame the
       // drawer opens — which silently swallowed the focus call.
       inert={!open}
+      // The ink curtain drops from the top on open and lifts away on close;
+      // the links rise into place behind it, one after another.
       className={cn(
-        "fixed inset-0 z-60 bg-ink-950 text-bone transition-opacity duration-300 ease-[var(--ease-out-expo)] lg:hidden",
-        open ? "opacity-100" : "pointer-events-none opacity-0",
+        "grain fixed inset-0 z-60 bg-ink-950 text-bone lg:hidden",
+        "transition-[clip-path] ease-[var(--ease-out-expo)]",
+        open
+          ? "duration-700 [clip-path:inset(0_0_0_0)]"
+          : "pointer-events-none duration-500 [clip-path:inset(0_0_100%_0)]",
       )}
     >
       <div
@@ -265,15 +309,30 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
 
         <nav aria-label="Mobile" className="container-page flex-1 pt-4">
           <ul>
-            {navItems.map((item) => (
-              <li key={item.href} className="border-b border-bone/10">
+            {navItems.map((item, index) => (
+              <li
+                key={item.href}
+                style={{ "--i": index } as React.CSSProperties}
+                className={cn(
+                  "border-b border-bone/10 transition-[opacity,translate] ease-[var(--ease-out-expo)]",
+                  open
+                    ? "translate-y-0 opacity-100 duration-700 delay-[calc(var(--i)*60ms+160ms)]"
+                    : "translate-y-5 opacity-0 duration-200",
+                )}
+              >
                 <Link
                   href={item.href}
                   onClick={onClose}
-                  className="flex items-baseline justify-between gap-4 py-5 transition-colors hover:text-brass"
+                  aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined}
+                  className="group flex items-baseline justify-between gap-4 py-5 transition-colors hover:text-brass aria-[current=page]:text-brass-bright"
                 >
-                  <span className="shrink-0 font-display text-2xl leading-none min-[380px]:text-[1.75rem]">
-                    {item.label}
+                  <span className="flex shrink-0 items-baseline gap-4">
+                    <span aria-hidden data-numeric className="font-roman text-[0.625rem] tracking-[0.2em] text-brass">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="font-display text-[1.75rem] leading-none min-[380px]:text-[2rem]">
+                      {item.label}
+                    </span>
                   </span>
                   {/*
                     The hint is the first thing to go on a narrow handset. Left
@@ -290,7 +349,12 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
           </ul>
         </nav>
 
-        <div className="container-page shrink-0 space-y-3 py-8">
+        <div
+          className={cn(
+            "container-page shrink-0 space-y-3 py-8 transition-opacity ease-[var(--ease-out-expo)]",
+            open ? "opacity-100 delay-500 duration-700" : "opacity-0 duration-200",
+          )}
+        >
           <ExternalButtonLink
             href={site.phone.href}
             variant="outline"
