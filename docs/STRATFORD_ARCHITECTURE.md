@@ -136,8 +136,9 @@ of that upload is not built yet. Media is described on each record's `media`
 array.
 
 - **Photographs**: each carries a category (exterior, interior, detail,
-  documents), width and height, alt text, `provenance` (`dealer` or `library`)
-  and an optional credit.
+  documents), width and height, alt text, `provenance` (`dealer` or `library`),
+  an optional credit, and — once processed — `variants` (the widths and formats
+  generated) and a `placeholder` (a ~200-byte blurred preview).
 - **Video**: a stored file, or a YouTube/Vimeo link. YouTube renders as a
   lightweight facade using `youtube-nocookie.com`. 360° spins are links.
 - **Storage** (`storage.ts`): `MediaStorage` interface with a local-disk
@@ -145,11 +146,97 @@ array.
   gitignored). Keys are validated against a strict pattern; path traversal
   returns 404. `MEDIA_PUBLIC_BASE_URL` is reserved for moving to object storage
   behind a CDN.
-- **Delivery**: `/media/<key>` serves files with
-  `Cache-Control: public, max-age=31536000, immutable` and range requests (for
-  video). Photos render through `next/image` (AVIF, then WebP) with `sizes`
-  matched to each layout; the first gallery image is eager with high fetch
-  priority, everything else lazy.
+- **Delivery**: `/media/<key>` serves files with `Cache-Control: public,
+  max-age=31536000, immutable` and range requests (for video). It looks, in
+  order, on local disk (`MEDIA_ROOT`), in its own cache (`MEDIA_CACHE_DIR`), in
+  the R2 bucket directly (`MEDIA_BUCKET*`, a read-only token; only `vehicles/`
+  is readable) and finally through the API (`MEDIA_PROXY_ORIGIN`). A complete
+  photograph read from the bucket or the API is kept in the cache — names never
+  change, so it cannot go stale — and each file leaves R2 once per server.
+  With the bucket configured, photographs never wait for the API: on Render's
+  free tier the API sleeps, and waking it took 53 s. Proxied requests wait 25 s
+  and retry once.
+
+### Photographs
+
+```text
+ADMIN UPLOAD → API: validate (type, 25 MB, ≥ 400×300, pixel limit)
+  → decode (JPEG/PNG/WebP/AVIF; HEIC via WebAssembly, colour profile kept)
+  → upright, sRGB, ≤ 2560 px
+  → original (private) + master WebP 90 + AVIF & WebP at
+    320/480/640/750/828/960/1080/1280/1600/1920/2560 (up to the photo's own
+    width) + blurred placeholder
+  → R2 under one id → record width, height, variants, placeholder
+WEBSITE → <picture>: AVIF then WebP srcset, per-layout `sizes`
+  → the browser fetches the one file that fits the screen
+  → /media: disk cache → R2 (→ API only as a fallback)
+```
+
+- **Quality, by measurement** (eight stored photographs at 828 px, SSIM and
+  VMAF against an uncompressed resize, zoomed side-by-side checks). AVIF 62 at
+  encoder effort 2 up to 1280 px, 58 above (only high-density screens get
+  those); WebP 78/72 for browsers without AVIF. AVIF 62 scores 0.968 SSIM /
+  93.9 VMAF — zoomed in it is indistinguishable from AVIF 68 at three quarters
+  of the bytes. Effort 2 rather than 3: the same quality for 40% less CPU,
+  which matters on the API's small instance. The image
+  optimiser this replaced scored 0.945 / 89.7 at 26 KB against 43 KB, with badge
+  lettering and brick joints visibly smeared. Nothing is compressed twice.
+- **Width steps** are close enough that a screen is never sent much more than
+  it draws (a 412 px phone at 1.75× needs 721 px and gets 750, not 828).
+- **Revisions.** Files are cached as immutable, so they are never rewritten:
+  the encoding revision (`VARIANT_REVISION` in `photos.ts`, recorded as
+  `variants.revision`) is part of each variant's name (`<id>-828r2.avif`). After
+  changing widths or quality, bump it and run
+  `pnpm --filter server photos:variants -- --apply`: photographs of an older
+  revision are re-encoded from their kept original (or, for photographs
+  stored before originals were kept, their master) under new names, verified,
+  then recorded. The old revision's files stay for pages still cached; a day
+  later `photos:variants -- --prune --apply` deletes them.
+- **Dense screens** (≥ 2.5 dppx, most phones) get the variant for 2× density —
+  the same pixels to the eye at arm's length, about half the bytes.
+- **Loading.** The page's LCP photograph is eager, high priority and preloaded
+  (one preload per kind of screen); the hero's later cars and a gallery's
+  other slides wait for the page's `load` event; everything else is native
+  lazy loading. Every photograph sits in a box whose aspect ratio the layout
+  sets (CLS 0), with its blurred placeholder painted until it arrives.
+- **Older photographs** without variants fall back to `next/image` at quality
+  85 until `pnpm --filter server photos:variants -- --apply` has processed them
+  (additive and re-runnable).
+- **Sized for a small server.** The API runs on a 512 MB instance with part of
+  a CPU. Encoding every file at once peaked at 740 MB for a 12 MP JPEG, so
+  files are encoded one after another (the same CPU time), libvips keeps no
+  cache and uses at most two threads, and one photograph is processed at a
+  time per server (a second upload queues). HEIC is decoded in a worker thread
+  that exits after each photograph — WebAssembly memory never shrinks, and
+  decoding a 48 MP HEIC in the main thread left the API holding ~900 MB for
+  good. Measured under Node (the production runtime): a 12 MP JPEG peaks at
+  ~280–350 MB and ~6.5 s of CPU; a 12 MP HEIC at ~470 MB; a 48 MP HEIC at
+  ~620 MB. On a 0.1-CPU instance an upload takes about a minute; see the
+  rollout checklist below.
+- **Admin previews** use the same WebP variants (a `srcset` in the media
+  manager; a 320 px variant as `coverSrc` for listing thumbnails), never the
+  master through the admin's own optimiser.
+
+### Photographs: production rollout
+
+1. **API instance.** Photograph processing needs memory and CPU: Render
+   Starter (512 MB, 0.5 CPU) handles JPEG and ordinary iPhone HEIC in ~15 s
+   per photograph but has little headroom for 48 MP HEIC; Standard (2 GB,
+   1 CPU) is comfortable (~7 s). On the free tier (0.1 CPU, sleeps when idle)
+   uploads take about a minute each after a ~50 s wake-up.
+2. **Deploy the API first, then the website and admin.** The website reads
+   photographs with or without variants, so any order works, but new uploads
+   only get variants once the API is deployed.
+3. **Website bucket access.** Create a read-only R2 API token for the bucket
+   and set `MEDIA_BUCKET`, `MEDIA_BUCKET_ENDPOINT`,
+   `MEDIA_BUCKET_ACCESS_KEY_ID` and `MEDIA_BUCKET_SECRET_ACCESS_KEY` on the
+   website (see `render.yaml`).
+4. **Existing photographs.** With the production `DATABASE_URL` and `UPLOAD_*`
+   settings, run `pnpm --filter server photos:variants` (dry run), then
+   `-- --apply`. It is additive and re-runnable; run it from a machine with a
+   real CPU, not the free instance.
+5. **A day later**, `photos:variants -- --prune` (dry run) and
+   `-- --prune --apply` remove files of superseded revisions.
 
 ## Enquiries
 
