@@ -39,7 +39,8 @@ export interface MediaStorage {
 export const MEDIA_URL_PREFIX = "/media";
 
 /** Keys and paths: a vehicle id folder, then a generated file name. Nothing else. */
-const KEY_PATTERN = /^[A-Za-z0-9_-]{1,64}\/[A-Za-z0-9_-]{8,64}\.(webp|jpg|mp4|webm)$/;
+// `<vehicleId>/<uuid>.webp`, or a delivery variant `<vehicleId>/<uuid>-<width>[r<n>].<avif|webp>`.
+const KEY_PATTERN = /^[A-Za-z0-9_-]{1,64}\/[A-Za-z0-9_-]{8,64}\.(webp|avif|jpg|mp4|webm)$/;
 
 export function isValidMediaKey(key: string): boolean {
   return KEY_PATTERN.test(key);
@@ -92,7 +93,14 @@ export async function openMediaFile(
   range?: { start: number; end: number },
 ): Promise<{ stream: ReadableStream<Uint8Array>; size: number; length: number; modified: Date } | null> {
   const file = resolveMediaPath(key);
-  if (!file) return null;
+  return file ? openFileAt(file, range) : null;
+}
+
+/** Opens a file already resolved to a safe path (see resolveMediaPath) for streaming, optionally a byte range. */
+export async function openFileAt(
+  file: string,
+  range?: { start: number; end: number },
+): Promise<{ stream: ReadableStream<Uint8Array>; size: number; length: number; modified: Date } | null> {
   const info = await stat(/*turbopackIgnore: true*/ file).catch(() => null);
   if (!info?.isFile()) return null;
 
