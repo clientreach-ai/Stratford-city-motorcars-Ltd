@@ -91,8 +91,7 @@ export async function Hero() {
               {prices.length ? <>, from {formatPrice(Math.min(...prices))}</> : null}.{" "}
             </>
           ) : null}
-          A small family-owned showroom on Romford Road, Stratford. Take your time, ask us anything — every
-          enquiry is handled personally.
+          A family-owned showroom in Stratford, East London.
         </p>
 
         <div className="intro mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3" style={delay(640)}>
