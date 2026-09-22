@@ -106,8 +106,15 @@ Everything under **Completed** was exercised against a production build
 
 - Media model on each car: photo categories, alt text, cover, dealer vs
   library provenance, video file or YouTube/Vimeo link, 360° link.
-- `next/image` with AVIF/WebP and per-layout `sizes`; eager, high-priority first
-  gallery image; `/media/*` served with immutable caching and range requests.
+- Photographs processed once at upload into AVIF/WebP delivery variants, served
+  through `<picture>` with per-layout `sizes` (see "Photographs" in the
+  architecture doc); eager, high-priority first
+  gallery image; `/media/*` served with immutable caching and range requests,
+  read straight from R2 with a disk cache when the website has bucket access.
+  Tested end to end on production builds (Node API, website, admin): HEIC,
+  JPEG and transparent PNG uploads through the admin, refusal of a non-image
+  and an undersized image, editor save keeping variants, removal deleting
+  every stored file, and the website showing photographs with the API down.
 - No upload tool (removed with the dashboard).
 - Retired brand assets replaced (Open Graph card, favicon and app icons with the
   new positioning).

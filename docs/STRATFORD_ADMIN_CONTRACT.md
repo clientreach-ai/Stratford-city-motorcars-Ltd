@@ -144,12 +144,16 @@ cars that fail them; `needsReply` is new enquiries oldest first (max 6);
 - After any stock change, revalidate the website's `inventory` cache tag (see
   "Website cache" below).
 
-**Uploading** (`POST /vehicles/:id/media`): accept JPEG, PNG, WebP or AVIF up
-to 25 MB; refuse images smaller than 400 × 300 in either orientation
-(`MINIMUM_PHOTO_SIZE`, 422 on `file`) and accept smaller-than-recommended ones
-(the checklist flags anything under 1200 × 800); re-encode,
-strip metadata (GPS), store through `MediaStorage` under a generated key, and
-record real width and height. **Append the image to the car's `media` without
+**Uploading** (`POST /vehicles/:id/media`): accept JPEG, PNG, WebP, AVIF or
+HEIC/HEIF up to 25 MB; refuse images smaller than 400 × 300 in either
+orientation (`MINIMUM_PHOTO_SIZE`, 422 on `file`) and accept
+smaller-than-recommended ones (the checklist flags anything under 1200 × 800).
+Keep the original privately; make the master (the recorded `src`), the AVIF and
+WebP delivery variants and a blurred placeholder from it, all upright, in sRGB
+and without metadata (GPS); store them through `MediaStorage` under one
+generated id; and record real width and height, `variants` and `placeholder`
+(see `VehicleImage`). `variants` and `placeholder` are server-owned: a save
+keeps the stored values, like `src`, `width` and `height`. **Append the image to the car's `media` without
 changing `updatedAt`** — an editor may be open, and a photo taken on a phone
 must not be lost if the editor is abandoned. The next save sets its category,
 description, order and cover.
@@ -281,8 +285,17 @@ the website (bearer `REVALIDATE_SECRET`), called by the API when
   (`RESEND_API_KEY`, `EMAIL_FROM`); without it, development prints the link to
   the server console. The first owner is created with
   `pnpm --filter server staff:create -- --email … --name "…" --role owner`.
-- **Photos** are re-encoded to WebP (≤ 2400 px, metadata removed) with `sharp`
-  and stored in R2 under `vehicles/<vehicleId>/`. With a public bucket URL the
+- **Photos** (`modules/media/photos.ts`) are decoded (HEIC through libheif in
+  WebAssembly), turned upright and converted to sRGB through their own colour
+  profile. Stored in R2 under one id: the untouched upload at
+  `originals/<vehicleId>/<id>.<ext>` (private, never served), the master
+  `vehicles/<vehicleId>/<id>.webp` (≤ 2560 px, WebP 90) and the delivery
+  variants `vehicles/<vehicleId>/<id>-<width>[r<revision>].<avif|webp>`.
+  Deleting a photo removes all of them. Photos without variants, or with
+  variants of an older encoding revision, are brought up to date by
+  `pnpm --filter server photos:variants -- --apply` (see "Photographs" in the
+  architecture doc). `coverSrc` in the overview and enquiries is a 320 px
+  variant of the cover (`coverPreview`), not the master. With a public bucket URL the
   record holds that URL; otherwise it holds `/media/<vehicleId>/<file>`, served
   by the API's `GET /media/*` and, on the website, by `/media` forwarding to
   `MEDIA_PROXY_ORIGIN`.
