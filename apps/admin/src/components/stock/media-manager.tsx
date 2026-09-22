@@ -211,7 +211,7 @@ export function MediaManager({
           <div className="min-w-0">
             <p className="text-sm font-medium">Add photographs</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              JPEG, PNG, WebP or AVIF. 1200 × 800 or larger looks sharpest. <span className="hidden sm:inline">Drop files here, or choose them.</span>
+              JPEG, PNG, WebP, AVIF or HEIC, straight from the camera or phone — sizing and web versions are made for you. 1200 × 800 or larger looks sharpest. <span className="hidden sm:inline">Drop files here, or choose them.</span>
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -231,7 +231,10 @@ export function MediaManager({
             <input
               ref={inputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
+              // HEIC is listed (with its extensions, which some browsers match on
+              // instead of the type) so photographs straight off a phone or a
+              // Mac can be chosen; the API converts them.
+              accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif"
               multiple
               className="sr-only"
               tabIndex={-1}
@@ -254,6 +257,10 @@ export function MediaManager({
                 <p className="truncate text-sm">{item.name}</p>
                 {item.error ? (
                   <p className="text-xs text-destructive">{item.error}</p>
+                ) : item.progress >= 1 ? (
+                  // Sent: the API is now making the web versions, which can take
+                  // a little while on a small server.
+                  <p className="text-xs text-muted-foreground">Preparing web versions…</p>
                 ) : (
                   <div className="mt-1.5 h-1 bg-ink-150" role="progressbar" aria-valuenow={Math.round(item.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading ${item.name}`}>
                     <div className="h-full bg-ink-900 transition-[width] duration-200" style={{ width: `${item.progress * 100}%` }} />
@@ -306,7 +313,7 @@ export function MediaManager({
                 )}
               >
                 <div className="relative">
-                  <Photo src={image.src} alt={image.alt || `Photograph ${index + 1}`} label={CATEGORY_LABEL[image.category]} className="aspect-[3/2] w-full" sizes="(min-width: 640px) 320px, 100vw" />
+                  <Photo src={image.src} variants={image.variants} alt={image.alt || `Photograph ${index + 1}`} label={CATEGORY_LABEL[image.category]} className="aspect-[3/2] w-full" sizes="(min-width: 640px) 320px, 100vw" />
                   <div className="absolute top-2 left-2 flex flex-wrap gap-1">
                     {isCover ? (
                       <Badge tone="ink">

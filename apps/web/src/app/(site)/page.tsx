@@ -256,9 +256,7 @@ export default async function HomePage() {
             {interior ? (
               <div className="reveal reveal-image relative aspect-[4/5] overflow-hidden bg-ink-900 sm:aspect-[4/3] lg:aspect-[4/5]">
                 <VehiclePhoto
-                  src={interior.src}
-                  alt={interior.alt}
-                  fill
+                  image={interior}
                   sizes="(min-width: 1408px) 620px, (min-width: 1024px) 45vw, 100vw"
                   className="object-cover"
                 />

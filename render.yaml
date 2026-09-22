@@ -54,6 +54,18 @@ services:
       # API serves photographs out of the R2 bucket.
       - key: MEDIA_PROXY_ORIGIN
         value: https://stratford-city-motorcars-ltd.onrender.com
+      # Read photographs straight from R2 instead, so a sleeping API never
+      # holds up a car's photographs (the proxy above becomes the fallback).
+      # Create a READ-ONLY R2 API token for the bucket; the bucket name and
+      # endpoint are the API's UPLOAD_BUCKET and its R2 account endpoint.
+      - key: MEDIA_BUCKET
+        sync: false
+      - key: MEDIA_BUCKET_ENDPOINT
+        sync: false
+      - key: MEDIA_BUCKET_ACCESS_KEY_ID
+        sync: false
+      - key: MEDIA_BUCKET_SECRET_ACCESS_KEY
+        sync: false
 
       # The canonical origin: drives canonical tags, Open Graph, sitemap.xml
       # and robots.txt. Until DNS points at Render, set this on the dashboard

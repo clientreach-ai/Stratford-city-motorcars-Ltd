@@ -164,7 +164,20 @@ function reconcileMedia(stored: VehicleMedia[], submitted: VehicleMedia[]): Vehi
     const previous = known.get(item.id);
     if (item.kind === "image") {
       if (previous?.kind !== "image") return [];
-      return [{ ...item, src: previous.src, width: previous.width, height: previous.height, provenance: previous.provenance, credit: previous.credit }];
+      // What the server made when it stored the photograph is kept from the
+      // stored copy; the editor only changes alt text, category and order.
+      return [
+        {
+          ...item,
+          src: previous.src,
+          width: previous.width,
+          height: previous.height,
+          provenance: previous.provenance,
+          credit: previous.credit,
+          variants: previous.variants,
+          placeholder: previous.placeholder,
+        },
+      ];
     }
     if (item.kind === "video") {
       const storedVideo = previous?.kind === "video" ? previous : null;
@@ -576,17 +589,25 @@ export const stockRoutes = new Hono<AdminEnv>()
       throw new ValidationError({ category: "Choose what the photograph shows." });
     }
 
+    // Validated, decoded and turned into the master, the delivery variants and
+    // a blurred preview; the original is kept privately beside them.
     const photo = await processPhoto(file);
-    const src = await storage.put(id, "webp", photo.bytes, "image/webp");
+    const src = await storage.putPhoto(id, photo);
     const image: VehicleImage = {
       id: `m-${crypto.randomUUID()}`,
       kind: "image",
       src,
-      width: photo.width,
-      height: photo.height,
+      width: photo.master.width,
+      height: photo.master.height,
       alt,
       category: category as PhotoCategory,
       provenance: "dealer",
+      variants: {
+        widths: [...new Set(photo.variants.map((variant) => variant.width))].sort((a, b) => a - b),
+        formats: [...new Set(photo.variants.map((variant) => variant.format))],
+        revision: photo.revision,
+      },
+      placeholder: photo.placeholder,
     };
 
     // Attached at once WITHOUT a new version, so an open editor can still save

@@ -46,14 +46,20 @@ coordinates) before anything is stored.
 
 ### How photographs are delivered
 
+Upload photographs exactly as they come off the camera or phone — JPEG, PNG,
+WebP, AVIF or an iPhone's HEIC, up to 25 MB. There is nothing to resize,
+compress or convert: when a photograph is uploaded the system keeps the
+original safely, and makes the web versions from it — every size a layout
+needs (phone, desktop, card, thumbnail, full screen) in AVIF and WebP, at a
+quality chosen so wheels, badges and paint look as sharp as the original — plus
+a tiny blurred preview that shows while the photograph loads. Colours are kept
+true: an iPhone's wide-colour photograph is converted properly, not dulled.
+
 Each photograph's pixel size is recorded on the car, so pages reserve the right
-space and nothing jumps as it loads. The site never serves the stored master to a browser directly in a gallery.
-The Next.js image optimiser produces each size a layout needs — phone gallery,
-desktop gallery, card, thumbnail, full-screen viewer — as AVIF or WebP, caches
-it, and the page's `sizes` tell the browser which one to fetch. Only the first
-gallery photograph loads immediately with high priority; every other photograph
-and thumbnail waits until it is about to scroll into view, and the full-screen
-viewer requests its image only when opened.
+space and nothing jumps as it loads. The browser fetches only the one file that
+fits the screen. Only the first gallery photograph loads immediately with high
+priority; the others wait until the page has loaded or are about to scroll into
+view, and the full-screen viewer requests its image only when opened.
 
 Videos are served as stored (the site does not transcode) and use the
 native player with `preload="none"`, so nothing downloads until a buyer presses

@@ -11,6 +11,7 @@ import {
   enquiryStatusLabel,
   isOpenEnquiry,
   isValidSlug,
+  coverPreview,
   listingProgress,
   publicationIssues,
   listingRecommendations,
@@ -149,7 +150,7 @@ function saveResult(db: MockDb, vehicle: StoredVehicle, user: SessionUser): Save
 }
 
 function coverSrc(vehicle: StoredVehicle): string | null {
-  return listingProgress(vehicle).cover?.src ?? null;
+  return coverPreview(listingProgress(vehicle).cover);
 }
 
 const TEXT_LIMITS: [keyof VehicleRecord, number, string][] = [
@@ -394,7 +395,7 @@ export function createMockApi(): AdminApi {
             title: vehicle.title,
             year: vehicle.year,
             status: vehicle.status,
-            coverSrc: p.cover?.src ?? null,
+            coverSrc: coverPreview(p.cover),
             dealerPhotos: p.dealerPhotos,
             hasVideo: p.hasVideo,
             issues: p.issues,
@@ -718,8 +719,8 @@ export function createMockApi(): AdminApi {
         const db = getDb();
         requireCapability(db, "stock.edit");
         const stored = findVehicle(db, id);
-        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) {
-          throw new ValidationError({ file: `“${file.name}” is not a JPEG, PNG, WebP or AVIF photograph.` }, "This file type is not supported.");
+        if (!["image/jpeg", "image/png", "image/webp", "image/avif", "image/heic", "image/heif"].includes(file.type)) {
+          throw new ValidationError({ file: `“${file.name}” is not a JPEG, PNG, WebP, AVIF or HEIC photograph.` }, "This file type is not supported.");
         }
         if (file.size > 25 * 1024 * 1024) {
           throw new ValidationError({ file: `“${file.name}” is larger than 25 MB.` }, "This photograph is too large.");

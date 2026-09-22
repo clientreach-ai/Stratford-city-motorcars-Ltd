@@ -9,7 +9,8 @@
     "dev": "bun run --hot src/index.ts",
     "start": "node dist/index.mjs",
     "staff:create": "bun scripts/create-staff.ts",
-    "staff:password": "bun scripts/reset-password.ts"
+    "staff:password": "bun scripts/reset-password.ts",
+    "photos:variants": "bun scripts/generate-photo-variants.ts"
   },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
@@ -21,6 +22,7 @@
     "@hono/node-server": "^2.1.1",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "heic-decode": "^2.1.0",
     "hono": "^4.12.32",
     "sharp": "^0.35.4",
     "zod": "catalog:"
