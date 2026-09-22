@@ -166,6 +166,9 @@ importers:
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
+      heic-decode:
+        specifier: ^2.1.0
+        version: 2.1.0
       hono:
         specifier: ^4.12.32
         version: 4.13.7
@@ -206,6 +209,9 @@ importers:
       '@Stratford-city-motorcars-Ltd/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@aws-sdk/client-s3':
+        specifier: ^3.1134.0
+        version: 3.1134.0
       '@swc/helpers':
         specifier: ^0.5.23
         version: 0.5.23
@@ -2643,6 +2649,10 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
+  heic-decode@2.1.0:
+    resolution: {integrity: sha512-0fB3O3WMk38+PScbHLVp66jcNhsZ/ErtQ6u2lMYu/YxXgbBtl+oKOhGQHa4RpvE68k8IzbWkABzHnyAIjR758A==}
+    engines: {node: '>=8.0.0'}
+
   hono@4.13.7:
     resolution: {integrity: sha512-c8/gF9ac8Y78/agExVocyLevgR+JlpNB444Py0FSX8pJoPdYUfUzRcXtYEYGwt6l19qIlVZPN5Mfsw9jFShmQQ==}
     engines: {node: '>=16.9.0'}
@@ -2841,6 +2851,10 @@ packages:
         optional: true
       vue:
         optional: true
+
+  libheif-js@1.23.2:
+    resolution: {integrity: sha512-qvHIXtggEsw1lCNCWBYKloL2Z36DJBm0R9ThGiH2JnhKYdeZFLPFkP30Lw4yMskxxhx0bKg1gLrBHX1D2w2pSw==}
+    engines: {node: '>=8.0.0'}
 
   lightningcss-android-arm64@1.32.0:
     resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
@@ -5509,6 +5523,10 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  heic-decode@2.1.0:
+    dependencies:
+      libheif-js: 1.23.2
+
   hono@4.13.7: {}
 
   hookable@6.1.1: {}
@@ -5633,6 +5651,8 @@ snapshots:
   lenis@1.3.26(react@19.2.8):
     optionalDependencies:
       react: 19.2.8
+
+  libheif-js@1.23.2: {}
 
   lightningcss-android-arm64@1.32.0:
     optional: true

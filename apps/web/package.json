@@ -17,6 +17,7 @@
     "@Stratford-city-motorcars-Ltd/domain": "workspace:*",
     "@Stratford-city-motorcars-Ltd/env": "workspace:*",
     "@Stratford-city-motorcars-Ltd/ui": "workspace:*",
+    "@aws-sdk/client-s3": "^3.1134.0",
     "@swc/helpers": "^0.5.23",
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "catalog:",
