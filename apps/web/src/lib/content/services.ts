@@ -72,6 +72,19 @@ export const whyBuyHere: Step[] = [
   },
 ];
 
+/**
+ * The homepage's three reasons, one line each.
+ *
+ * The same confirmed facts as `whyBuyHere` above, cut to what someone reads
+ * while scrolling past: the homepage sells the cars, not the copy. The full
+ * set stays on the About page for anyone who wants it.
+ */
+export const homeReasons: Step[] = [
+  { title: "A family business", detail: "You deal with the owners, not a sales floor." },
+  { title: "Sports and luxury cars", detail: "It's the only thing we trade in." },
+  { title: "Priced from the market", detail: "Every price set against what the car is worth today." },
+];
+
 // ---- The buying journey ---------------------------------------------------------
 
 export interface JourneyStep extends Step {
