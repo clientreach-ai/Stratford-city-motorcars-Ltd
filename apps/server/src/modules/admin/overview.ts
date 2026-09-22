@@ -1,5 +1,5 @@
 import type { Overview, OverviewListing } from "@Stratford-city-motorcars-Ltd/core/overview";
-import { listingProgress } from "@Stratford-city-motorcars-Ltd/core/stock";
+import { coverPreview, listingProgress } from "@Stratford-city-motorcars-Ltd/core/stock";
 import { Hono } from "hono";
 
 import { listVehicles } from "../vehicles/repository";
@@ -30,7 +30,7 @@ export const overviewRoutes = new Hono<AdminEnv>().get("/", async (c) => {
     title: record.title,
     year: record.year,
     status: record.status,
-    coverSrc: p.cover?.src ?? null,
+    coverSrc: coverPreview(p.cover),
     dealerPhotos: p.dealerPhotos,
     hasVideo: p.hasVideo,
     issues: p.issues,
