@@ -1,17 +1,19 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowUpRight, Pause, Play } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { usePageLoaded } from "@/components/ui/use-page-loaded";
+import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
+import type { VehicleImage } from "@/lib/inventory/types";
 
 export interface HeroSlide {
   id: string;
   href: `/vehicles/${string}`;
-  src: string;
-  alt: string;
+  /** The car's cover photograph. Decorative here: the caption names the car. */
+  image: VehicleImage;
   /** "2022 Ferrari Roma" */
   name: string;
   /** Already formatted: "£164,950" or "POA". */
@@ -45,6 +47,8 @@ export function HeroShowcase({ slides, children }: { slides: HeroSlide[]; childr
   const [userPaused, setUserPaused] = useState(false);
   const [offscreen, setOffscreen] = useState(false);
   const [reduced, setReduced] = useState(false);
+  // The later cars wait until the page has loaded (see usePageLoaded).
+  const settled = usePageLoaded();
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
 
@@ -132,20 +136,20 @@ export function HeroShowcase({ slides, children }: { slides: HeroSlide[]; childr
                 index === active ? "opacity-100" : "opacity-0",
               )}
             >
-              <Image
-                src={slide.src}
+              {index === 0 || settled || index === active ? (
+              <VehiclePhoto
+                image={slide.image}
                 alt=""
-                fill
                 // The first car is the LCP element; the rest wait their turn.
                 priority={index === 0}
-                fetchPriority={index === 0 ? "high" : "low"}
-                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? undefined : "low"}
                 sizes="(min-width: 1024px) 76vw, 100vw"
                 className={cn(
                   "object-cover object-[center_62%]",
                   index === active && !reduced && "animate-[hero-push_9s_var(--ease-out-expo)_both]",
                 )}
               />
+              ) : null}
             </div>
           ))}
         </div>

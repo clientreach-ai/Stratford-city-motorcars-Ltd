@@ -42,6 +42,10 @@ export function PageHero({
         width={800}
         height={105}
         sizes="(min-width: 1024px) 60vw, 120vw"
+        // Tiny (the file is 800 px), but on wide screens its painted area makes
+        // it the largest element, so it must never wait to be lazy-loaded.
+        loading="eager"
+        fetchPriority="low"
         className="animate-intro-fade pointer-events-none absolute -right-[30%] bottom-6 w-[120%] max-w-none opacity-[0.045] lg:-right-[4%] lg:bottom-10 lg:w-[60%]"
       />
       <Container className="relative pb-16 pt-8 md:pb-24 md:pt-10">

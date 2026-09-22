@@ -34,8 +34,7 @@ function toSlide(vehicle: PublicVehicle): HeroSlide {
   return {
     id: vehicle.id,
     href: `/vehicles/${vehicle.slug}`,
-    src: vehicle.cover.src,
-    alt: vehicle.cover.alt,
+    image: vehicle.cover,
     name: `${vehicle.year} ${vehicle.title}`,
     price: formatVehiclePrice(vehicle),
     detail: [vehicle.engine, vehicle.power].filter(Boolean).join(" · ") || undefined,

@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { useDialogFocus } from "@/components/ui/use-dialog-focus";
+import { usePageLoaded } from "@/components/ui/use-page-loaded";
 import { carPhotoTransitionName } from "@/components/vehicle/card-photo";
 import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
 import type { VehicleImage } from "@/lib/inventory/types";
@@ -54,6 +55,9 @@ export function VehicleGallery({
   const closeLightbox = useGalleryStore((state) => state.closeLightbox);
   const reset = useGalleryStore((state) => state.reset);
   const trackRef = useRef<HTMLDivElement>(null);
+  // Slides beyond the first wait for the page to load (see usePageLoaded); the
+  // frames keep their size meanwhile, so nothing shifts when they arrive.
+  const pageLoaded = usePageLoaded();
 
   const count = images.length;
 
@@ -136,17 +140,16 @@ export function VehicleGallery({
                 aria-label={`${image.alt}. Photograph ${index + 1} of ${count}, view full screen`}
                 className="relative aspect-[4/3] w-full shrink-0 snap-center cursor-zoom-in overflow-hidden bg-ink-900 md:aspect-[16/10] lg:aspect-[2/1]"
               >
+                {index === 0 || index === active || pageLoaded ? (
                 <VehiclePhoto
-                  src={image.src}
-                  alt={image.alt}
-                  fill
+                  image={image}
                   // Only the first photograph is the LCP element.
-                  loading={index === 0 ? "eager" : "lazy"}
-                  fetchPriority={index === 0 ? "high" : "auto"}
+                  priority={index === 0}
                   // The stage is the full container on every breakpoint.
                   sizes="(min-width: 1408px) 1280px, (min-width: 768px) 92vw, 100vw"
                   className="object-cover transition-transform duration-[1400ms] ease-[var(--ease-out-expo)] group-hover:scale-[1.02]"
                 />
+                ) : null}
               </button>
             ))}
           </div>
@@ -221,10 +224,8 @@ export function VehicleGallery({
                 className="group/thumb relative block aspect-[4/3] w-full overflow-hidden bg-ink-900"
               >
                 <VehiclePhoto
-                  src={image.src}
+                  image={image}
                   alt=""
-                  fill
-                  loading="lazy"
                   // Thumbnail rail: 6 columns from md, 8 from lg.
                   sizes="(min-width: 1408px) 150px, (min-width: 1024px) 11vw, 15vw"
                   className={cn(
@@ -323,7 +324,8 @@ function Lightbox({
       <div className="relative flex-1">
         {/* Keyed on the photograph, so each one dissolves in as it arrives. */}
         <div key={image.id} className="lightbox-frame absolute inset-0 md:inset-x-20">
-          <VehiclePhoto src={image.src} alt={image.alt} fill sizes="100vw" className="object-contain" />
+          {/* Letterboxed, so no blurred placeholder bleeding into the margins. */}
+          <VehiclePhoto image={image} sizes="100vw" blur={false} className="object-contain" />
         </div>
 
         {images.length > 1 ? (
@@ -381,9 +383,8 @@ function Lightbox({
                 className="relative block h-14 w-20 overflow-hidden bg-ink-900"
               >
                 <VehiclePhoto
-                  src={thumb.src}
+                  image={thumb}
                   alt=""
-                  fill
                   sizes="80px"
                   className={cn(
                     "object-cover transition-opacity duration-300",

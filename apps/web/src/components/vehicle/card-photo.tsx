@@ -46,19 +46,16 @@ export function CardPhoto({
         }}
       >
         <VehiclePhoto
-          src={cover.src}
-          alt={cover.alt}
-          fill
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
+          image={cover}
+          priority={priority}
           sizes={sizes}
           className="object-cover transition-transform duration-[1400ms] ease-[var(--ease-out-expo)] group-hover:scale-[1.06]"
         />
         {alternate && wanted ? (
           <VehiclePhoto
-            src={alternate.src}
+            image={alternate}
             alt=""
-            fill
+            blur={false}
             sizes={sizes}
             onLoad={() => setLoaded(true)}
             className={cn(
