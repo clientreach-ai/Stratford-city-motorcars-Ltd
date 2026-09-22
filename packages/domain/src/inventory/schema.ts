@@ -5,6 +5,7 @@ import {
   FUEL_TYPES,
   HPI_STATUSES,
   PHOTO_CATEGORIES,
+  PHOTO_VARIANT_FORMATS,
   TRANSMISSIONS,
   VEHICLE_STATUSES,
   type VehicleRecord,
@@ -63,6 +64,19 @@ const image = z.object({
   category: z.enum(PHOTO_CATEGORIES),
   provenance,
   credit: credit.optional(),
+  // Written by the API when the photograph is stored; see PhotoVariants.
+  variants: z
+    .object({
+      widths: z.array(z.number().int().min(16).max(8_000)).min(1).max(16),
+      formats: z.array(z.enum(PHOTO_VARIANT_FORMATS)).min(1).max(PHOTO_VARIANT_FORMATS.length),
+      revision: z.number().int().min(1).max(999).optional(),
+    })
+    .optional(),
+  placeholder: z
+    .string()
+    .max(4_000)
+    .regex(/^data:image\/(?:webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/, "Placeholder must be a small data: image")
+    .optional(),
 });
 
 const videoSource = z.discriminatedUnion("type", [
