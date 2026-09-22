@@ -184,7 +184,7 @@ export function StockList() {
       header: "Photograph",
       hideHeader: true,
       className: "w-24",
-      cell: (vehicle) => <Photo src={progressById.get(vehicle.id)?.cover?.src} alt="" label="Cover" className="h-12 w-[4.5rem]" />,
+      cell: (vehicle) => <Photo src={progressById.get(vehicle.id)?.cover?.src} variants={progressById.get(vehicle.id)?.cover?.variants} alt="" label="Cover" className="h-12 w-[4.5rem]" />,
     },
     {
       id: "car",
@@ -337,7 +337,7 @@ export function StockList() {
             const progress = progressById.get(vehicle.id)!;
             return (
               <div className="flex gap-3">
-                <Photo src={progress.cover?.src} alt="" label="Cover" className="h-16 w-22 shrink-0" />
+                <Photo src={progress.cover?.src} variants={progress.cover?.variants} alt="" label="Cover" className="h-16 w-22 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <GuardedLink href={routes.vehicle(vehicle.id)} className={cn(rowLinkClass, "block truncate")}>
                     {vehicleName(vehicle)}

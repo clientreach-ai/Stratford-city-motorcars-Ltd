@@ -49,9 +49,7 @@ export function Spotlight({ vehicle }: { vehicle: PublicVehicle }) {
               aria-label={`${vehicle.year} ${vehicle.title} — view this car`}
             >
               <VehiclePhoto
-                src={photo.src}
-                alt={photo.alt}
-                fill
+                image={photo}
                 sizes="(min-width: 1408px) 760px, (min-width: 1024px) 54vw, 100vw"
                 className="object-cover transition-transform duration-[1400ms] ease-[var(--ease-out-expo)] group-hover:scale-[1.04]"
               />

@@ -1,4 +1,4 @@
-import type { PhotoCategory, VehicleImage, VehicleRecord, VehicleStatus } from "./vehicle";
+import { photoPreviewSrc, type PhotoCategory, type VehicleImage, type VehicleRecord, type VehicleStatus } from "./vehicle";
 import {
   LISTING_PHOTO_TARGET,
   REQUIRED_DEALER_PHOTOS,
@@ -107,6 +107,15 @@ export function listingProgress(record: VehicleRecord): ListingProgress {
     withheld: (record.status === "published" || record.status === "sold") && !live,
     cover: resolveCover(dealer, record.coverImageId),
   };
+}
+
+/**
+ * The `coverSrc` of a listing in the admin's overview and enquiries: a small
+ * stored variant of the cover (those thumbnails are at most ~100 px wide, so
+ * 320 px covers a 3× screen), never the full-size master.
+ */
+export function coverPreview(cover: VehicleImage | undefined): string | null {
+  return cover ? photoPreviewSrc(cover, 320) : null;
 }
 
 export { REQUIRED_DEALER_PHOTOS };

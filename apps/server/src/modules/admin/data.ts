@@ -13,7 +13,7 @@ import {
   type Valuation,
 } from "@Stratford-city-motorcars-Ltd/core/enquiry";
 import { can } from "@Stratford-city-motorcars-Ltd/core/permissions";
-import { listingProgress, type AdminVehicle } from "@Stratford-city-motorcars-Ltd/core/stock";
+import { coverPreview, listingProgress, type AdminVehicle } from "@Stratford-city-motorcars-Ltd/core/stock";
 import type { MemberStatus, SessionUser, TeamMember } from "@Stratford-city-motorcars-Ltd/core/team";
 
 import { db } from "../../lib/db";
@@ -108,7 +108,7 @@ export function toEnquiry(row: LeadRow, vehicles: StoredVehicle[]): Enquiry {
           reserved: record.reserved,
           price: record.price,
           priceOnApplication: record.priceOnApplication,
-          coverSrc: listingProgress(record).cover?.src ?? null,
+          coverSrc: coverPreview(listingProgress(record).cover),
         }
       : null,
     customerId: row.customerId,

@@ -97,6 +97,59 @@ export interface VehicleImage {
   category: PhotoCategory;
   provenance: MediaProvenance;
   credit?: ImageCredit;
+  /**
+   * Delivery files generated from the photograph when it was stored: one per
+   * width and format, named by `photoVariantSrc()` beside `src`. Absent on
+   * photographs stored before variants existed, which are served through the
+   * website's image optimiser instead.
+   */
+  variants?: PhotoVariants;
+  /** A tiny blurred preview (a `data:` URL of a few hundred bytes) shown while the photograph loads. */
+  placeholder?: string;
+}
+
+export const PHOTO_VARIANT_FORMATS = ["avif", "webp"] as const;
+export type PhotoVariantFormat = (typeof PHOTO_VARIANT_FORMATS)[number];
+
+export interface PhotoVariants {
+  /** Pixel widths generated, ascending. The largest is the stored photograph's own width. */
+  widths: number[];
+  /** Formats generated at every width, preferred first. */
+  formats: PhotoVariantFormat[];
+  /**
+   * Which encoding the files come from (absent = 1). It is part of every file's
+   * name, so re-encoding a photograph (new widths, new quality) writes new
+   * files instead of rewriting ones that browsers and the CDN hold as
+   * immutable for a year.
+   */
+  revision?: number;
+}
+
+/**
+ * Where the variant of a stored photograph lives: `/media/v1/abc.webp` →
+ * `/media/v1/abc-1280.avif` (revision 1) or `/media/v1/abc-1280r2.avif`. The
+ * API writes these names and the website reads them, so this is the one place
+ * the rule is spelled out.
+ */
+export function photoVariantSrc(src: string, width: number, format: PhotoVariantFormat, revision = 1): string {
+  return `${src.replace(/\.[A-Za-z0-9]+$/, "")}-${width}${revision > 1 ? `r${revision}` : ""}.${format}`;
+}
+
+/** True for a delivery variant's name (`…-1280.avif`, `…-1280r2.avif`): a file already sized and encoded for the web. */
+export function isPhotoVariantSrc(src: string): boolean {
+  return /-\d{2,4}(?:r\d{1,3})?\.(?:avif|webp)$/.test(src);
+}
+
+/**
+ * The file for a fixed-size preview (the admin's thumbnails, say) drawn
+ * `width` device pixels wide: the smallest stored WebP variant at least that
+ * wide, or the largest there is. A photograph without variants gives its `src`.
+ */
+export function photoPreviewSrc(image: Pick<VehicleImage, "src" | "variants">, width: number): string {
+  const variants = image.variants;
+  if (!variants?.formats.includes("webp")) return image.src;
+  const chosen = variants.widths.find((candidate) => candidate >= width) ?? variants.widths[variants.widths.length - 1]!;
+  return photoVariantSrc(image.src, chosen, "webp", variants.revision);
 }
 
 export type VideoSource =

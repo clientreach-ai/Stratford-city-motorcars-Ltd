@@ -56,7 +56,11 @@ const nextConfig: NextConfig = {
     // AVIF first for browsers that accept it (typically 20–30% smaller than
     // WebP for photographs), WebP otherwise.
     formats: ["image/avif", "image/webp"],
-    qualities: [75],
+    // 75 for the site's own brand images; 85 for vehicle photographs stored
+    // before delivery variants existed. Photographs with variants bypass the
+    // optimiser entirely (components/vehicle/vehicle-photo.tsx): they were
+    // encoded once, at upload, at measured quality.
+    qualities: [75, 85],
     // Breakpoints tuned to the layouts: the vehicle gallery peaks at ~800 CSS px
     // (1600 device px at 2×), cards at ~420 CSS px. 3840 is dropped — nothing on
     // the site is ever that wide.
