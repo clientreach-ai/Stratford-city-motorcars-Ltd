@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Car, ImageOff } from "lucide-react";
 import { useState } from "react";
 
+import { isPhotoVariantSrc, photoVariantSrc, type PhotoVariants } from "@Stratford-city-motorcars-Ltd/core/vehicle";
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 
 import { SITE_URL } from "@/lib/api";
@@ -16,9 +17,15 @@ import { SITE_URL } from "@/lib/api";
  *  - `data:` / `blob:`    a photograph just added in this browser
  *  - `/media/…`           the website's media route, resolved against the site
  *  - `https://…`          object storage behind a CDN
+ *
+ * A stored photograph with `variants` is drawn from the WebP files the API made
+ * when it was uploaded, with `sizes` choosing among them, so a thumbnail never
+ * downloads the full-size master. So is a `src` that is already a variant (a
+ * cover preview). Anything else goes through the image optimiser.
  */
 export function Photo({
   src,
+  variants,
   alt,
   className,
   sizes = "96px",
@@ -26,6 +33,8 @@ export function Photo({
   priority,
 }: {
   src: string | null | undefined;
+  /** The stored photograph's delivery variants, when it has them. */
+  variants?: PhotoVariants;
   alt: string;
   className?: string;
   sizes?: string;
@@ -72,7 +81,28 @@ export function Photo({
     );
   }
 
-  const resolved = src.startsWith("/sample/") || /^https?:\/\//.test(src) ? src : `${SITE_URL}${src}`;
+  const resolve = (path: string) => (path.startsWith("/sample/") || /^https?:\/\//.test(path) ? path : `${SITE_URL}${path}`);
+  const resolved = resolve(src);
+
+  if (variants?.formats.includes("webp")) {
+    const widths = variants.widths;
+    return (
+      <span className={cn("relative block overflow-hidden bg-ink-100", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- already encoded for the web at upload */}
+        <img
+          src={resolve(photoVariantSrc(src, widths.find((width) => width >= 640) ?? widths[widths.length - 1]!, "webp", variants.revision))}
+          srcSet={widths.map((width) => `${resolve(photoVariantSrc(src, width, "webp", variants.revision))} ${width}w`).join(", ")}
+          sizes={sizes}
+          alt={alt}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          className="absolute inset-0 size-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      </span>
+    );
+  }
+
   return (
     <span className={cn("relative block overflow-hidden bg-ink-100", className)}>
       <Image
@@ -81,6 +111,7 @@ export function Photo({
         fill
         sizes={sizes}
         priority={priority}
+        unoptimized={isPhotoVariantSrc(src)}
         className="object-cover"
         onError={() => setFailed(true)}
       />
