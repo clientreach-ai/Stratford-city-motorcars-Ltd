@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { ArrowRight, MapPin, Phone } from "lucide-react";
 
 import { BuyingJourney } from "@/components/site/buying-journey";
 import { PageHero } from "@/components/site/page-hero";
-import { ShowroomPanel } from "@/components/site/showroom-panel";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { JsonLd } from "@/components/ui/json-ld";
@@ -22,6 +22,12 @@ import { whatsappLinks } from "@/lib/whatsapp";
  * versus incorporated 2024 is awaiting the client), staff names (the client
  * does not want people named) and the old three promises (awaiting the
  * client's reordering and rewording).
+ *
+ * Cut to the homepage's measure. The story told the same thing four times over
+ * — take your time, no hurry, no pressure, no script — so it is the client's
+ * own two sentences and then a line each. The full showroom panel, with hours,
+ * map and travel, lives on /contact; here it is one line and three buttons,
+ * exactly as on the homepage.
  */
 export const metadata: Metadata = pageMetadata({
   title: "About Us — A Family-Owned Car Dealer in Stratford",
@@ -35,21 +41,21 @@ const crumbs = [
   { name: "About", path: "/about" },
 ];
 
+/** One line each, from the client's own answers. The story above says the rest. */
 const principles = [
   {
     title: "Take your time",
     detail:
-      "We'd rather you left feeling good about your decision than rushed into one. Look the car over properly, ask everything you want to ask, come back for a second look. There's no script and no pressure.",
+      "Look the car over properly, ask everything you want to ask, come back for a second look.",
   },
   {
     title: "The car has to be right",
     detail:
-      "We won't put something on the forecourt we wouldn't be happy to drive ourselves. We take pride in our stock, and a car only goes online once it has been photographed inside and out.",
+      "We take pride in our stock, and a car only goes online once it has been photographed inside and out.",
   },
   {
     title: "You deal with us",
-    detail:
-      "We're a family business, not a sales floor. Call, message or visit and you're speaking to the people who own the business, from the first question to the handover.",
+    detail: "Call, message or visit and you're speaking to the people who own the business.",
   },
 ];
 
@@ -64,7 +70,7 @@ export default async function AboutPage() {
       <PageHero
         eyebrow="About us"
         title="A small family business"
-        lede="Stratford City Motorcars is a family-owned business on Romford Road in Stratford, East London, trading in sports and luxury cars. When you get in touch, you deal with us directly."
+        lede="A family-owned business on Romford Road in Stratford, East London, trading in sports and luxury cars."
         crumbs={crumbs}
       />
 
@@ -83,21 +89,9 @@ export default async function AboutPage() {
                 </p>
 
                 <p className="text-[var(--muted-foreground)]">
-                  We trade in sports and luxury cars, and we&rsquo;d rather give you an experience than a car sale.
-                  Buying a car like this should be something you enjoy, not something you get through — so the
-                  showroom is welcoming and comfortable, and nobody is going to hurry you.
-                </p>
-
-                <p className="text-[var(--muted-foreground)]">
-                  Take your time. Come in, look around, sit in the car, ask whatever you like. We&rsquo;d far
-                  rather you left without buying than bought something that wasn&rsquo;t quite right — the first
-                  costs us one sale, the second costs us a customer.
-                </p>
-
-                <p className="text-[var(--muted-foreground)]">
-                  Every price is set by looking at the current market, and we aim to put the best car we can in
-                  front of you at a competitive price. People travel from across the country for the right car,
-                  and when that&rsquo;s too far, we deliver nationwide.
+                  We trade in sports and luxury cars, and we&rsquo;d rather give you an experience than a car
+                  sale. Every price is set by looking at the current market, and people travel from across the
+                  country for the right car — when that&rsquo;s too far, we deliver nationwide.
                 </p>
               </div>
             </div>
@@ -137,11 +131,7 @@ export default async function AboutPage() {
       {/* ---- How we work -------------------------------------------------- */}
       <Section tinted size="md">
         <Container>
-          <SectionHeading
-            eyebrow="How we work"
-            title="What you can expect from us"
-            lede="Nothing complicated. It's how we'd want to be treated buying a car ourselves."
-          />
+          <SectionHeading eyebrow="How we work" title="What you can expect from us" />
           <ul className="mt-14 grid gap-px border border-[var(--border)] bg-[var(--border)] md:grid-cols-3">
             {principles.map((item) => (
               <li key={item.title} className="reveal bg-[var(--background)] p-7 md:p-9">
@@ -163,12 +153,8 @@ export default async function AboutPage() {
                 Chosen one at a time
               </h2>
               <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
-                Our stock is sports and luxury cars, and it changes all the time. We hold more than we list
-                online: a car only goes on the website once it has been properly photographed, inside and out,
-                so you can see exactly what you&rsquo;re looking at before you visit.
-              </p>
-              <p className="mt-4 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
-                Looking for something in particular? Tell us, and we&rsquo;ll let you know what we have.
+                Our stock changes all the time, and we hold more than we list online. Looking for something in
+                particular? Tell us, and we&rsquo;ll let you know what we have.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <ButtonLink href="/vehicles" size="md">
@@ -198,10 +184,6 @@ export default async function AboutPage() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-6 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                Wherever a car comes from, ask us anything about it — its history, its paperwork and what we know
-                about it.
-              </p>
             </div>
           </div>
         </Container>
@@ -212,13 +194,39 @@ export default async function AboutPage() {
       {/* ---- Visit ------------------------------------------------------------ */}
       <Section size="md">
         <Container>
-          <SectionHeading
-            eyebrow="Come and see us"
-            title="The showroom"
-            lede={`${site.address.full}, with free parking on site. Call ahead and we'll have the car you'd like to see ready for you.`}
-          />
-          <div className="mt-14">
-            <ShowroomPanel />
+          {/* The showroom in a line, as on the homepage: /contact has the hours,
+              the map and how to get here. */}
+          <div className="reveal flex flex-col gap-8 border-t border-[var(--border-strong)] pt-10 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <Eyebrow>Come and see us</Eyebrow>
+              <p className="mt-4 flex items-start gap-2.5 font-display text-2xl leading-snug md:text-3xl">
+                <MapPin className="mt-1.5 size-5 shrink-0 text-[var(--accent-text)]" />
+                {site.address.full}
+              </p>
+              <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+                {site.hours.compact} · {site.parking}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <ButtonLink href="/contact#book-a-viewing" size="md">
+                Book a viewing
+                <ArrowRight />
+              </ButtonLink>
+              <ExternalButtonLink href={site.phone.href} variant="outline" size="md">
+                <Phone className="size-4" />
+                {site.phone.display}
+              </ExternalButtonLink>
+              <ExternalButtonLink
+                href={whatsappLinks.general}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="whatsapp"
+                size="md"
+              >
+                <WhatsAppIcon className="size-4" />
+                WhatsApp
+              </ExternalButtonLink>
+            </div>
           </div>
         </Container>
       </Section>
