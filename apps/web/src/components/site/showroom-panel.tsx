@@ -6,93 +6,102 @@ import { getMapLinks, getSite } from "@/lib/settings";
 import { whatsappLinks } from "@/lib/whatsapp";
 
 /**
- * Showroom details. Shared by the homepage and the contact page so the address,
- * hours and travel information can never fall out of step between them.
+ * Showroom details: the map and how to travel here, beside the address, phone
+ * and email. Everything is read from the one business record, so the panel can
+ * never fall out of step with the header, the footer or the schema.
  */
 export async function ShowroomPanel({
   showMap = true,
   showHours = true,
+  children,
 }: {
   showMap?: boolean;
   /** Off where the page already shows the hours prominently. */
   showHours?: boolean;
+  /**
+   * Replaces the address/phone/email column. The contact page passes its
+   * directions instead, because its header already carries all three.
+   */
+  children?: React.ReactNode;
 }) {
   const [site, mapLinks] = await Promise.all([getSite(), getMapLinks()]);
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-      <div>
-        <dl className="space-y-7">
-          <DetailRow icon={<MapPin className="size-4" />} term="Address">
-            <a
-              href={mapLinks.place}
+      {children ?? (
+        <div>
+          <dl className="space-y-7">
+            <DetailRow icon={<MapPin className="size-4" />} term="Address">
+              <a
+                href={mapLinks.place}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block py-1 transition-colors hover:text-[var(--rule)]"
+              >
+                {site.address.street}
+                <br />
+                {site.address.locality}
+                <br />
+                {site.address.postcode}
+              </a>
+            </DetailRow>
+
+            <DetailRow icon={<Phone className="size-4" />} term="Phone">
+              <a
+                href={site.phone.href}
+                className="inline-block py-1 transition-colors hover:text-[var(--rule)]"
+              >
+                {site.phone.display}
+              </a>
+            </DetailRow>
+
+            <DetailRow icon={<Mail className="size-4" />} term="Email">
+              <a
+                href={`mailto:${site.email}`}
+                className="inline-block break-all py-1 transition-colors hover:text-[var(--rule)]"
+              >
+                {site.email}
+              </a>
+            </DetailRow>
+          </dl>
+
+          {showHours ? (
+            <div className="mt-9 border-t border-[var(--border)] pt-7">
+              <h3 className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
+                Opening hours
+              </h3>
+              <dl className="mt-4 space-y-2">
+                {site.hours.summary.map((entry) => (
+                  <div key={entry.label} className="flex justify-between gap-6 text-sm">
+                    <dt className="text-[var(--muted-foreground)]">{entry.label}</dt>
+                    <dd data-numeric className="font-medium">{entry.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                {site.hours.outOfHours}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <ExternalButtonLink href={site.phone.href} size="md">
+              <Phone className="size-4" />
+              Call the showroom
+            </ExternalButtonLink>
+            <ExternalButtonLink
+              href={whatsappLinks.bookViewing}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block py-1 transition-colors hover:text-[var(--rule)]"
+              variant="whatsapp"
+              size="md"
             >
-              {site.address.street}
-              <br />
-              {site.address.locality}
-              <br />
-              {site.address.postcode}
-            </a>
-          </DetailRow>
-
-          <DetailRow icon={<Phone className="size-4" />} term="Phone">
-            <a
-              href={site.phone.href}
-              className="inline-block py-1 transition-colors hover:text-[var(--rule)]"
-            >
-              {site.phone.display}
-            </a>
-          </DetailRow>
-
-          <DetailRow icon={<Mail className="size-4" />} term="Email">
-            <a
-              href={`mailto:${site.email}`}
-              className="inline-block break-all py-1 transition-colors hover:text-[var(--rule)]"
-            >
-              {site.email}
-            </a>
-          </DetailRow>
-        </dl>
-
-        {showHours ? (
-          <div className="mt-9 border-t border-[var(--border)] pt-7">
-            <h3 className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
-              Opening hours
-            </h3>
-            <dl className="mt-4 space-y-2">
-              {site.hours.summary.map((entry) => (
-                <div key={entry.label} className="flex justify-between gap-6 text-sm">
-                  <dt className="text-[var(--muted-foreground)]">{entry.label}</dt>
-                  <dd data-numeric className="font-medium">{entry.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-4 text-xs leading-relaxed text-[var(--muted-foreground)]">
-              {site.hours.outOfHours}
-            </p>
+              <WhatsAppIcon className="size-4" />
+              Book a viewing
+            </ExternalButtonLink>
           </div>
-        ) : null}
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <ExternalButtonLink href={site.phone.href} size="md">
-            <Phone className="size-4" />
-            Call the showroom
-          </ExternalButtonLink>
-          <ExternalButtonLink
-            href={whatsappLinks.bookViewing}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="whatsapp"
-            size="md"
-          >
-            <WhatsAppIcon className="size-4" />
-            Book a viewing
-          </ExternalButtonLink>
         </div>
-      </div>
+      )}
 
       <div className="space-y-6">
         {showMap ? (

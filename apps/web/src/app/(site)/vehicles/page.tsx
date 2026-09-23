@@ -222,8 +222,11 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
         </Container>
       </Section>
 
+      {/* The few questions a buyer asks before enquiring. The rest live on the
+          pages that answer them properly, rather than as a wall of text under
+          the cars. */}
       <FaqSection
-        faqs={faqsByCategory("Buying")}
+        faqs={faqsByCategory("Buying").slice(0, 4)}
         eyebrow="Buying from us"
         title="Questions about buying"
         lede="Anything else, just ask — by phone, WhatsApp or the enquiry form on each car's page."

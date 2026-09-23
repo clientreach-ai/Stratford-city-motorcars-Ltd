@@ -9,6 +9,10 @@ import { Container, Section, SectionHeading } from "@/components/ui/section";
  * Set as a route rather than a grid of boxes: a brass line draws across the
  * four stops as the section scrolls in, each stop marked on it, so the order
  * of things reads at a glance. On phones the line runs down the left edge.
+ *
+ * Each stop is its name and a short row of chips. The paragraph that used to
+ * follow each one repeated the chips in sentences, and the detail it carried
+ * lives on the pages the stop points at.
  */
 export function BuyingJourney({
   tinted = false,
@@ -24,11 +28,7 @@ export function BuyingJourney({
   return (
     <Section tinted={tinted} dark={dark} size="md">
       <Container>
-        <SectionHeading
-          eyebrow={eyebrow}
-          title={title}
-          lede="No pressure at any stage. Move at your own pace, and ask as many questions as you like along the way."
-        />
+        <SectionHeading eyebrow={eyebrow} title={title} />
 
         <div className="relative mt-16 md:mt-20">
           {/* The route: across on wide screens, down the side on phones. */}
@@ -54,8 +54,9 @@ export function BuyingJourney({
                   </span>
                 </div>
                 <h3 className="mt-5 font-display text-2xl leading-snug">{step.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]">{step.detail}</p>
-                <ul className="mt-auto flex flex-wrap gap-1.5 pt-6">
+                {/* The chips carry the step; the paragraph that used to sit here
+                    said the same thing again in sentences. */}
+                <ul className="mt-auto flex flex-wrap gap-1.5 pt-5">
                   {step.options.map((option) => (
                     <li
                       key={option}
