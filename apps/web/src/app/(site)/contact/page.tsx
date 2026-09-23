@@ -36,7 +36,7 @@ export default async function ContactPage() {
       <PageHero
         eyebrow="Contact"
         title="Talk to a person, not a queue"
-        lede="Call us, message us on WhatsApp, or send a note below. Whichever you choose, you'll reach someone who knows the cars on the floor."
+        lede="Call us, message us on WhatsApp, or send a note below."
         crumbs={crumbs}
       >
         {/* Direct channels first — most people arriving here want to call. */}
@@ -74,17 +74,15 @@ export default async function ContactPage() {
               <Eyebrow>Book a viewing</Eyebrow>
               <h2 className="mt-5 text-[clamp(2rem,4vw,2.75rem)] leading-[1.08]">See the car before you decide</h2>
               <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
-                Viewings and test drives are arranged as requests: tell us which car and when suits you, and
-                we&rsquo;ll confirm a time by phone or WhatsApp. Call ahead and we&rsquo;ll have the car ready for
-                you when you arrive.
+                Viewings and test drives are requests: tell us which car and when suits you, and we&rsquo;ll
+                confirm a time by phone or WhatsApp.
               </p>
 
+              {/* The hours, the weekend rule and the out-of-hours note are in
+                  the card beside this — repeating them here only added words. */}
               <ul className="mt-8 space-y-4">
                 {[
                   "Found the car online? Use “Book a viewing” on its page — the details come straight to us.",
-                  `Weekdays ${site.hours.open.opens}–${site.hours.open.closes}. Saturday and Sunday by appointment only.`,
-                  "Bank holidays and closure days: viewings can still be arranged by appointment.",
-                  site.hours.outOfHours,
                   `Free parking on site at ${site.address.full}.`,
                 ].map((point) => (
                   <li key={point} className="flex items-start gap-3 text-sm leading-relaxed">
@@ -148,9 +146,8 @@ export default async function ContactPage() {
                 Tell us what you need
               </h2>
               <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
-                Whether it&rsquo;s a specific car, a finance question, a
-                part-exchange valuation or something else entirely — send it over
-                and we&rsquo;ll come back to you personally.
+                A specific car, a finance question, a part-exchange valuation or
+                anything else — we&rsquo;ll come back to you personally.
               </p>
 
               <div className="mt-10 border-t border-[var(--border)] pt-8">
@@ -162,9 +159,8 @@ export default async function ContactPage() {
                   <div>
                     <h3 className="font-medium">Looking for something specific?</h3>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                      We hold more stock than we list online. Tell us the make,
-                      model and budget and we&rsquo;ll let you know what we
-                      have.
+                      We hold more stock than we list online — tell us the make,
+                      model and budget.
                     </p>
                   </div>
                 </div>
@@ -181,41 +177,39 @@ export default async function ContactPage() {
       {/* ---- Finding us ------------------------------------------------------ */}
       <Section tinted size="md">
         <Container>
-          <div className="max-w-2xl">
-            <Eyebrow>Finding us</Eyebrow>
-            <h2 className="mt-5 text-[clamp(2rem,4vw,2.75rem)] leading-[1.08]">
-              {site.address.street}, {site.address.locality} {site.address.postcode}
-            </h2>
-            <p className="mt-5 leading-relaxed text-[var(--muted-foreground)]">
-              One showroom, on Romford Road in Stratford, East London. There&rsquo;s free parking on site.
-            </p>
-            <dl className="mt-8 space-y-5">
-              {[
-                { term: "Sat nav", detail: site.directions.satNav },
-                { term: "On foot", detail: site.directions.onFoot },
-                { term: "By car", detail: site.directions.byCar },
-              ].map((row) => (
-                <div key={row.term} className="grid gap-1 sm:grid-cols-[7rem_1fr] sm:gap-6">
-                  <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--rule)] sm:pt-1">
-                    {row.term}
-                  </dt>
-                  <dd className="leading-relaxed text-[var(--muted-foreground)]">{row.detail}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="mt-14">
-            <ShowroomPanel showHours={false} />
-          </div>
+          {/* The directions take the panel's first column: the address, phone
+              and email it usually holds are already at the top of this page. */}
+          <ShowroomPanel showHours={false}>
+            <div>
+              <Eyebrow>Finding us</Eyebrow>
+              <h2 className="mt-5 text-[clamp(1.85rem,3.4vw,2.5rem)] leading-[1.08]">
+                {site.address.street}, {site.address.locality} {site.address.postcode}
+              </h2>
+              <dl className="mt-8 space-y-5">
+                {[
+                  { term: "Sat nav", detail: site.directions.satNav },
+                  { term: "On foot", detail: site.directions.onFoot },
+                  { term: "By car", detail: site.directions.byCar },
+                ].map((row) => (
+                  <div key={row.term} className="grid gap-1 sm:grid-cols-[6rem_1fr] sm:gap-6">
+                    <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--rule)] sm:pt-1">
+                      {row.term}
+                    </dt>
+                    <dd className="text-sm leading-relaxed text-[var(--muted-foreground)]">{row.detail}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </ShowroomPanel>
         </Container>
       </Section>
 
       <FaqSection
-        faqs={faqsByCategory("Visiting")}
+        // Parking and the hours are answered on the page above, so the list is
+        // the three questions someone still asks before setting off.
+        faqs={faqsByCategory("Visiting").filter((faq) => faq.id !== "parking")}
         eyebrow="Before you come"
         title="Visiting questions"
-        lede="Anything else, give us a call or send a message on WhatsApp."
       />
     </>
   );

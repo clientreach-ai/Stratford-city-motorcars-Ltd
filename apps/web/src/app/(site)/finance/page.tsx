@@ -22,6 +22,12 @@ import { whatsappLinks } from "@/lib/whatsapp";
  * FAQs that repeated them. The client has no lender panel yet and is still
  * confirming its regulatory status; approved wording must come from its
  * compliance adviser before any of that returns.
+ *
+ * Cut to the homepage's measure: three cards that explain the products, the
+ * words behind a quote, and the form. Gone with the words: the "at a glance"
+ * table, which restated the cards a second time in a second voice, and the
+ * three "how an enquiry works" steps, which restated the form beside them.
+ * Nothing here is a new claim — only fewer words for the same confirmed facts.
  */
 export const metadata: Metadata = pageMetadata({
   title: "Car Finance Explained — HP, PCP & Personal Loans",
@@ -35,6 +41,9 @@ const crumbs = [
   { name: "Finance", path: "/finance" },
 ];
 
+/** "Do you offer finance?" is what this whole page answers, so it is dropped. */
+const financeFaqs = faqsByCategory("Finance").filter((faq) => faq.id !== "finance");
+
 export default function FinancePage(props: PageProps<"/finance">) {
   return (
     <>
@@ -43,18 +52,14 @@ export default function FinancePage(props: PageProps<"/finance">) {
       <PageHero
         eyebrow="Finance"
         title="Finance, explained without the fog"
-        lede="Finance is one of the ways you can pay for your next car. Here's how Hire Purchase, Personal Contract Purchase and personal loans work, the terms you'll meet in any quote, and how to start a conversation with us about it."
+        lede="One of the ways you can pay. Here is how Hire Purchase, Personal Contract Purchase and personal loans work."
         crumbs={crumbs}
       />
 
       {/* ---- The three products ------------------------------------------- */}
       <Section size="md">
         <Container>
-          <SectionHeading
-            eyebrow="Your options"
-            title="Three ways to fund a car"
-            lede="Which one suits you depends on whether you want to own the car outright, keep the monthly payment down, or keep your options open at the end."
-          />
+          <SectionHeading eyebrow="Your options" title="Three ways to fund a car" />
 
           {/*
             Subgrid: the five bands (abbreviation, name, summary, points,
@@ -100,7 +105,7 @@ export default function FinancePage(props: PageProps<"/finance">) {
                   </div>
                   <div>
                     <dt className="font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                      At the end of the term
+                      At the end
                     </dt>
                     <dd className="mt-1 leading-relaxed">{product.endOfTerm}</dd>
                   </div>
@@ -111,64 +116,16 @@ export default function FinancePage(props: PageProps<"/finance">) {
         </Container>
       </Section>
 
-      {/* ---- At a glance ----------------------------------------------------- */}
-      <Section tinted size="md">
-        <Container>
-          <SectionHeading eyebrow="At a glance" title="How the three compare" />
-
-          {/* Focusable so keyboard users can scroll the table sideways on a phone. */}
-          <div
-            role="region"
-            aria-label="Finance options compared"
-            tabIndex={0}
-            className="mt-12 overflow-x-auto border border-[var(--border)] bg-[var(--background)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--ring)]"
-          >
-            <table className="w-full min-w-[44rem] text-left text-sm">
-              <caption className="sr-only">Hire Purchase, Personal Contract Purchase and personal loans compared</caption>
-              <thead>
-                <tr className="border-b border-[var(--border)]">
-                  <th scope="col" className="w-44 p-5 font-normal text-[var(--muted-foreground)]">
-                    <span className="sr-only">Question</span>
-                  </th>
-                  {financeProducts.map((product) => (
-                    <th key={product.key} scope="col" className="p-5 align-bottom">
-                      <span className="block font-roman text-[0.625rem] uppercase tracking-[0.2em] text-[var(--rule)]">
-                        {product.abbreviation}
-                      </span>
-                      <span className="mt-1.5 block font-display text-lg font-normal">{product.name}</span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {comparisonRows.map((row) => (
-                  <tr key={row.label}>
-                    <th scope="row" className="p-5 align-top font-medium">
-                      {row.label}
-                    </th>
-                    {financeProducts.map((product) => (
-                      <td key={product.key} className="p-5 align-top leading-relaxed text-[var(--muted-foreground)]">
-                        {row.value(product)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Container>
-      </Section>
-
       {/* ---- The terms ------------------------------------------------------- */}
-      <Section size="md">
+      <Section dark size="md">
         <Container>
           <div className="grid gap-12 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-20">
             <div>
               <Eyebrow>Plain English</Eyebrow>
               <h2 className="mt-5 text-[clamp(1.85rem,3.6vw,2.6rem)] leading-tight">The terms you&rsquo;ll see in any quote</h2>
               <p className="mt-5 leading-relaxed text-[var(--muted-foreground)]">
-                Monthly figures depend on the car, your deposit, the term and the lender, so we don&rsquo;t quote
-                them here. These are the moving parts behind every one.
+                Monthly figures depend on the car, your deposit, the term and the lender, so we don&rsquo;t
+                quote them here.
               </p>
             </div>
             <dl className="grid gap-px border border-[var(--border)] bg-[var(--border)] sm:grid-cols-2">
@@ -183,30 +140,6 @@ export default function FinancePage(props: PageProps<"/finance">) {
         </Container>
       </Section>
 
-      {/* ---- How an enquiry works -------------------------------------------- */}
-      <Section dark size="md">
-        <Container>
-          <SectionHeading eyebrow="Talking to us about finance" title="How a finance enquiry works" />
-          <ol className="mt-12 grid gap-px border border-bone/12 bg-bone/12 md:grid-cols-3">
-            {enquirySteps.map((step, index) => (
-              <li key={step.title} className="bg-ink-950 p-7 md:p-8">
-                <span aria-hidden data-numeric className="font-display text-4xl leading-none text-bone/50">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h3 className="mt-5 font-display text-xl leading-snug">{step.title}</h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-bone/65">{step.detail}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-10 flex flex-col gap-3 border-t border-bone/12 pt-6 text-sm md:flex-row md:items-baseline md:gap-8">
-            <h3 className="shrink-0 font-roman text-[0.625rem] uppercase tracking-[0.22em] text-brass">
-              Other ways to pay
-            </h3>
-            <p className="leading-relaxed text-bone/65">{paymentMethods.join(" · ")}</p>
-          </div>
-        </Container>
-      </Section>
-
       {/* ---- The form ------------------------------------------------------ */}
       <Section tinted size="md">
         <Container>
@@ -217,9 +150,17 @@ export default function FinancePage(props: PageProps<"/finance">) {
                 Tell us what works for you
               </h2>
               <p className="mt-5 max-w-lg leading-relaxed text-[var(--muted-foreground)]">
-                Tell us the car you&rsquo;re interested in and roughly what you&rsquo;d like to pay. Sending this
-                form doesn&rsquo;t run a credit check. Prefer to talk? Call or message us instead.
+                The car you&rsquo;re interested in and roughly what you&rsquo;d like to pay. Sending this form
+                doesn&rsquo;t run a credit check, and nothing is applied for without your say-so.
               </p>
+
+              {/* The other ways to pay, in one line, for anyone finance isn't right for. */}
+              <div className="mt-7 flex flex-col gap-2 border-t border-[var(--border)] pt-6 text-sm md:flex-row md:items-baseline md:gap-6">
+                <h3 className="shrink-0 font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--accent-text)]">
+                  Other ways to pay
+                </h3>
+                <p className="leading-relaxed text-[var(--muted-foreground)]">{paymentMethods.join(" · ")}</p>
+              </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <ExternalButtonLink href={site.phone.href} variant="outline" size="md">
@@ -249,7 +190,7 @@ export default function FinancePage(props: PageProps<"/finance">) {
       </Section>
 
       <FaqSection
-        faqs={faqsByCategory("Finance")}
+        faqs={financeFaqs}
         eyebrow="Finance questions"
         title="Before you ask"
         footer={
@@ -278,41 +219,3 @@ async function FinanceFormForLinkedCar({
   if (!car) return <FinanceForm />;
   return <FinanceForm vehicleSlug={car.slug} vehicleName={`${car.year} ${car.title}`} />;
 }
-
-const comparisonRows: { label: string; value: (product: (typeof financeProducts)[number]) => string }[] = [
-  {
-    label: "Monthly payments",
-    value: (product) =>
-      ({
-        hp: "Fixed across the term, covering the full amount borrowed.",
-        pcp: "Lower than HP, because part of the car's value is deferred to the end.",
-        loan: "Repaid to the lender, separately from the car.",
-      })[product.key] ?? "",
-  },
-  {
-    label: "Deposit",
-    value: (product) =>
-      product.key === "loan"
-        ? "Optional — put some money down and borrow less."
-        : "Paid at the start. A part exchange can count towards it.",
-  },
-  { label: "Best for", value: (product) => product.bestFor },
-];
-
-const enquirySteps = [
-  {
-    title: "Tell us what you're after",
-    detail:
-      "The car you're interested in, a rough budget and whether you have a part exchange. Use the form below, call or WhatsApp.",
-  },
-  {
-    title: "We talk it through",
-    detail:
-      "We'll come back to you personally to go over the options for that car and answer any questions about how they work.",
-  },
-  {
-    title: "You decide",
-    detail:
-      "Nothing is applied for without your say-so. If finance isn't right for you, there are plenty of other ways to pay.",
-  },
-];
