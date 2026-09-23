@@ -29,6 +29,14 @@ import { site } from "../site";
  *    instead.
  *
  * Vehicle hire is intentionally absent: hire is not part of this business.
+ *
+ * September 2026: the wording here was tightened for the pages that render it,
+ * the way the homepage was. Sentences that restated another field were cut —
+ * a product's `points` no longer repeat its `summary`, `ownership` or
+ * `endOfTerm`, and `bestFor` ("buyers who…") went with the finance page's
+ * comparison table, being a reading of those fields rather than a fact of its
+ * own. Nothing confirmed was replaced or added, and every qualifier still
+ * travels with the fact it qualifies.
  */
 
 export interface Step {
@@ -170,7 +178,6 @@ export interface FinanceProduct {
   abbreviation: string;
   summary: string;
   points: string[];
-  bestFor: string;
   ownership: string;
   endOfTerm: string;
 }
@@ -181,13 +188,8 @@ export const financeProducts: FinanceProduct[] = [
     name: "Hire Purchase",
     abbreviation: "HP",
     summary:
-      "The most straightforward way to spread the cost. You pay a deposit, then fixed monthly payments across the term. When the last payment clears, the car is yours.",
-    points: [
-      "A deposit, then fixed monthly payments",
-      "The car is yours after the final payment",
-      "No mileage limits",
-    ],
-    bestFor: "Buyers who want to own the car outright at the end.",
+      "The most straightforward way to spread the cost. When the last payment clears, the car is yours.",
+    points: ["A deposit, then fixed monthly payments", "No mileage limits"],
     ownership: "Transfers to you with the final payment.",
     endOfTerm: "Nothing to decide — the car is yours.",
   },
@@ -196,14 +198,8 @@ export const financeProducts: FinanceProduct[] = [
     name: "Personal Contract Purchase",
     abbreviation: "PCP",
     summary:
-      "Monthly payments are lower because part of the car's value is deferred to the end of the agreement. At the end you choose whether to keep it, hand it back or put it towards your next car.",
-    points: [
-      "Lower monthly payments than Hire Purchase",
-      "A guaranteed minimum future value is agreed up front",
-      "Flexible options at the end of the term",
-      "Part-exchange protection",
-    ],
-    bestFor: "Buyers who like flexibility and lower monthly payments.",
+      "Monthly payments are lower because part of the car's value is deferred to the end of the agreement.",
+    points: ["A guaranteed minimum future value is agreed up front", "Part-exchange protection"],
     ownership: "Stays with the lender until you settle the final payment.",
     endOfTerm:
       "Pay the optional final payment and keep it, return it, or use any equity towards your next car.",
@@ -213,13 +209,8 @@ export const financeProducts: FinanceProduct[] = [
     name: "Personal Loan",
     abbreviation: "Loan",
     summary:
-      "An unsecured loan buys the car outright, so you own it from day one and the finance sits separately from the vehicle.",
-    points: [
-      "You own the car immediately",
-      "No final payment at the end",
-      "No mileage restrictions",
-    ],
-    bestFor: "Buyers who want immediate, unencumbered ownership.",
+      "An unsecured loan buys the car outright, so the finance sits separately from the vehicle.",
+    points: ["You own the car immediately", "No mileage restrictions"],
     ownership: "Yours from the moment you buy.",
     endOfTerm: "The loan simply ends — there is no final balloon payment.",
   },
@@ -229,23 +220,19 @@ export const financeProducts: FinanceProduct[] = [
 export const financeTerms: Step[] = [
   {
     title: "Deposit",
-    detail:
-      "What you put down at the start. A larger deposit means borrowing less, which lowers the monthly payment. A part exchange can count towards it.",
+    detail: "What you put down at the start. A part exchange can count towards it.",
   },
   {
     title: "Term",
-    detail:
-      "How long the agreement runs, in months. A longer term spreads the cost into smaller payments but usually costs more overall.",
+    detail: "How long the agreement runs. A longer term means smaller payments, but costs more overall.",
   },
   {
     title: "Monthly payment",
-    detail:
-      "The fixed amount you pay each month. It depends on the price of the car, your deposit, the term and the lender's rate.",
+    detail: "The fixed amount you pay each month.",
   },
   {
     title: "Final payment",
-    detail:
-      "PCP only. The deferred part of the car's value, due at the end if you decide to keep the car. You don't have to pay it if you hand the car back.",
+    detail: "PCP only. The deferred part of the car's value, due at the end if you keep the car.",
   },
 ];
 
@@ -254,18 +241,16 @@ export const financeTerms: Step[] = [
 export const partExchangeSteps: Step[] = [
   {
     title: "Send us your car's details",
-    detail:
-      "Registration, mileage, service history, MOT and anything we should know about its condition. Photos help, and are easiest sent on WhatsApp.",
+    detail: "Registration, mileage, service history, MOT and its condition. Photos help.",
   },
   {
     title: "We look it over",
-    detail:
-      "We go through the details and photos you've sent, and come back to you if we need to know more.",
+    detail: "We go through what you've sent, and come back if we need to know more.",
   },
   {
     title: "We come back with a figure",
     detail:
-      "Usually within 24 hours on weekdays, by phone or email, with an initial valuation based on what you've told us.",
+      "Usually within 24 hours on weekdays, by phone or email — an initial valuation based on what you've told us.",
   },
   {
     title: "It goes towards your next car",

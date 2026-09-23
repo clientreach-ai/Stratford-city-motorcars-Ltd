@@ -236,17 +236,15 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                         { term: "Ways to pay", detail: paymentMethods.join(", ") + "." },
                         {
                           term: "Part exchange",
-                          detail:
-                            "Welcome. Send us your car's details and we'll usually come back within 24 hours on weekdays with an initial figure.",
+                          detail: "Welcome — an initial figure usually within 24 hours on weekdays.",
                         },
                         {
                           term: "Delivery",
-                          detail:
-                            "We deliver nationwide. A delivery charge may apply, so ask us about delivery for this car.",
+                          detail: "Nationwide. A charge may apply — ask us about this car.",
                         },
                         {
                           term: "Viewing",
-                          detail: `Request a viewing or test drive below. ${site.hours.compact}; out-of-hours by WhatsApp or text.`,
+                          detail: `Request one below. ${site.hours.compact}; out-of-hours by WhatsApp or text.`,
                         },
                       ].map((row) => (
                         <div key={row.term} className="grid gap-1 py-4 text-sm sm:grid-cols-[9rem_1fr] sm:gap-6">

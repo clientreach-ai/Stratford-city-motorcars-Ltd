@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Check, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 
 import { PartExchangeForm } from "@/components/forms/part-exchange-form";
 import { FaqSection } from "@/components/site/faq-section";
@@ -16,6 +16,14 @@ import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 
+/*
+ * Four steps, then the form. The "what happens next" band told the same four
+ * steps a second time — the figure in 24 hours, the inspection that confirms
+ * it, the value coming off the next car, no obligation — so it went. Its
+ * inspection and outstanding-finance wording is not lost: the form carries it
+ * verbatim, where someone is actually committing. Every qualifier the client
+ * attached to a fact still travels with that fact.
+ */
 export const metadata: Metadata = pageMetadata({
   title: "Part Exchange Your Car — Stratford, East London",
   description:
@@ -36,18 +44,14 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
       <PageHero
         eyebrow="Part exchange"
         title="Your current car can do most of the work"
-        lede="Put the car you're driving now towards your next one. Send us its details and we'll usually come back within 24 hours on weekdays with an initial figure. When you bring it in, we confirm the valuation after a short inspection and a look at the documents."
+        lede="Send us its details and we'll usually come back within 24 hours on weekdays with an initial figure. No obligation at any point."
         crumbs={crumbs}
       />
 
       {/* ---- Steps --------------------------------------------------------- */}
       <Section size="md">
         <Container>
-          <SectionHeading
-            eyebrow="How it works"
-            title="Four steps from your car to ours"
-            lede="You're under no obligation at any point. If the figure isn't right for you, that's the end of it."
-          />
+          <SectionHeading eyebrow="How it works" title="Four steps from your car to ours" />
 
           <ol className="mt-14 grid gap-px bg-[var(--border)] md:grid-cols-2 xl:grid-cols-4">
             {partExchangeSteps.map((step, index) => (
@@ -84,22 +88,18 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
                 What we need to value it
               </h2>
 
-              <ul className="mt-8 space-y-3.5">
+              {/* A compact row of short items rather than a stacked list: the
+                  form beside it asks for each of these in turn. */}
+              <ul className="mt-7 flex flex-wrap gap-1.5">
                 {partExchangeChecklist.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm">
-                    <Check
-                      aria-hidden
-                      className="mt-0.5 size-4 shrink-0 text-[var(--rule)]"
-                    />
+                  <li
+                    key={item}
+                    className="border border-[var(--border-strong)] px-2.5 py-1.5 text-[0.6875rem] leading-none text-[var(--muted-foreground)]"
+                  >
                     {item}
                   </li>
                 ))}
               </ul>
-
-              <p className="mt-8 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                Being straight with us about condition keeps the initial figure
-                close to the final one. Surprises on inspection help nobody.
-              </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <ExternalButtonLink href={site.phone.href} variant="outline" size="md">
@@ -128,42 +128,6 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
         </Container>
       </Section>
 
-      {/* ---- What happens next --------------------------------------------- */}
-      <Section dark size="md">
-        <Container>
-          <div className="max-w-3xl">
-            <Eyebrow>After you send it</Eyebrow>
-            <h2 className="mt-5 text-[clamp(2rem,4vw,3rem)] leading-[1.06]">
-              What happens next
-            </h2>
-
-            <div className="mt-10 space-y-8">
-              <NextStep
-                title="Usually within 24 hours on weekdays"
-                detail="We come back to you by phone or email with an initial figure based on what you've told us."
-              />
-              <NextStep
-                title="When you bring it in"
-                detail="A short inspection and a look at the documents. This is where the valuation is confirmed, and there's free parking on site."
-              />
-              <NextStep
-                title="If you go ahead"
-                detail="The agreed value comes straight off the price of your next car, or goes towards your finance deposit. Any outstanding finance must be disclosed and settled."
-              />
-              <NextStep
-                title="If you don't"
-                detail="Nothing happens. There's no obligation at any point, and we won't chase you."
-              />
-            </div>
-
-            <p className="mt-12 border-l border-brass pl-5 text-xs leading-relaxed text-bone/55">
-              {site.compliance.partExchangeSubjectToInspection} Outstanding finance
-              must be disclosed and settled before a part exchange completes.
-            </p>
-          </div>
-        </Container>
-      </Section>
-
       <FaqSection
         // "Do you accept part exchange?" is what this whole page answers.
         faqs={[...faqsByCategory("Part exchange"), ...faqsByCategory("Finance")].filter(
@@ -171,7 +135,6 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
         )}
         eyebrow="Part-exchange questions"
         title="Good to know"
-        lede="Anything else about your car, just ask — photos and questions are easiest on WhatsApp."
       />
     </>
   );
@@ -192,15 +155,4 @@ async function PartExchangeFormForLinkedCar({
   const car = await resolveVehicleBySlug(Array.isArray(vehicle) ? vehicle[0] : vehicle);
   if (!car) return <PartExchangeForm />;
   return <PartExchangeForm vehicleSlug={car.slug} vehicleName={`${car.year} ${car.title}`} />;
-}
-
-function NextStep({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="reveal border-t border-bone/12 pt-6">
-      <h3 className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-brass">
-        {title}
-      </h3>
-      <p className="mt-3 leading-relaxed text-bone/70">{detail}</p>
-    </div>
-  );
 }
