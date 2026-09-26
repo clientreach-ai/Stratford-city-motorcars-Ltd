@@ -1,5 +1,7 @@
 import "server-only";
 
+import { describeError } from "@Stratford-city-motorcars-Ltd/db/errors";
+
 import type { LeadInput } from "@/lib/forms/schemas";
 
 import { configuredNotifiers } from "./notify";
@@ -34,7 +36,7 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
     ? insertLead(lead, reference).then(
         () => true,
         (error: unknown) => {
-          console.error(`[leads] could not store enquiry kind=${lead.kind} ref=${reference}:`, describe(error));
+          console.error(`[leads] could not store enquiry kind=${lead.kind} ref=${reference}:`, describeError(error));
           return false;
         },
       )
@@ -49,7 +51,7 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
   outcomes.forEach((outcome, index) => {
     const name = notifiers[index]!.name;
     if (outcome.status === "fulfilled") notified.push(name);
-    else console.error(`[leads] ${name} failed kind=${lead.kind} ref=${reference}:`, describe(outcome.reason));
+    else console.error(`[leads] ${name} failed kind=${lead.kind} ref=${reference}:`, describeError(outcome.reason));
   });
 
   if (!stored && notified.length === 0) {
@@ -68,10 +70,4 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
   }
 
   return { delivered: true, reference, stored, notified };
-}
-
-/** Error summary without request bodies or payloads. */
-function describe(error: unknown): string {
-  if (error instanceof Error) return `${error.name}: ${error.message}`.slice(0, 300);
-  return "unknown error";
 }
