@@ -11,7 +11,6 @@ import { errorBody, handleError, handleNotFound, ok } from "./lib/http";
 import { loadSession, sameOriginWrites } from "./middleware/auth";
 import { adminRoutes } from "./modules/admin";
 import { healthRoutes } from "./modules/health/routes";
-import { publicLeadRoutes } from "./modules/leads/public-routes";
 import { mediaRoutes } from "./modules/media/routes";
 import { MAX_PHOTO_BYTES } from "./modules/media/photos";
 import { publicVehicleRoutes } from "./modules/vehicles/public-routes";
@@ -24,7 +23,6 @@ import type { AppEnv } from "./types";
  *   /media/*              stored photographs (when the bucket has no public URL)
  *   /api/auth/*           Better Auth (used by /api/admin/session)
  *   /api/vehicles/*       public stock
- *   /api/leads            public enquiry submission
  *   /api/admin/*          the admin API (docs/STRATFORD_ADMIN_CONTRACT.md)
  *
  * Error responses follow lib/http.ts.
@@ -68,7 +66,6 @@ export function createApp() {
     .route("/health", healthRoutes)
     .route("/media", mediaRoutes)
     .route("/api/vehicles", publicVehicleRoutes)
-    .route("/api/leads", publicLeadRoutes)
     .route("/api/admin", adminRoutes);
 
   app.notFound(handleNotFound);
