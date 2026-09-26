@@ -5,6 +5,7 @@ import {
   UnauthorisedError,
   ValidationError,
 } from "@Stratford-city-motorcars-Ltd/core/errors";
+import { describeError, errorFrames } from "@Stratford-city-motorcars-Ltd/db/errors";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -75,7 +76,11 @@ export function handleError(error: Error, c: Context) {
       status as ContentfulStatusCode,
     );
   }
-  console.error(`[api] ${c.req.method} ${c.req.path} failed (request ${c.get("requestId") as string | undefined}):`, error);
+  // Summarised, never the error itself: a failed query's message carries its
+  // parameters, which are often a customer's personal details.
+  console.error(
+    `[api] ${c.req.method} ${c.req.path} failed (request ${c.get("requestId") as string | undefined}): ${describeError(error)}\n${errorFrames(error)}`,
+  );
   return c.json(errorBody("internal_error", "Something went wrong on the server. Nothing was changed."), 500);
 }
 
