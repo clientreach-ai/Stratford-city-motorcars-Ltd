@@ -1,38 +1,23 @@
 import type { Context } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
+import { clientAddressFromHeaders, createSlidingWindow } from "@Stratford-city-motorcars-Ltd/domain/rate-limit";
 
 import { HttpError } from "./http";
 
 /**
- * Sliding-window throttling per client address, in memory, per process.
- *
- * Good enough to stop one script flooding the enquiry inbox. It resets on
- * restart and is not shared between instances; a multi-instance deployment
- * should move this to a shared store. Addresses are map keys only and are
+ * Sliding-window throttling per client address, in memory, per process (see
+ * packages/domain/src/rate-limit.ts). Addresses are map keys only and are
  * never logged.
  */
 export function createRateLimiter(options: { windowMs: number; max: number; message: string }) {
-  const hits = new Map<string, number[]>();
+  const window = createSlidingWindow(options);
 
   /** Records one attempt for this caller, or throws 429 when over the limit. */
   function consume(c: Context): void {
-    const key = clientAddress(c);
-    if (!key) return;
-
-    const now = Date.now();
-    const recent = (hits.get(key) ?? []).filter((time) => now - time < options.windowMs);
-    if (recent.length >= options.max) {
-      hits.set(key, recent);
-      c.header("Retry-After", String(Math.ceil((options.windowMs - (now - recent[0]!)) / 1000)));
+    const retryAfter = window.hit(clientAddress(c));
+    if (retryAfter > 0) {
+      c.header("Retry-After", String(retryAfter));
       throw new HttpError(429, "rate_limited", options.message);
-    }
-    recent.push(now);
-    hits.set(key, recent);
-
-    if (hits.size > 5000) {
-      for (const [entry, times] of hits) {
-        if (times.every((time) => now - time >= options.windowMs)) hits.delete(entry);
-      }
     }
   }
 
@@ -42,22 +27,16 @@ export function createRateLimiter(options: { windowMs: number; max: number; mess
    * its own staff signing in normally. Only failures count towards the limit.
    */
   consume.reset = function reset(c: Context): void {
-    const key = clientAddress(c);
-    if (key) hits.delete(key);
+    window.reset(clientAddress(c));
   };
 
   return consume;
 }
 
-/**
- * The caller's address. Behind a proxy the first `X-Forwarded-For` hop is used,
- * so in production the API must only be reachable through that proxy.
- */
+/** The caller's address: from the proxy in front of this server, else the socket. */
 export function clientAddress(c: Context): string | null {
-  const forwarded = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
-  if (forwarded) return forwarded;
-  const real = c.req.header("x-real-ip")?.trim();
-  if (real) return real;
+  const fromHeaders = clientAddressFromHeaders((name) => c.req.header(name));
+  if (fromHeaders) return fromHeaders;
   try {
     return getConnInfo(c).remote.address ?? null;
   } catch {

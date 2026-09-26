@@ -3,6 +3,8 @@
 import { headers } from "next/headers";
 import type { z } from "zod";
 
+import { clientAddressFromHeaders } from "@Stratford-city-motorcars-Ltd/domain/rate-limit";
+
 import { resolveVehicleBySlug } from "@/lib/inventory/repository";
 import { deliverLead } from "@/lib/leads/deliver";
 import { allowSubmission } from "@/lib/leads/rate-limit";
@@ -35,8 +37,7 @@ const THROTTLED_MESSAGE =
 
 async function clientKey(): Promise<string | null> {
   const list = await headers();
-  const forwarded = list.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || list.get("x-real-ip") || null;
+  return clientAddressFromHeaders((name) => list.get(name));
 }
 
 /**

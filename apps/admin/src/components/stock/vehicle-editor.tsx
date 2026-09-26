@@ -223,7 +223,10 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   const save = async (): Promise<AdminVehicle | null> => {
     setSaving(true);
     try {
-      const result = await api.stock.save(draft, { expectedUpdatedAt: vehicle.updatedAt });
+      // What this editor has been shown: a photograph attached since (from a
+      // phone, or while this save is on its way) is kept by the API, not removed.
+      const knownMediaIds = base.media.map((item) => item.id);
+      const result = await api.stock.save(draft, { expectedUpdatedAt: vehicle.updatedAt, knownMediaIds });
       accept(result.vehicle);
       setFieldErrors({});
       setConflict(false);
@@ -559,8 +562,11 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
               onCoverChange={(coverId) => set("coverImageId", coverId)}
               onUploaded={(image: VehicleImage) => {
                 // Already stored on the car: add it to both, so an upload alone is not an unsaved change.
-                setBase((current) => ({ ...current, media: [...current.media, image] }));
-                setDraft((current) => ({ ...current, media: [...current.media, image] }));
+                // A save that finished first may already have brought it back from the API.
+                const add = (current: VehicleRecord) =>
+                  current.media.some((item) => item.id === image.id) ? current : { ...current, media: [...current.media, image] };
+                setBase(add);
+                setDraft(add);
               }}
             />
           </Section>

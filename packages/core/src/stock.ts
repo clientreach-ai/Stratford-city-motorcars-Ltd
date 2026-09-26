@@ -251,3 +251,14 @@ export interface MarkSoldInput {
 export interface Versioned {
   expectedUpdatedAt: string;
 }
+
+export interface SaveVehicleOptions extends Versioned {
+  /**
+   * Every media id the editor has been shown. Photographs are attached without
+   * a new version, so one can arrive after the editor loaded the car (from a
+   * phone, or while this save was on its way); a save removes only media the
+   * editor knew about and left out, and keeps the rest. Without the list, every
+   * stored item left out is removed.
+   */
+  knownMediaIds?: string[];
+}
