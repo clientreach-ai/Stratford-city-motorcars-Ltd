@@ -1001,6 +1001,14 @@ export function createMockApi(): AdminApi {
               notes: "",
             });
           }
+          // As the API: reservations and sales stay, without who they were for.
+          for (const vehicle of db.vehicles) {
+            if (vehicle.sale?.customerId === id) vehicle.sale = { ...vehicle.sale, customerId: null, customerName: "Erased at their request" };
+            if (vehicle.reservation?.customerId === id) {
+              const { note: _note, depositNote: _depositNote, ...rest } = vehicle.reservation;
+              vehicle.reservation = { ...rest, customerId: null, customerName: "Erased at their request" };
+            }
+          }
           db.customers = db.customers.filter((item) => item.id !== id);
         }),
     },
