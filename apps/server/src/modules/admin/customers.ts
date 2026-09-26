@@ -1,4 +1,4 @@
-import { emailKey, eq, phoneKey, tables } from "@Stratford-city-motorcars-Ltd/db";
+import { emailKey, eq, phoneKey, sql, tables } from "@Stratford-city-motorcars-Ltd/db";
 import type { Customer, CustomerDetail } from "@Stratford-city-motorcars-Ltd/core/customer";
 import { NotFoundError, ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import { DEFAULT_PAGE_SIZE, type Page } from "@Stratford-city-motorcars-Ltd/core/list";
@@ -12,6 +12,9 @@ import { listVehicles } from "../vehicles/repository";
 import { checkVersion, requireCapability, stamp, type AdminEnv } from "./context";
 import { loadAppointments, loadCustomers, loadLeads, matches, toAppointment, toCustomer, toEnquiry } from "./data";
 import { paginate } from "./enquiries";
+
+/** What an erased person's name becomes on the records that stay. */
+const ERASED = "Erased at their request";
 
 /**
  * Customers — people grouped from their enquiries (see packages/db
@@ -123,8 +126,8 @@ export const customerRoutes = new Hono<AdminEnv>()
    * details on their viewings. Deleting an enquiry alone left the customer
    * behind, so an erasure request could never actually be completed.
    *
-   * Appointments and sales are kept as anonymous records so the diary and the
-   * sales history stay intact.
+   * Appointments, reservations and sales are kept as anonymous records so the
+   * diary and the sales history stay intact.
    */
   .delete("/:id", validate("param", idParam), async (c) => {
     requireCapability(c, "enquiries.delete");
@@ -139,8 +142,20 @@ export const customerRoutes = new Hono<AdminEnv>()
       // The diary keeps the slot, without the person's details.
       await tx
         .update(tables.appointment)
-        .set({ customerId: null, customerName: "Erased at their request", customerPhone: null, notes: "" })
+        .set({ customerId: null, customerName: ERASED, customerPhone: null, notes: "" })
         .where(eq(tables.appointment.customerId, id));
+      // A car reserved for or sold to them keeps the reservation or sale, not
+      // who it was. Reservation notes are free text and go too. The car's own
+      // version is left alone: nothing an editor shows has changed.
+      const anonymous = JSON.stringify({ customerId: null, customerName: ERASED });
+      await tx
+        .update(tables.vehicle)
+        .set({ sale: sql`${tables.vehicle.sale} || ${anonymous}::jsonb` })
+        .where(sql`${tables.vehicle.sale}->>'customerId' = ${id}`);
+      await tx
+        .update(tables.vehicle)
+        .set({ reservation: sql`(${tables.vehicle.reservation} - 'note' - 'depositNote') || ${anonymous}::jsonb` })
+        .where(sql`${tables.vehicle.reservation}->>'customerId' = ${id}`);
       await tx.delete(customer).where(eq(customer.id, id));
     });
 
