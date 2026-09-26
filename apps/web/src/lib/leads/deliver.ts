@@ -28,20 +28,23 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
   const reference = createLeadReference();
   const receivedAt = new Date().toISOString();
 
-  let stored = false;
-  if (leadStorageAvailable()) {
-    try {
-      await insertLead(lead, reference);
-      stored = true;
-    } catch (error) {
-      console.error(`[leads] could not store enquiry kind=${lead.kind} ref=${reference}:`, describe(error));
-    }
-  }
+  // Storing and notifying run side by side, so a slow database never holds
+  // back the email or webhook that may be the only channel that works.
+  const storing = leadStorageAvailable()
+    ? insertLead(lead, reference).then(
+        () => true,
+        (error: unknown) => {
+          console.error(`[leads] could not store enquiry kind=${lead.kind} ref=${reference}:`, describe(error));
+          return false;
+        },
+      )
+    : Promise.resolve(false);
 
   const notifiers = configuredNotifiers();
-  const outcomes = await Promise.allSettled(
-    notifiers.map((notifier) => notifier.notify(lead, { reference, receivedAt })),
-  );
+  const [stored, outcomes] = await Promise.all([
+    storing,
+    Promise.allSettled(notifiers.map((notifier) => notifier.notify(lead, { reference, receivedAt }))),
+  ]);
   const notified: string[] = [];
   outcomes.forEach((outcome, index) => {
     const name = notifiers[index]!.name;
