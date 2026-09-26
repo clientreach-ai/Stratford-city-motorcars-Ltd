@@ -53,6 +53,14 @@ export function createAuth(options: { allowSignUp?: boolean } = {}) {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
+      // Better Auth's own rate limit and session records read the client
+      // address from these. On Render, Cloudflare sets CF-Connecting-IP and
+      // overwrites any value the client sends; X-Forwarded-For there carries
+      // several hops, which Better Auth refuses, putting every caller in one
+      // shared bucket.
+      ipAddress: {
+        ipAddressHeaders: process.env.RENDER ? ["cf-connecting-ip"] : ["x-forwarded-for"],
+      },
       // In production the admin and the API may be on different sites, so
       // the session cookie must be sent cross-site over HTTPS. Locally both run
       // on localhost (one site, different ports), where a plain lax cookie works.

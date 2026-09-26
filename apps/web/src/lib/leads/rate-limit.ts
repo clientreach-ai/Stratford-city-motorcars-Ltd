@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createSlidingWindow } from "@Stratford-city-motorcars-Ltd/domain/rate-limit";
+
 /**
  * Best-effort submission throttling, per client address, per server process.
  *
@@ -11,24 +13,8 @@ import "server-only";
  *
  * Addresses are used as map keys only, held for the window, and never logged.
  */
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_SUBMISSIONS = 6;
-const hits = new Map<string, number[]>();
+const submissions = createSlidingWindow({ windowMs: 10 * 60 * 1000, max: 6 });
 
 export function allowSubmission(clientKey: string | null, now = Date.now()): boolean {
-  if (!clientKey) return true;
-  const recent = (hits.get(clientKey) ?? []).filter((time) => now - time < WINDOW_MS);
-  if (recent.length >= MAX_SUBMISSIONS) {
-    hits.set(clientKey, recent);
-    return false;
-  }
-  recent.push(now);
-  hits.set(clientKey, recent);
-
-  if (hits.size > 5000) {
-    for (const [key, times] of hits) {
-      if (times.every((time) => now - time >= WINDOW_MS)) hits.delete(key);
-    }
-  }
-  return true;
+  return submissions.hit(clientKey, now) === 0;
 }
