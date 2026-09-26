@@ -65,7 +65,10 @@ const saleBody = versioned.extend({
   enquiryId: z.string().max(64).nullable().default(null),
 });
 
-const saveBody = versioned.extend({ record: z.record(z.string(), z.unknown()) });
+const saveBody = versioned.extend({
+  record: z.record(z.string(), z.unknown()),
+  knownMediaIds: z.array(z.string().max(100)).max(500).optional(),
+});
 
 // ---- Helpers ------------------------------------------------------------------------------
 
@@ -157,9 +160,23 @@ function emptyDraft(id: string, slug: string, now: string): StoredVehicle {
  * Keeps stored files as stored: an image or video file is accepted only if its
  * id is already on this car, and its source, size and provenance come from the
  * stored copy. Video and 360° links may be added freely.
+ *
+ * Stored media the editor never saw (`knownMediaIds`) is kept after the
+ * submitted items: photographs are attached without a new version, so one
+ * uploaded from another device, or while this save was on its way, would
+ * otherwise be removed — and its files deleted — by a save that never knew it
+ * existed. Without the list, every stored item left out is removed.
  */
-function reconcileMedia(stored: VehicleMedia[], submitted: VehicleMedia[]): VehicleMedia[] {
+function reconcileMedia(stored: VehicleMedia[], submitted: VehicleMedia[], knownMediaIds?: string[]): VehicleMedia[] {
   const known = new Map(stored.map((item) => [item.id, item]));
+  const reconciled = reconcileSubmitted(known, submitted);
+  if (!knownMediaIds) return reconciled;
+  const seen = new Set(knownMediaIds);
+  const kept = new Set(reconciled.map((item) => item.id));
+  return [...reconciled, ...stored.filter((item) => !seen.has(item.id) && !kept.has(item.id))];
+}
+
+function reconcileSubmitted(known: Map<string, VehicleMedia>, submitted: VehicleMedia[]): VehicleMedia[] {
   return submitted.flatMap((item): VehicleMedia[] => {
     const previous = known.get(item.id);
     if (item.kind === "image") {
@@ -294,7 +311,7 @@ export const stockRoutes = new Hono<AdminEnv>()
   .put("/:id", validate("param", idParam), validate("json", saveBody), async (c) => {
     const member = requireCapability(c, "stock.edit");
     const { id } = c.req.valid("param");
-    const { record: input, expectedUpdatedAt } = c.req.valid("json");
+    const { record: input, expectedUpdatedAt, knownMediaIds } = c.req.valid("json");
     let removedFiles: string[] = [];
 
     const saved = await withLockedVehicle(id, async (stored, tx) => {
@@ -315,7 +332,7 @@ export const stockRoutes = new Hono<AdminEnv>()
         throw new ValidationError({ slug: "Another car already uses (or used) this web address." });
       }
 
-      const media = reconcileMedia(stored.record.media, record.media);
+      const media = reconcileMedia(stored.record.media, record.media, knownMediaIds);
       const kept = new Set(storedFiles(media));
       removedFiles = storedFiles(stored.record.media).filter((src) => !kept.has(src));
 

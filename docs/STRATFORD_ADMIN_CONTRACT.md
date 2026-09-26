@@ -116,7 +116,7 @@ cars that fail them; `needsReply` is new enquiries oldest first (max 6);
 | GET | `/vehicles` | | | `AdminVehicle[]`, every status |
 | GET | `/vehicles/:id` | | | `AdminVehicle` |
 | POST | `/vehicles` | stock.edit | | new empty draft `AdminVehicle` (a unique placeholder slug) |
-| PUT | `/vehicles/:id` | stock.edit | `{ record: VehicleRecord, expectedUpdatedAt }` | `SaveVehicleResult` |
+| PUT | `/vehicles/:id` | stock.edit | `{ record: VehicleRecord, expectedUpdatedAt, knownMediaIds? }` | `SaveVehicleResult`; stored media whose id is not in `knownMediaIds` is kept, so a photograph uploaded after the editor loaded is never removed by its save |
 | POST | `/vehicles/:id/publish` | stock.edit | `{ expectedUpdatedAt }` | `SaveVehicleResult`; 422 with `issues` from `publicationIssues()` |
 | POST | `/vehicles/:id/unpublish` | stock.edit | `{ expectedUpdatedAt }` | back to draft, `featured: false` |
 | POST | `/vehicles/:id/featured` | stock.edit | `{ featured, expectedUpdatedAt }` | only published cars can be featured |

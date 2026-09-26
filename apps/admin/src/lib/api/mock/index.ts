@@ -499,7 +499,7 @@ export function createMockApi(): AdminApi {
           return toAdminVehicle(db, vehicle, user);
         }),
 
-      save: (record, { expectedUpdatedAt }) =>
+      save: (record, { expectedUpdatedAt, knownMediaIds }) =>
         call((db) => {
           const user = requireCapability(db, "stock.edit");
           const stored = findVehicle(db, record.id);
@@ -508,7 +508,12 @@ export function createMockApi(): AdminApi {
 
           // Only media already stored for this car may be kept or reordered.
           const known = new Map(stored.media.map((item) => [item.id, item]));
-          const media = record.media.filter((item) => known.has(item.id) || item.kind !== "image");
+          const submitted = record.media.filter((item) => known.has(item.id) || item.kind !== "image");
+          // As the API: stored media the editor never saw is kept, not removed.
+          const seen = knownMediaIds ? new Set(knownMediaIds) : null;
+          const media = seen
+            ? [...submitted, ...stored.media.filter((item) => !seen.has(item.id) && !submitted.some((kept) => kept.id === item.id))]
+            : submitted;
 
           const previousSlugs =
             record.slug !== stored.slug && stored.listedAt && !stored.previousSlugs.includes(stored.slug)

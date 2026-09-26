@@ -16,6 +16,7 @@ import type {
   AdminVehicle,
   MarkSoldInput,
   ReserveInput,
+  SaveVehicleOptions,
   SaveVehicleResult,
   Versioned,
 } from "./stock";
@@ -63,8 +64,9 @@ export interface AdminApi {
      * Saves the whole record. The API keeps `status` as stored (use the
      * status methods), appends a changed slug of a car that has been public to
      * `previousSlugs`, and accepts only media ids already on the record.
+     * Stored media missing from `knownMediaIds` is kept, not removed.
      */
-    save(record: VehicleRecord, options: Versioned): Promise<SaveVehicleResult>;
+    save(record: VehicleRecord, options: SaveVehicleOptions): Promise<SaveVehicleResult>;
     /** 422 with `issues` when a publishing rule is not met. */
     publish(id: string, options: Versioned): Promise<SaveVehicleResult>;
     /** Back to draft. */
