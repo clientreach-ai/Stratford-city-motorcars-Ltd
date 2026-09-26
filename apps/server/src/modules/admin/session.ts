@@ -2,6 +2,7 @@ import { auth } from "@Stratford-city-motorcars-Ltd/auth";
 import { eq, tables } from "@Stratford-city-motorcars-Ltd/db";
 import { UnauthorisedError, ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import type { SessionUser } from "@Stratford-city-motorcars-Ltd/core/team";
+import { createSlidingWindow } from "@Stratford-city-motorcars-Ltd/domain/rate-limit";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 
@@ -30,6 +31,14 @@ const throttle = createRateLimiter({
   message: "Too many sign-in attempts. Wait a few minutes and try again.",
 });
 
+/**
+ * Failed sign-ins per account, whatever address they come from, so a password
+ * cannot be guessed by spreading attempts across many addresses. Unknown
+ * addresses are counted the same way, so the limit reveals nothing about which
+ * accounts exist.
+ */
+const accountThrottle = createSlidingWindow({ windowMs: 60 * 60 * 1000, max: 20 });
+
 const signInBody = z.object({
   email: z.string().trim().toLowerCase().min(1, "Enter your email address.").max(160),
   password: z.string().min(1, "Enter your password.").max(200),
@@ -51,6 +60,11 @@ export const sessionRoutes = new Hono<AppEnv>()
   .post("/", validate("json", signInBody), async (c) => {
     throttle(c);
     const { email, password } = c.req.valid("json");
+    const retryAfter = accountThrottle.hit(email);
+    if (retryAfter > 0) {
+      c.header("Retry-After", String(retryAfter));
+      throw new HttpError(429, "rate_limited", "Too many sign-in attempts. Wait a few minutes and try again.");
+    }
 
     const [member] = await db.select().from(tables.user).where(eq(tables.user.email, email)).limit(1);
     if (!member || member.status !== "active") throw new ValidationError({}, WRONG_CREDENTIALS);
@@ -68,6 +82,7 @@ export const sessionRoutes = new Hono<AppEnv>()
     forwardCookies(c, response);
     // A successful sign-in clears the count: only failures are throttled.
     throttle.reset(c);
+    accountThrottle.reset(email);
     await db.update(tables.user).set({ lastActiveAt: new Date() }).where(eq(tables.user.id, member.id));
     return c.json({ id: member.id, name: member.name, email: member.email, role: toRole(member.role) } satisfies SessionUser);
   })
