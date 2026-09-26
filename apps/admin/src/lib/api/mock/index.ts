@@ -499,7 +499,7 @@ export function createMockApi(): AdminApi {
           return toAdminVehicle(db, vehicle, user);
         }),
 
-      save: (record, { expectedUpdatedAt }) =>
+      save: (record, { expectedUpdatedAt, knownMediaIds }) =>
         call((db) => {
           const user = requireCapability(db, "stock.edit");
           const stored = findVehicle(db, record.id);
@@ -508,7 +508,12 @@ export function createMockApi(): AdminApi {
 
           // Only media already stored for this car may be kept or reordered.
           const known = new Map(stored.media.map((item) => [item.id, item]));
-          const media = record.media.filter((item) => known.has(item.id) || item.kind !== "image");
+          const submitted = record.media.filter((item) => known.has(item.id) || item.kind !== "image");
+          // As the API: stored media the editor never saw is kept, not removed.
+          const seen = knownMediaIds ? new Set(knownMediaIds) : null;
+          const media = seen
+            ? [...submitted, ...stored.media.filter((item) => !seen.has(item.id) && !submitted.some((kept) => kept.id === item.id))]
+            : submitted;
 
           const previousSlugs =
             record.slug !== stored.slug && stored.listedAt && !stored.previousSlugs.includes(stored.slug)
@@ -995,6 +1000,14 @@ export function createMockApi(): AdminApi {
               customerPhone: null,
               notes: "",
             });
+          }
+          // As the API: reservations and sales stay, without who they were for.
+          for (const vehicle of db.vehicles) {
+            if (vehicle.sale?.customerId === id) vehicle.sale = { ...vehicle.sale, customerId: null, customerName: "Erased at their request" };
+            if (vehicle.reservation?.customerId === id) {
+              const { note: _note, depositNote: _depositNote, ...rest } = vehicle.reservation;
+              vehicle.reservation = { ...rest, customerId: null, customerName: "Erased at their request" };
+            }
           }
           db.customers = db.customers.filter((item) => item.id !== id);
         }),

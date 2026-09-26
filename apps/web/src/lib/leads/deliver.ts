@@ -1,5 +1,7 @@
 import "server-only";
 
+import { describeError } from "@Stratford-city-motorcars-Ltd/db/errors";
+
 import type { LeadInput } from "@/lib/forms/schemas";
 
 import { configuredNotifiers } from "./notify";
@@ -28,25 +30,28 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
   const reference = createLeadReference();
   const receivedAt = new Date().toISOString();
 
-  let stored = false;
-  if (leadStorageAvailable()) {
-    try {
-      await insertLead(lead, reference);
-      stored = true;
-    } catch (error) {
-      console.error(`[leads] could not store enquiry kind=${lead.kind} ref=${reference}:`, describe(error));
-    }
-  }
+  // Storing and notifying run side by side, so a slow database never holds
+  // back the email or webhook that may be the only channel that works.
+  const storing = leadStorageAvailable()
+    ? insertLead(lead, reference).then(
+        () => true,
+        (error: unknown) => {
+          console.error(`[leads] could not store enquiry kind=${lead.kind} ref=${reference}:`, describeError(error));
+          return false;
+        },
+      )
+    : Promise.resolve(false);
 
   const notifiers = configuredNotifiers();
-  const outcomes = await Promise.allSettled(
-    notifiers.map((notifier) => notifier.notify(lead, { reference, receivedAt })),
-  );
+  const [stored, outcomes] = await Promise.all([
+    storing,
+    Promise.allSettled(notifiers.map((notifier) => notifier.notify(lead, { reference, receivedAt }))),
+  ]);
   const notified: string[] = [];
   outcomes.forEach((outcome, index) => {
     const name = notifiers[index]!.name;
     if (outcome.status === "fulfilled") notified.push(name);
-    else console.error(`[leads] ${name} failed kind=${lead.kind} ref=${reference}:`, describe(outcome.reason));
+    else console.error(`[leads] ${name} failed kind=${lead.kind} ref=${reference}:`, describeError(outcome.reason));
   });
 
   if (!stored && notified.length === 0) {
@@ -65,10 +70,4 @@ export async function deliverLead(lead: LeadInput): Promise<DeliveryResult> {
   }
 
   return { delivered: true, reference, stored, notified };
-}
-
-/** Error summary without request bodies or payloads. */
-function describe(error: unknown): string {
-  if (error instanceof Error) return `${error.name}: ${error.message}`.slice(0, 300);
-  return "unknown error";
 }

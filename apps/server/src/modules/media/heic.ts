@@ -36,6 +36,14 @@ require(workerData.module).all({ buffer: workerData.input }).then(
 `;
 
 export class HeicTooLargeError extends Error {}
+export class HeicTimeoutError extends Error {}
+
+/**
+ * A 48 MP iPhone photograph decodes in a few seconds; a file that takes this
+ * long is stuck, and would otherwise hold the one-at-a-time photo queue (see
+ * photos.ts) for good.
+ */
+const DECODE_TIMEOUT_MS = 60_000;
 
 export async function decodeHeic(
   input: Uint8Array,
@@ -45,9 +53,14 @@ export async function decodeHeic(
   try {
     const message = await new Promise<{ tooLarge?: true; error?: string; width?: number; height?: number; data?: Uint8ClampedArray }>(
       (resolve, reject) => {
-        worker.once("message", resolve);
-        worker.once("error", reject);
-        worker.once("exit", (code) => reject(new Error(`HEIC decoder exited (${code})`)));
+        const timer = setTimeout(() => reject(new HeicTimeoutError()), DECODE_TIMEOUT_MS);
+        const settle = <T,>(done: (value: T) => void) => (value: T) => {
+          clearTimeout(timer);
+          done(value);
+        };
+        worker.once("message", settle(resolve));
+        worker.once("error", settle(reject));
+        worker.once("exit", settle((code: number) => reject(new Error(`HEIC decoder exited (${code})`))));
       },
     );
     if (message.tooLarge) throw new HeicTooLargeError();

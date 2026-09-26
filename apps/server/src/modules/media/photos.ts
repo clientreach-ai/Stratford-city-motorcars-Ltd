@@ -4,7 +4,8 @@ import { meetsPhotoSize, MINIMUM_PHOTO_SIZE } from "@Stratford-city-motorcars-Lt
 import { availableParallelism } from "node:os";
 import { deflateSync } from "node:zlib";
 
-import { decodeHeic, HeicTooLargeError } from "./heic";
+import { HttpError } from "../../lib/http";
+import { decodeHeic, HeicTimeoutError, HeicTooLargeError } from "./heic";
 import sharp, { type Sharp } from "sharp";
 
 /**
@@ -54,6 +55,18 @@ sharp.concurrency(Math.min(2, availableParallelism()));
 export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
 /** Guards against decompression bombs: about a 200-megapixel photograph. */
 const MAX_INPUT_PIXELS = 200_000_000;
+/**
+ * HEIC is decoded in full, in WebAssembly, before it can be reduced, so it
+ * gets a tighter limit: a 48 MP iPhone photograph (8064×6048) fits, and
+ * nothing larger is decoded on a small server.
+ */
+const MAX_HEIC_PIXELS = 50_000_000;
+/**
+ * Uploads that may wait behind the one being processed. Each holds its file in
+ * memory while it waits, so beyond this the upload is refused and the admin
+ * tries again, rather than a burst of uploads exhausting a small server.
+ */
+const MAX_WAITING_PHOTOS = 3;
 const MASTER_LONG_SIDE = 2560;
 const MASTER_WEBP_QUALITY = 90;
 
@@ -202,9 +215,11 @@ async function open(input: Buffer): Promise<{ image: () => Sharp; format: string
   if (!isHeic(input)) throw new Error("unsupported");
   let decoded: Awaited<ReturnType<typeof decodeHeic>>;
   try {
-    decoded = await decodeHeic(input, MAX_INPUT_PIXELS);
+    decoded = await decodeHeic(input, MAX_HEIC_PIXELS);
   } catch (error) {
-    throw new Error(error instanceof HeicTooLargeError ? "too-large" : "unsupported");
+    if (error instanceof HeicTooLargeError) throw new Error("too-large");
+    if (error instanceof HeicTimeoutError) throw new Error("timed-out");
+    throw new Error("unsupported");
   }
   // Reduced to the master's size straight away, so only one full-size copy of
   // the pixels ever exists. Still in the file's own colour space: the profile
@@ -235,6 +250,9 @@ export async function processPhoto(file: File): Promise<ProcessedPhoto> {
     throw new ValidationError({ file: `“${name}” is larger than 25 MB.` }, "This photograph is too large.");
   }
 
+  if (waiting > MAX_WAITING_PHOTOS) {
+    throw new HttpError(503, "busy", "The server is still preparing other photographs. Try this one again in a minute.");
+  }
   const input = Buffer.from(await file.arrayBuffer());
   return exclusive(() => decodeAndDerive(input, name));
 }
@@ -246,6 +264,9 @@ async function decodeAndDerive(input: Buffer, name: string): Promise<ProcessedPh
   } catch (error) {
     if (error instanceof Error && error.message === "too-large") {
       throw new ValidationError({ file: `“${name}” has too many pixels to process.` }, "This photograph is too large.");
+    }
+    if (error instanceof Error && error.message === "timed-out") {
+      throw new ValidationError({ file: `“${name}” took too long to read. Try exporting it as a JPEG.` }, "This photograph could not be processed.");
     }
     throw new ValidationError(
       { file: `“${name}” is not a JPEG, PNG, WebP, AVIF or HEIC photograph.` },
@@ -270,10 +291,15 @@ async function decodeAndDerive(input: Buffer, name: string): Promise<ProcessedPh
 }
 
 let turn: Promise<unknown> = Promise.resolve();
+/** Photographs queued or being processed. */
+let waiting = 0;
 
 /** Runs photograph processing one at a time, in arrival order, so two uploads never hold two photographs' memory at once. */
 function exclusive<T>(task: () => Promise<T>): Promise<T> {
-  const result = turn.then(task, task);
+  waiting++;
+  const result = turn.then(task, task).finally(() => {
+    waiting--;
+  });
   turn = result.catch(() => undefined);
   return result;
 }
