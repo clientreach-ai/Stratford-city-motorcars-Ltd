@@ -412,7 +412,6 @@ middleware/auth.ts     session loading, cross-origin write guard
 modules/health         GET /health
 modules/media          R2 storage, photo processing (sharp), GET /media/* proxy
 modules/vehicles       public stock routes, repository (record + reservation + sale)
-modules/leads          public enquiry submission and delivery (DB + webhook)
 modules/admin          the admin API: session, overview, stock, enquiries,
                        appointments, customers, team + invitations, settings
 ```
@@ -422,7 +421,6 @@ modules/admin          the admin API: session, overview, stock, enquiries,
 | `GET /health` | public | Liveness and database check |
 | `GET /media/:vehicleId/:file` | public | Stored photos when the bucket has no public URL |
 | `GET /api/vehicles`, `/featured`, `/makes`, `/:slug`, `/:slug/related` | public | Stock that passes the publishing rules (`{ data, meta }`); old slugs 308 |
-| `POST /api/leads` | public | Enquiry with the website form fields; 6 per 10 min per address |
 | `/api/admin/*` | admin | Everything in [the admin contract](./STRATFORD_ADMIN_CONTRACT.md), with role checks |
 | `/api/auth/*` | none | Better Auth, used by `/api/admin/session`; sign-up disabled |
 
