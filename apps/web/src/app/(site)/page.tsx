@@ -83,7 +83,9 @@ export default async function HomePage() {
                     key={vehicle.id}
                     vehicle={vehicle}
                     // Below the hero on every viewport; the hero photograph is the LCP.
-                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 82vw"
+                    // Four across from xl, stopping at 305px once the container
+                    // reaches its 88rem cap.
+                    sizes="(min-width: 1408px) 305px, (min-width: 1280px) 22vw, (min-width: 640px) 45vw, 82vw"
                     className="reveal w-[82%] shrink-0 snap-start sm:w-auto"
                   />
                 ))}

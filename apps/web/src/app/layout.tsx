@@ -14,14 +14,21 @@ import { site } from "@/lib/site";
  *  Archivo    — everything functional: body copy, spec tables, forms. Tabular
  *               figures keep mileage and price columns aligned.
  *
- * All three are variable and self-hosted by next/font, so this costs three
- * files with no external requests and no layout shift.
+ * All three are variable and self-hosted by next/font, so there are no
+ * external requests and no layout shift.
+ *
+ * Only the faces the first screen is set in are preloaded: Newsreader (the
+ * hero headline uses both its upright and its italic) and Archivo. Every
+ * preload is fetched ahead of the hero photograph (the LCP), so Cinzel, used
+ * only for 10–11px labels, is left to load when the page first uses it,
+ * swapping in over its metric-matched fallback.
  */
 const cinzel = Cinzel({
   subsets: ["latin"],
   weight: ["400", "600"],
   variable: "--font-cinzel",
   display: "swap",
+  preload: false,
 });
 
 const newsreader = Newsreader({
