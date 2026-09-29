@@ -10,6 +10,7 @@ import { db } from "../../lib/db";
 import { validate } from "../../lib/validation";
 import { listVehicles } from "../vehicles/repository";
 import { checkVersion, requireCapability, stamp, type AdminEnv } from "./context";
+import { logDeletions } from "./deletions";
 import { loadAppointments, loadCustomers, loadLeads, matches, toAppointment, toCustomer, toEnquiry } from "./data";
 import { paginate } from "./enquiries";
 
@@ -132,7 +133,7 @@ export const customerRoutes = new Hono<AdminEnv>()
    * diary and the sales history stay intact.
    */
   .delete("/:id", validate("param", idParam), async (c) => {
-    requireCapability(c, "enquiries.delete");
+    const member = requireCapability(c, "enquiries.delete");
     const { id } = c.req.valid("param");
 
     await db.transaction(async (tx) => {
@@ -140,7 +141,10 @@ export const customerRoutes = new Hono<AdminEnv>()
       if (!current) throw new NotFoundError("This customer could not be found.");
 
       // Enquiries (and their activity, by cascade) go with the person.
-      await tx.delete(tables.lead).where(eq(tables.lead.customerId, id));
+      const enquiries = await tx
+        .delete(tables.lead)
+        .where(eq(tables.lead.customerId, id))
+        .returning({ id: tables.lead.id, reference: tables.lead.reference });
       // The diary keeps the slot, without the person's details.
       await tx
         .update(tables.appointment)
@@ -159,6 +163,17 @@ export const customerRoutes = new Hono<AdminEnv>()
         .set({ reservation: sql`(${tables.vehicle.reservation} - 'note' - 'depositNote') || ${anonymous}::jsonb` })
         .where(sql`${tables.vehicle.reservation}->>'customerId' = ${id}`);
       await tx.delete(customer).where(eq(customer.id, id));
+      // That the erasure was carried out, for the record; none of what was erased.
+      await logDeletions(tx, [
+        { entity: "customer", entityId: id, reason: "erasure-request", deletedBy: member.id },
+        ...enquiries.map((row) => ({
+          entity: "enquiry" as const,
+          entityId: row.id,
+          reference: row.reference,
+          reason: "erasure-request",
+          deletedBy: member.id,
+        })),
+      ]);
     });
 
     return c.body(null, 204);
