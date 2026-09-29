@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import type { z } from "zod";
 
+import { describeError } from "@Stratford-city-motorcars-Ltd/db/errors";
 import { clientAddressFromHeaders } from "@Stratford-city-motorcars-Ltd/domain/rate-limit";
 
 import { resolveVehicleBySlug } from "@/lib/inventory/repository";
@@ -44,15 +45,38 @@ async function clientKey(): Promise<string | null> {
  * The car an enquiry is about comes from stock, never from the page that
  * posted it: the hidden fields are only a browser's word for which car it was
  * showing. The slug is resolved against current and previous slugs, and the
- * car's own title is stored. A slug that matches nothing keeps the slug and no
- * title at all, rather than a headline typed by whoever sent the form.
+ * car's own title is stored. A vehicle enquiry whose slug matches nothing keeps
+ * the slug and no title at all, rather than a headline typed by whoever sent
+ * the form; the admin flags it as a car we no longer list. A finance or part-
+ * exchange enquiry only names a car when it was linked from one, so a slug that
+ * matches nothing is dropped rather than shown in the admin as the car.
  */
 async function withStoredVehicle(lead: LeadInput): Promise<LeadInput> {
-  if (lead.kind !== "vehicle-enquiry") return lead;
-  const vehicle = await resolveVehicleBySlug(lead.vehicleSlug);
-  return vehicle
-    ? { ...lead, vehicleSlug: vehicle.slug, vehicleTitle: vehicle.title }
-    : { ...lead, vehicleTitle: "" };
+  if (lead.kind === "vehicle-enquiry") {
+    const vehicle = await stockVehicle(lead.vehicleSlug);
+    return vehicle
+      ? { ...lead, vehicleSlug: vehicle.slug, vehicleTitle: vehicle.title }
+      : { ...lead, vehicleTitle: "" };
+  }
+  if ((lead.kind === "finance" || lead.kind === "part-exchange") && lead.vehicleSlug) {
+    const vehicle = await stockVehicle(lead.vehicleSlug);
+    return { ...lead, vehicleSlug: vehicle?.slug };
+  }
+  return lead;
+}
+
+/**
+ * Stock unreadable (the database is down and nothing is cached) is treated as
+ * no match: the enquiry can still go out by email or webhook, and losing it
+ * over which car it named would be worse.
+ */
+async function stockVehicle(slug: string | undefined) {
+  try {
+    return await resolveVehicleBySlug(slug);
+  } catch (error) {
+    console.error("[leads] could not read stock to resolve the enquiry's car:", describeError(error));
+    return null;
+  }
 }
 
 /**
