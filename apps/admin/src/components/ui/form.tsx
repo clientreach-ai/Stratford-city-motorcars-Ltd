@@ -104,7 +104,8 @@ export function Field({
 
 export const controlClass =
   "w-full rounded-sm border border-input bg-surface-raised px-3 font-sans text-[0.9375rem] text-foreground sm:text-sm " +
-  "placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-400 " +
+  // The resting border (--input) is ink-500 for 3:1; hover goes darker still.
+  "placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-600 " +
   "focus:border-ink-900 focus:outline-none focus-visible:outline-none focus:ring-1 focus:ring-ink-900 " +
   "aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive " +
   "disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500";
@@ -202,7 +203,7 @@ export function Checkbox({
           disabled={disabled}
           onChange={(event) => onChange(event.target.checked)}
           aria-describedby={description ? `${id}-d` : undefined}
-          className="peer size-4.5 cursor-pointer appearance-none rounded-[1px] border border-input bg-surface-raised transition-colors checked:border-ink-950 checked:bg-ink-950 hover:border-ink-500 disabled:cursor-not-allowed disabled:opacity-45"
+          className="peer size-4.5 cursor-pointer appearance-none rounded-[1px] border border-input bg-surface-raised transition-colors checked:border-ink-950 checked:bg-ink-950 hover:border-ink-600 disabled:cursor-not-allowed disabled:opacity-45"
         />
         <svg
           aria-hidden
@@ -242,6 +243,7 @@ export function ChoiceGroup<T extends string>({
   label,
   control,
   className,
+  disabled,
 }: {
   value: T;
   onChange: (value: T) => void;
@@ -249,14 +251,17 @@ export function ChoiceGroup<T extends string>({
   label: string;
   control?: ControlProps;
   className?: string;
+  /** Shown but not changeable — by pointer or keyboard. */
+  disabled?: boolean;
 }) {
   return (
     <div
       role="radiogroup"
       aria-label={label}
       aria-describedby={control?.["aria-describedby"]}
+      aria-disabled={disabled || undefined}
       id={control?.id}
-      className={cn("flex flex-wrap border border-input bg-surface-raised p-0.5", className)}
+      className={cn("flex flex-wrap border border-input bg-surface-raised p-0.5", disabled && "opacity-60", className)}
     >
       {options.map((option) => {
         const active = option.value === value;
@@ -266,10 +271,11 @@ export function ChoiceGroup<T extends string>({
             type="button"
             role="radio"
             aria-checked={active}
+            disabled={disabled}
             onClick={() => onChange(option.value)}
             className={cn(
               "h-10 flex-1 px-3 text-[0.8125rem] whitespace-nowrap transition-colors sm:h-9",
-              active ? "bg-ink-950 text-bone" : "text-ink-700 hover:bg-ink-100",
+              active ? "bg-ink-950 text-bone" : "text-ink-700 enabled:hover:bg-ink-100",
             )}
           >
             {option.label}

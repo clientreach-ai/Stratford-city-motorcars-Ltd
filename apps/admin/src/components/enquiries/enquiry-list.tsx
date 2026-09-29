@@ -104,9 +104,9 @@ export function EnquiryList({ mode = "all" }: { mode?: "all" | "part-exchange" }
     pageSize: DEFAULT_PAGE_SIZE,
   };
 
-  const list = useQuery({ queryKey: queryKeys.enquiries(listQuery), queryFn: () => api.enquiries.list(listQuery), placeholderData: keepPreviousData });
-  const counts = useQuery({ queryKey: queryKeys.enquiryCounts({ kind }), queryFn: () => api.enquiries.counts({ kind }) });
-  const team = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
+  const list = useQuery({ queryKey: queryKeys.enquiries(listQuery), queryFn: ({ signal }) => api.enquiries.list(listQuery, { signal }), placeholderData: keepPreviousData });
+  const counts = useQuery({ queryKey: queryKeys.enquiryCounts({ kind }), queryFn: ({ signal }) => api.enquiries.counts({ kind }, { signal }) });
+  const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
   const members = new Map((team.data ?? []).map((member) => [member.id, member]));
 
   const filtered = Boolean(debouncedSearch.trim()) || handledBy !== "all" || valuation !== "all" || (!partExchange && kind !== "all");

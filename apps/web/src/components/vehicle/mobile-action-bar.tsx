@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { MessageSquare, Phone } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { useSite } from "@/components/site/site-provider";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { site } from "@/lib/site";
 
 /**
  * Sticky enquiry bar for phones.
@@ -26,36 +26,51 @@ export function MobileActionBar({
   formId?: string;
 }) {
   const [visible, setVisible] = useState(false);
+  const site = useSite();
 
   useEffect(() => {
     const form = document.getElementById(formId);
+    let formOnScreen = false;
+    let frame = 0;
 
+    const update = () => setVisible(window.scrollY > 380 && !formOnScreen);
+
+    // Scrolling only reads scrollY, at most once a frame. Whether the form is
+    // on screen comes from an observer, so the scroll path never forces layout.
     const onScroll = () => {
-      const scrolledEnough = window.scrollY > 380;
-      let formOnScreen = false;
-      if (form) {
-        const rect = form.getBoundingClientRect();
-        formOnScreen = rect.top < window.innerHeight && rect.bottom > 0;
-      }
-      setVisible(scrolledEnough && !formOnScreen);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
     };
 
-    onScroll();
+    const observer = new IntersectionObserver(([entry]) => {
+      formOnScreen = entry?.isIntersecting ?? false;
+      update();
+    });
+    if (form) observer.observe(form);
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
     return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
     };
   }, [formId]);
 
   return (
     <div
       data-surface="dark"
+      // The footer looks for this to leave room beneath its last line.
+      data-mobile-action-bar
+      // Off screen is not the same as gone: without `inert` the hidden bar's
+      // links stayed in the tab order and were still read out.
+      aria-hidden={!visible}
+      inert={!visible}
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t border-bone/12 bg-ink-950/97 backdrop-blur-sm lg:hidden",
         "transition-transform duration-300 ease-[var(--ease-out-expo)]",
-        "pb-[env(safe-area-inset-bottom)]",
+        // Clears the home indicator, and the notch in landscape.
+        "pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
         visible ? "translate-y-0" : "translate-y-full",
       )}
     >

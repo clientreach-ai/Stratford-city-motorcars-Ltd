@@ -49,6 +49,19 @@ if (typeof document !== "undefined") {
   );
 }
 
+/**
+ * Open dialogs holding the page still. Counted, because a confirmation can
+ * open over a sheet, and closing it must not set the page scrolling under the
+ * sheet that is still open.
+ */
+let scrollLocks = 0;
+function lockScroll() {
+  if (scrollLocks++ === 0) document.documentElement.style.overflow = "hidden";
+}
+function unlockScroll() {
+  if (--scrollLocks === 0) document.documentElement.style.overflow = "";
+}
+
 const variantClass: Record<Variant, string> = {
   // `h-fit`, not `h-auto`: the browser pins a dialog top and bottom, and an auto
   // height then fills the screen for two lines of text.
@@ -101,21 +114,24 @@ export function Dialog({
     const restoreFocus = () => {
       if (opener.current?.isConnected) opener.current.focus();
     };
-    if (open && !dialog.open) {
+    if (!open) {
+      if (dialog.open) {
+        dialog.close();
+        restoreFocus();
+      }
+      return;
+    }
+    if (!dialog.open) {
       const active = document.activeElement as HTMLElement | null;
       opener.current = active?.matches(RETURNABLE) ? active : lastFocused;
       dialog.showModal();
-      document.documentElement.style.overflow = "hidden";
       // Focus the requested control, or the dialog itself — never the first
       // link or button by accident, which would read as already selected.
       (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog).focus();
-    } else if (!open && dialog.open) {
-      dialog.close();
-      restoreFocus();
     }
+    lockScroll();
     return () => {
-      if (!open) return;
-      document.documentElement.style.overflow = "";
+      unlockScroll();
       // Still in the document means the branch above is about to close it.
       if (!dialog.isConnected) restoreFocus();
     };
@@ -201,16 +217,31 @@ const ConfirmContext = createContext<((options: ConfirmOptions) => Promise<boole
 /** One confirmation dialog for the admin: `if (await confirm({...})) …`. */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfirmState | null>(null);
+  // The question being asked, outside React's state so a second question can
+  // answer the first before replacing it.
+  const pending = useRef<ConfirmState | null>(null);
 
   const confirm = useCallback(
-    (options: ConfirmOptions) => new Promise<boolean>((resolve) => setState({ ...options, resolve })),
+    (options: ConfirmOptions) =>
+      new Promise<boolean>((resolve) => {
+        // Only one question at a time: an unanswered one counts as "no", rather
+        // than leaving whoever asked it waiting for good.
+        pending.current?.resolve(false);
+        pending.current = { ...options, resolve };
+        setState(pending.current);
+      }),
     [],
   );
 
   const settle = (ok: boolean) => {
-    state?.resolve(ok);
+    pending.current?.resolve(ok);
+    pending.current = null;
     setState(null);
   };
+
+  // A destructive confirmation starts on the safe answer, so Enter pressed out
+  // of habit does not delete anything.
+  const danger = state?.tone === "danger";
 
   return (
     <ConfirmContext value={confirm}>
@@ -222,10 +253,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         width="28rem"
         footer={
           <>
-            <Button variant="ghost" onClick={() => settle(false)}>
+            <Button variant="ghost" onClick={() => settle(false)} data-autofocus={danger || undefined}>
               {state?.cancelLabel ?? "Cancel"}
             </Button>
-            <Button variant={state?.tone === "danger" ? "danger" : "primary"} onClick={() => settle(true)} data-autofocus>
+            <Button variant={danger ? "danger" : "primary"} onClick={() => settle(true)} data-autofocus={danger ? undefined : true}>
               {state?.confirmLabel}
             </Button>
           </>

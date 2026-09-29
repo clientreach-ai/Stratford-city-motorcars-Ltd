@@ -10,7 +10,7 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import type { Site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 import { useNavStore } from "@/stores/nav";
 import { navItems } from "./nav-config";
 
@@ -101,8 +101,11 @@ export function SiteHeader({ site }: { site: Site }) {
               // Rendered 36px tall (≈121px wide) on phones and 44px (≈147px) from md.
               sizes="(min-width: 768px) 148px, 121px"
               // Above the fold but tiny and never the LCP element: load it
-              // straight away without a preload competing with the headline.
+              // straight away, behind the hero photograph. React preloads
+              // every eager <img> it renders in the document head unless it is
+              // marked low priority, which put the logo ahead of the LCP.
               loading="eager"
+              fetchPriority="low"
               className={cn(
                 "w-auto transition-[height] duration-500 ease-[var(--ease-out-expo)]",
                 scrolled ? "h-8 md:h-9" : "h-9 md:h-11",
@@ -196,7 +199,7 @@ function UtilityStrip({ site }: { site: Site }) {
             {site.phone.display}
           </a>
           <a
-            href={whatsappLinks.general}
+            href={whatsappLinksFor(site).general}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 tracking-wide transition-colors hover:text-whatsapp"
@@ -351,7 +354,9 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
 
         <div
           className={cn(
-            "container-page shrink-0 space-y-3 py-8 transition-opacity ease-[var(--ease-out-expo)]",
+            // Bottom padding grows to clear the home indicator where there is one.
+            "container-page shrink-0 space-y-3 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))]",
+            "transition-opacity ease-[var(--ease-out-expo)]",
             open ? "opacity-100 delay-500 duration-700" : "opacity-0 duration-200",
           )}
         >
@@ -365,7 +370,7 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
             {site.phone.display}
           </ExternalButtonLink>
           <ExternalButtonLink
-            href={whatsappLinks.general}
+            href={whatsappLinksFor(site).general}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"

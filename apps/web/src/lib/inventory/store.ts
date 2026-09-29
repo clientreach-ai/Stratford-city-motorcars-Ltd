@@ -1,5 +1,7 @@
 import "server-only";
 
+import { env } from "@Stratford-city-motorcars-Ltd/env/web";
+
 import type { VehicleRecord } from "./types";
 
 /**
@@ -13,10 +15,11 @@ import type { VehicleRecord } from "./types";
  *
  *  - `DATABASE_URL` set   → Postgres (read/write). The dashboard edits stock
  *                           and the public site reflects it.
- *  - `DATABASE_URL` unset → the seed records in `data.ts` (read-only). The
- *                           public site builds and runs without a database;
- *                           the dashboard explains that storage is not
- *                           connected.
+ *  - `DATABASE_URL` unset → the seed records in `data.ts` (read-only), for
+ *                           local development and previews only. The seed
+ *                           records are all drafts, so a production
+ *                           deployment refuses to build or start without a
+ *                           database (see packages/env/src/web.ts).
  *
  * Build and runtime must use the same `DATABASE_URL`, or pages prerendered from
  * one source will be served while the other is being edited.
@@ -45,9 +48,13 @@ export class SlugConflictError extends Error {
   }
 }
 
+/**
+ * Read through the validated environment, which is checked again when the
+ * server loads this module: a production deployment whose runtime has lost
+ * its database throws, instead of quietly serving the seed records.
+ */
 export function databaseUrl(): string | undefined {
-  const value = process.env.DATABASE_URL?.trim();
-  return value ? value : undefined;
+  return env.DATABASE_URL;
 }
 
 const globalForStore = globalThis as unknown as { __scmInventoryStore?: InventoryStore };

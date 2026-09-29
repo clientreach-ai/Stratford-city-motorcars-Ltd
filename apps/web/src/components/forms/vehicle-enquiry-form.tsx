@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState } from "react";
 import { Checkbox, Field, fieldProps, Honeypot, Input, Select, Textarea } from "@/components/ui/field";
 import { submitVehicleEnquiry } from "@/lib/forms/actions";
 import { PREFERRED_TIMES, REQUEST_TYPES, type FormState, type RequestType } from "@/lib/forms/options";
+import { londonToday } from "@/lib/forms/showroom-time";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
 import { useFormFeedbackFocus, useSubmissionKey } from "./use-form-feedback";
@@ -57,7 +58,7 @@ export function VehicleEnquiryForm({
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- today's date comes from the visitor's clock after hydration, so the server-rendered form never disagrees with it
-    setMinDate(new Date().toISOString().slice(0, 10));
+    setMinDate(londonToday());
     const fromHash = () => {
       if (window.location.hash === BOOK_VIEWING_HASH) setRequestType("viewing");
     };
@@ -100,7 +101,7 @@ export function VehicleEnquiryForm({
       {state.status === "unavailable" ? <UnavailablePanel message={state.message} /> : null}
 
       <fieldset>
-        <legend className="mb-3 font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+        <legend className="mb-3 font-roman text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
           What would you like to do?
         </legend>
         <div className="grid gap-2 sm:grid-cols-3">

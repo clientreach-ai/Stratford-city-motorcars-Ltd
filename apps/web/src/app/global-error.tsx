@@ -6,6 +6,11 @@ import { site } from "@/lib/site";
  * Last-resort error page, used only if the root layout itself fails. It
  * replaces the whole document, so it carries its own minimal styling and no
  * dependency on the app's components or fonts.
+ *
+ * For the same reason it quotes the confirmed phone number from `site.ts`
+ * rather than the saved one: with the root layout gone there is no provider to
+ * read, and a client component cannot fetch settings itself. A number that may
+ * be out of date still beats a page with no way to reach anyone.
  */
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (

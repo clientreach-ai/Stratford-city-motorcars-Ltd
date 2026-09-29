@@ -1,6 +1,7 @@
 import "server-only";
 
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import {
   availableVehicles,
@@ -15,6 +16,7 @@ import {
 
 import { getInventoryStore } from "./store";
 import type { PublicVehicle, VehicleFacets, VehicleQuery, VehicleRecord } from "./types";
+import { matchVehicleSlug, type VehicleLink } from "./vehicle-link";
 import { publicBlockers, toPublicVehicle } from "./visibility";
 
 /**
@@ -58,7 +60,14 @@ function warnWithheld(record: VehicleRecord): void {
   console.warn(`[inventory] ${record.id} (${record.slug}) is ${record.status} but withheld: ${codes.join(", ")}`);
 }
 
-async function loadPublicVehicles(): Promise<PublicVehicle[]> {
+/**
+ * Memoised for the length of one server render with React's `cache()`: a page
+ * asks for stock from several components (the homepage about six times), and
+ * without it each one re-read the cached records and re-mapped every car. The
+ * memo never outlives the request, so revalidating the `inventory` tag still
+ * reaches the next render through `loadRecords()`.
+ */
+const loadPublicVehicles = cache(async (): Promise<PublicVehicle[]> => {
   const records = await loadRecords();
   const now = Date.now();
   const visible: PublicVehicle[] = [];
@@ -70,7 +79,7 @@ async function loadPublicVehicles(): Promise<PublicVehicle[]> {
   }
 
   return visible;
-}
+});
 
 /** Cars currently for sale (published and not sold), in the default order. */
 export async function getAvailableVehicles(): Promise<PublicVehicle[]> {
@@ -99,9 +108,20 @@ export async function resolvePreviousSlug(slug: string): Promise<string | null> 
  * the page was asked to say.
  */
 export async function resolveVehicleBySlug(slug: string | null | undefined): Promise<PublicVehicle | null> {
-  if (!slug || !/^[a-z0-9-]{1,120}$/.test(slug)) return null;
-  const all = await loadPublicVehicles();
-  return all.find((vehicle) => vehicle.slug === slug || vehicle.previousSlugs.includes(slug)) ?? null;
+  return matchVehicleSlug(await loadPublicVehicles(), slug);
+}
+
+/**
+ * Every public car, reduced to what a `?vehicle=` link needs, for the finance
+ * and part-exchange forms to resolve the link in the browser against the same
+ * stock `resolveVehicleBySlug()` reads.
+ */
+export async function getVehicleLinks(): Promise<VehicleLink[]> {
+  return (await loadPublicVehicles()).map((vehicle) => ({
+    slug: vehicle.slug,
+    previousSlugs: vehicle.previousSlugs,
+    name: `${vehicle.year} ${vehicle.title}`,
+  }));
 }
 
 /** Slugs for `generateStaticParams`, so every public vehicle page prerenders. */

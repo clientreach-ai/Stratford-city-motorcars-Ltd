@@ -20,22 +20,48 @@ import { useConfirm } from "./dialog";
 /**
  * Unsaved-changes protection.
  *
- * An editor calls `useUnsavedChanges(isDirty)`. While anything is dirty,
- * closing or reloading the tab raises the browser's warning, and every admin
- * link (`GuardedLink`) asks before leaving.
+ * An editor calls `useUnsavedChanges(isDirty)` — as does a photograph still
+ * uploading. While anything is dirty, closing or reloading the tab raises the
+ * browser's warning, every admin link (`GuardedLink`) and signing out ask
+ * before leaving, and so does the browser's Back (or a swipe back on an
+ * iPhone).
+ *
+ * Back cannot be cancelled once pressed, so while the page is dirty it holds a
+ * spare history entry for this same address: Back uses that up without
+ * leaving, and the question is asked then. The spare entry is removed again
+ * once the page is clean.
  */
 
 type Guard = {
   mark: (key: string, dirty: boolean) => void;
   isDirty: () => boolean;
+  /** Asks whether to discard unsaved changes (true when there are none). Changes nothing. */
   confirmLeave: () => Promise<boolean>;
+  /**
+   * Goes to `href`, letting go of unsaved changes — for leaving by code once
+   * it is certain (after a delete, a copy, signing out, or a "yes" above).
+   */
+  leave: (href: Route, options?: { replace?: boolean }) => Promise<void>;
 };
 
 const GuardContext = createContext<Guard | null>(null);
 
+/** Marks the spare history entry. Next.js keeps its own keys beside it. */
+const SPARE = "__adminUnsaved";
+
+const onSpareEntry = () => (window.history.state as Record<string, unknown> | null)?.[SPARE] === true;
+
 export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
   const confirm = useConfirm();
   const dirty = useRef(new Set<string>());
+  /** The address the spare entry was added for. */
+  const spareFor = useRef<string | null>(null);
+  /** Our own step back off the spare entry, which is not the user leaving. */
+  const ownStep = useRef(false);
+  /** Waiting on that step, when leaving (see `leave`). */
+  const stepped = useRef<(() => void) | null>(null);
+  const asking = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -45,26 +71,107 @@ export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
 
-  const mark = useCallback((key: string, isDirty: boolean) => {
-    if (isDirty) dirty.current.add(key);
-    else dirty.current.delete(key);
+  /** Adds the spare entry while dirty, and takes it away once clean — only ever while this page is showing. */
+  const syncHistory = useCallback(() => {
+    const here = window.location.href;
+    if (dirty.current.size) {
+      if (!onSpareEntry()) window.history.pushState({ ...(window.history.state as object | null), [SPARE]: true }, "", here);
+      spareFor.current = here;
+      return;
+    }
+    if (onSpareEntry() && spareFor.current === here) {
+      ownStep.current = true;
+      window.history.back();
+    }
+    spareFor.current = null;
   }, []);
 
+  // Only asks. Nothing is let go until leaving is certain (see `leave`): a
+  // sign-out that fails, or a Back with nowhere to go, leaves the page — and
+  // its protection — as it was.
   const confirmLeave = useCallback(async () => {
     if (dirty.current.size === 0) return true;
-    const ok = await confirm({
+    asking.current = true;
+    return confirm({
       title: "Leave without saving?",
       body: "You have changes on this page that have not been saved. Leaving now discards them.",
       confirmLabel: "Discard changes",
       cancelLabel: "Keep editing",
       tone: "danger",
+    }).finally(() => {
+      asking.current = false;
     });
-    if (ok) dirty.current.clear();
-    return ok;
   }, [confirm]);
 
+  const leave = useCallback(
+    async (href: Route, { replace = false }: { replace?: boolean } = {}) => {
+      dirty.current.clear();
+      // Off the spare entry first, so the entry this page leaves behind is its
+      // own (or, replaced, none) rather than a stale copy one step back.
+      if (onSpareEntry() && spareFor.current === window.location.href) {
+        await new Promise<void>((resolve) => {
+          stepped.current = resolve;
+          ownStep.current = true;
+          window.history.back();
+          // Not worth waiting on for good if the browser never reports it.
+          setTimeout(resolve, 1000);
+        });
+      }
+      spareFor.current = null;
+      if (replace) router.replace(href);
+      else router.push(href);
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    // Capturing, so it runs before Next.js's own listener and can keep it
+    // from moving the app when the step back only used up the spare entry.
+    const onPopState = (event: PopStateEvent) => {
+      if (ownStep.current) {
+        ownStep.current = false;
+        event.stopImmediatePropagation();
+        stepped.current?.();
+        stepped.current = null;
+        return;
+      }
+      // Only a step from the spare entry back onto this same page can be
+      // caught; a jump further back has already left.
+      if (!spareFor.current || onSpareEntry() || window.location.href !== spareFor.current) return;
+      // Nothing on screen changes, so Next.js need not hear of it.
+      event.stopImmediatePropagation();
+      spareFor.current = null;
+      if (!dirty.current.size) {
+        // Saved since: the spare entry was all that was left, so carry on back.
+        window.history.back();
+        return;
+      }
+      // Hold the page again straight away, so a second Back while the
+      // question is open is caught too.
+      syncHistory();
+      if (asking.current) return;
+      void confirmLeave().then((ok) => {
+        // Past the spare entry and the step just caught. The page going away
+        // is what clears its changes; if this was the tab's first page there
+        // is nowhere to go, and it simply stays, still protected.
+        if (ok) window.history.go(-2);
+      });
+    };
+    window.addEventListener("popstate", onPopState, true);
+    return () => window.removeEventListener("popstate", onPopState, true);
+  }, [confirmLeave, syncHistory]);
+
+  const mark = useCallback(
+    (key: string, isDirty: boolean) => {
+      if (isDirty) dirty.current.add(key);
+      else dirty.current.delete(key);
+      syncHistory();
+    },
+    [syncHistory],
+  );
+
   const isDirty = useCallback(() => dirty.current.size > 0, []);
-  const guard = useMemo(() => ({ mark, isDirty, confirmLeave }), [mark, isDirty, confirmLeave]);
+  const guard = useMemo(() => ({ mark, isDirty, confirmLeave, leave }), [mark, isDirty, confirmLeave, leave]);
 
   return <GuardContext value={guard}>{children}</GuardContext>;
 }
@@ -92,7 +199,6 @@ export function GuardedLink({
   ...props
 }: Omit<ComponentProps<"a">, "href"> & { href: Route; prefetch?: boolean }) {
   const guard = useContext(GuardContext);
-  const router = useRouter();
   return (
     <Link
       href={href}
@@ -101,7 +207,7 @@ export function GuardedLink({
         if (!guard?.isDirty()) return;
         event.preventDefault();
         void guard.confirmLeave().then((ok) => {
-          if (ok) router.push(href);
+          if (ok) void guard.leave(href);
         });
       }}
       {...props}

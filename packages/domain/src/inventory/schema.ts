@@ -23,6 +23,9 @@ import {
  * Zod ends up in the browser bundle.
  */
 
+/** Photographs, videos and 360° links one car may hold. */
+export const MAX_VEHICLE_MEDIA = 120;
+
 const trimmed = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) =>
   z
@@ -183,7 +186,7 @@ export const vehicleRecordSchema = z.object({
   description: trimmed(6000),
   features: z.array(trimmed(80).min(1)).max(60),
 
-  media: z.array(z.discriminatedUnion("kind", [image, video, spin])).max(120),
+  media: z.array(z.discriminatedUnion("kind", [image, video, spin])).max(MAX_VEHICLE_MEDIA),
   coverImageId: mediaId.optional(),
 
   seoTitle: optionalText(70),
