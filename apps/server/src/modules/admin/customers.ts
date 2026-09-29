@@ -117,7 +117,9 @@ export const customerRoutes = new Hono<AdminEnv>()
     });
 
     const [rows, leads, appointments, vehicles] = await Promise.all([loadCustomers(), loadLeads(), loadAppointments(), listVehicles()]);
-    const row = rows.find((item) => item.id === c.req.valid("param").id)!;
+    const row = rows.find((item) => item.id === c.req.valid("param").id);
+    // Erased by someone else straight after this save.
+    if (!row) throw new NotFoundError("This customer could not be found.");
     return c.json(toCustomer(row, leads, appointments, vehicles) satisfies Customer);
   })
 
