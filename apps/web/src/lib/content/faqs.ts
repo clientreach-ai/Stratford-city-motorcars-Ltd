@@ -1,4 +1,4 @@
-import { site } from "../site";
+import type { Site } from "../site";
 
 export type FaqCategory = "Buying" | "Visiting" | "Finance" | "Part exchange";
 
@@ -26,8 +26,11 @@ export interface Faq {
  *
  * FAQ structured data is emitted only on pages where these questions are
  * visible.
+ *
+ * Built from the saved business details (`getSite()`), because some answers
+ * quote the hours and the address the owner can change in the admin.
  */
-export const faqs: Faq[] = [
+const faqsFor = (site: Site): Faq[] => [
   {
     id: "what-cars",
     question: "What cars do you sell?",
@@ -147,8 +150,8 @@ export const faqs: Faq[] = [
   },
 ];
 
-export function faqsByCategory(...categories: FaqCategory[]): Faq[] {
-  return faqs.filter((faq) => categories.includes(faq.category));
+export function faqsByCategory(site: Site, ...categories: FaqCategory[]): Faq[] {
+  return faqsFor(site).filter((faq) => categories.includes(faq.category));
 }
 
-export const homeFaqs = (): Faq[] => faqs.filter((faq) => faq.home);
+export const homeFaqs = (site: Site): Faq[] => faqsFor(site).filter((faq) => faq.home);

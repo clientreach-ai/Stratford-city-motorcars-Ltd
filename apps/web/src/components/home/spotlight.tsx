@@ -10,6 +10,7 @@ import { SplitText } from "@/components/ui/split-text";
 import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
 import { formatMileage, formatVehiclePrice } from "@/lib/format";
 import type { PublicVehicle } from "@/lib/inventory/types";
+import { getSite } from "@/lib/settings";
 import { whatsappForVehicle } from "@/lib/whatsapp";
 
 /**
@@ -21,7 +22,8 @@ import { whatsappForVehicle } from "@/lib/whatsapp";
  * nothing more; every figure comes from the listing, and rows the listing does
  * not hold are simply left out.
  */
-export function Spotlight({ vehicle }: { vehicle: PublicVehicle }) {
+export async function Spotlight({ vehicle }: { vehicle: PublicVehicle }) {
+  const site = await getSite();
   const href = `/vehicles/${vehicle.slug}` as Route;
   // A different view from the hero's cover when the listing has one.
   const photo =
@@ -100,7 +102,7 @@ export function Spotlight({ vehicle }: { vehicle: PublicVehicle }) {
                 <ArrowRight />
               </ButtonLink>
               <ExternalButtonLink
-                href={whatsappForVehicle(vehicle)}
+                href={whatsappForVehicle(site, vehicle)}
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="whatsapp"

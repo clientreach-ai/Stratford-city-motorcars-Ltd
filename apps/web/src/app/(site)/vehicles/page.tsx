@@ -28,7 +28,9 @@ import {
 import { faqsByCategory } from "@/lib/content/faqs";
 import { searchVehicles } from "@/lib/inventory/repository";
 import type { VehicleQuery } from "@/lib/inventory/types";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import type { Site } from "@/lib/site";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
 
 /**
@@ -64,7 +66,7 @@ const crumbs = [
 export default async function VehiclesPage(props: PageProps<"/vehicles">) {
   const searchParams = await props.searchParams;
   const query = parseSearchParams(searchParams);
-  const { results, total, facets } = await searchVehicles(query);
+  const [{ results, total, facets }, site] = await Promise.all([searchVehicles(query), getSite()]);
 
   const activeCount = countActiveFilters(query);
   const summary = describeQuery(query, facets);
@@ -168,7 +170,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                       ))}
                     </div>
                   ) : hasStock ? (
-                    <NoMatches />
+                    <NoMatches site={site} />
                   ) : (
                     <StockEmptyState />
                   )}
@@ -226,7 +228,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
           pages that answer them properly, rather than as a wall of text under
           the cars. */}
       <FaqSection
-        faqs={faqsByCategory("Buying").slice(0, 4)}
+        faqs={faqsByCategory(site, "Buying").slice(0, 4)}
         eyebrow="Buying from us"
         title="Questions about buying"
         lede="Anything else, just ask — by phone, WhatsApp or the enquiry form on each car's page."
@@ -344,7 +346,7 @@ function Pagination({
 }
 
 /** Filters that match nothing, while stock exists: point back at a person. */
-function NoMatches() {
+function NoMatches({ site }: { site: Site }) {
   return (
     <div className="mt-6 border border-[var(--border)] px-6 py-16 text-center md:py-20">
       <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
@@ -361,7 +363,7 @@ function NoMatches() {
         <TextLink href="/vehicles" arrow={false}>
           Clear filters
         </TextLink>
-        <ExternalTextLink href={whatsappLinks.sourcing} target="_blank" rel="noopener noreferrer">
+        <ExternalTextLink href={whatsappLinksFor(site).sourcing} target="_blank" rel="noopener noreferrer">
           Tell us what you want on WhatsApp
         </ExternalTextLink>
       </div>

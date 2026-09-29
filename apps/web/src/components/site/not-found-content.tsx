@@ -3,8 +3,8 @@ import { Phone } from "lucide-react";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { Container, Eyebrow } from "@/components/ui/section";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /**
  * The 404 body, shared by the site-level and global not-found pages.
@@ -12,7 +12,9 @@ import { whatsappLinks } from "@/lib/whatsapp";
  * Cars sell and listings disappear, so a 404 here is a normal event rather
  * than an error — it should route the visitor back to stock, not apologise.
  */
-export function NotFoundContent() {
+export async function NotFoundContent() {
+  const site = await getSite();
+
   return (
     <section data-surface="dark" className="bg-ink-950 text-bone">
       <Container className="flex min-h-[70vh] flex-col items-center justify-center py-24 text-center">
@@ -40,7 +42,7 @@ export function NotFoundContent() {
             View our stock
           </ButtonLink>
           <ExternalButtonLink
-            href={whatsappLinks.sourcing}
+            href={whatsappLinksFor(site).sourcing}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"
