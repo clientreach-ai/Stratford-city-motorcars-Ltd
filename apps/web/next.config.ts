@@ -7,6 +7,20 @@ import type { NextConfig } from "next";
  */
 const mediaPublicBase = process.env.MEDIA_PUBLIC_BASE_URL?.trim();
 
+/** The canonical origin (see src/lib/site.ts, which reads the same setting). */
+const canonical = new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.stratfordcitymotorcars.co.uk");
+
+/**
+ * Vercel serves every deployment on *.vercel.app as well as on the site's own
+ * domain. In production those addresses redirect to the canonical origin, so
+ * search engines see one site rather than two copies of it. /api stays
+ * reachable on them: the API signs its cache-refresh calls, and a redirect to
+ * another host would drop the signature. Preview deployments are left alone
+ * but kept out of search results.
+ */
+const vercelEnv = process.env.VERCEL_ENV;
+const redirectVercelHosts = vercelEnv === "production" && !canonical.hostname.endsWith(".vercel.app");
+
 /**
  * Baseline security headers for every response. The Content-Security-Policy
  * sets only directives that cannot break the app — no framing by other sites,
@@ -35,6 +49,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      ...(vercelEnv === "preview" ? [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }] : []),
     ];
   },
 
@@ -49,6 +64,16 @@ const nextConfig: NextConfig = {
       { source: "/sales", destination: "/vehicles", permanent: true },
       { source: "/used-cars-stratford", destination: "/vehicles", permanent: true },
       { source: "/mission", destination: "/about", permanent: true },
+      ...(redirectVercelHosts
+        ? [
+            {
+              source: "/:path((?!api/).*)",
+              has: [{ type: "host" as const, value: ".*\\.vercel\\.app" }],
+              destination: `${canonical.origin}/:path`,
+              permanent: true,
+            },
+          ]
+        : []),
     ];
   },
 
