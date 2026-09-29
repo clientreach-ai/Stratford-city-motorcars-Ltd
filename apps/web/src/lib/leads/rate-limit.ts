@@ -18,3 +18,8 @@ const submissions = createSlidingWindow({ windowMs: 10 * 60 * 1000, max: 6 });
 export function allowSubmission(clientKey: string | null, now = Date.now()): boolean {
   return submissions.hit(clientKey, now) === 0;
 }
+
+/** Hands back the slot an attempt took, for a submission that was never delivered. */
+export function refundSubmission(clientKey: string | null): void {
+  submissions.undo(clientKey);
+}
