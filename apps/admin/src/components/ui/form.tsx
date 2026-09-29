@@ -242,6 +242,7 @@ export function ChoiceGroup<T extends string>({
   label,
   control,
   className,
+  disabled,
 }: {
   value: T;
   onChange: (value: T) => void;
@@ -249,14 +250,17 @@ export function ChoiceGroup<T extends string>({
   label: string;
   control?: ControlProps;
   className?: string;
+  /** Shown but not changeable — by pointer or keyboard. */
+  disabled?: boolean;
 }) {
   return (
     <div
       role="radiogroup"
       aria-label={label}
       aria-describedby={control?.["aria-describedby"]}
+      aria-disabled={disabled || undefined}
       id={control?.id}
-      className={cn("flex flex-wrap border border-input bg-surface-raised p-0.5", className)}
+      className={cn("flex flex-wrap border border-input bg-surface-raised p-0.5", disabled && "opacity-60", className)}
     >
       {options.map((option) => {
         const active = option.value === value;
@@ -266,10 +270,11 @@ export function ChoiceGroup<T extends string>({
             type="button"
             role="radio"
             aria-checked={active}
+            disabled={disabled}
             onClick={() => onChange(option.value)}
             className={cn(
               "h-10 flex-1 px-3 text-[0.8125rem] whitespace-nowrap transition-colors sm:h-9",
-              active ? "bg-ink-950 text-bone" : "text-ink-700 hover:bg-ink-100",
+              active ? "bg-ink-950 text-bone" : "text-ink-700 enabled:hover:bg-ink-100",
             )}
           >
             {option.label}

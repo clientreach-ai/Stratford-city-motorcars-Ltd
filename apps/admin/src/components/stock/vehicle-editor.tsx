@@ -261,11 +261,20 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
     if (current) await actions.publish(current);
   };
 
+  const [reloading, setReloading] = useState(false);
   const reload = async () => {
-    const latest = await client.fetchQuery({ queryKey: queryKeys.vehicle(vehicle.id), queryFn: ({ signal }) => api.stock.get(vehicle.id, { signal }) });
-    accept(latest);
-    setConflict(false);
-    notify.info("Loaded the latest version", "Your unsaved changes were discarded.");
+    setReloading(true);
+    try {
+      // Always from the server: the cached copy is the very version that conflicted.
+      const latest = await client.fetchQuery({ queryKey: queryKeys.vehicle(vehicle.id), queryFn: ({ signal }) => api.stock.get(vehicle.id, { signal }), staleTime: 0 });
+      accept(latest);
+      setConflict(false);
+      notify.info("Loaded the latest version", "Your unsaved changes were discarded.");
+    } catch (error) {
+      notify.error("Their version could not be loaded", errorMessage(error));
+    } finally {
+      setReloading(false);
+    }
   };
 
   const name = vehicleName(draft);
@@ -330,7 +339,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
           className="mb-6"
           title="Someone else saved this car after you opened it"
           action={
-            <Button size="sm" onClick={() => void reload()}>
+            <Button size="sm" onClick={() => void reload()} busy={reloading}>
               Load their version
             </Button>
           }
@@ -400,7 +409,8 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                       { value: "price", label: "Cash price" },
                       { value: "poa", label: "Price on application" },
                     ]}
-                    className={cn("sm:max-w-md", !canEdit && "pointer-events-none opacity-60")}
+                    disabled={!canEdit}
+                    className="sm:max-w-md"
                   />
                 )}
               </Field>
@@ -518,7 +528,8 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                     value={draft.hpiStatus}
                     onChange={(value: HpiStatus) => set("hpiStatus", value)}
                     options={HPI_STATUSES.map((value) => ({ value, label: value === "clear" ? "Clear" : value === "not-checked" ? "Not checked" : "Not known" }))}
-                    className={cn("sm:max-w-md", !canEdit && "pointer-events-none opacity-60")}
+                    disabled={!canEdit}
+                    className="sm:max-w-md"
                   />
                 )}
               </Field>
@@ -706,7 +717,7 @@ function TriState({
         { value: "no", label: "No" },
         { value: "unknown", label: "Not known" },
       ]}
-      className={cn(disabled && "pointer-events-none opacity-60")}
+      disabled={disabled}
     />
   );
 }
