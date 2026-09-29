@@ -75,11 +75,12 @@ export function buildSite(business: BusinessDetails = DEFAULT_BUSINESS) {
     tagline: "Sports and luxury cars from a small family-owned business in Stratford, East London",
 
     /**
-     * Canonical origin. Override per environment with NEXT_PUBLIC_SITE_URL —
-     * the client currently trades on the .com; their old markup referenced a
-     * .co.uk that does not resolve.
+     * Canonical origin. Override per environment with NEXT_PUBLIC_SITE_URL.
+     * The site is launched on the .co.uk while the .com's DNS is still with the
+     * old site. An empty value falls back too: a blank setting would otherwise
+     * give relative canonicals, sitemap and robots URLs.
      */
-    url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.stratfordcitymotorcars.com").replace(/\/$/, ""),
+    url: (process.env.NEXT_PUBLIC_SITE_URL || "https://www.stratfordcitymotorcars.co.uk").replace(/\/$/, ""),
 
     phone: {
       display: business.phoneDisplay,

@@ -24,7 +24,7 @@ import { formatMileage, formatPrice, formatVehiclePrice } from "@/lib/format";
 import { getRelatedVehicles, getVehicleBySlug, getVehicleSlugs, resolvePreviousSlug } from "@/lib/inventory/repository";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { reservationOffer } from "@/lib/reservations";
-import { breadcrumbSchema, pageMetadata, vehicleMetaDescription, vehicleSchema } from "@/lib/seo";
+import { breadcrumbSchema, pageMetadata, vehicleMetaDescription, vehicleSchema, vehicleShareImage } from "@/lib/seo";
 import { getSite } from "@/lib/settings";
 import type { Site } from "@/lib/site";
 import { whatsappForVehicle, whatsappLinksFor } from "@/lib/whatsapp";
@@ -60,7 +60,7 @@ export async function generateMetadata(props: PageProps<"/vehicles/[slug]">): Pr
       (vehicle.isSold ? `${name} — Sold` : `${name} — ${formatVehiclePrice(vehicle)}`),
     description: vehicle.seoDescription ?? vehicleMetaDescription(vehicle),
     path: `/vehicles/${vehicle.slug}`,
-    image: vehicle.cover.src,
+    image: vehicleShareImage(vehicle),
     imageAlt: vehicle.cover.alt,
   });
 }

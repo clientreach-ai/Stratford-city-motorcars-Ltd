@@ -1,9 +1,10 @@
 import { desc, eq, tables, type Database } from "@Stratford-city-motorcars-Ltd/db";
+import { ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import type { Reservation, SaleRecord } from "@Stratford-city-motorcars-Ltd/core/stock";
 import type { VehicleRecord } from "@Stratford-city-motorcars-Ltd/core/vehicle";
 import { parseVehicleRecord } from "@Stratford-city-motorcars-Ltd/domain/inventory/schema";
 
-import { db } from "../../lib/db";
+import { db, isUniqueViolation } from "../../lib/db";
 
 /**
  * Vehicle persistence. The same `vehicle` table the website reads: each record
@@ -104,6 +105,14 @@ export async function writeVehicle(stored: StoredVehicle, executor: Executor = d
         sale: values.sale,
         updatedAt: values.updatedAt,
       },
+    })
+    .catch((error: unknown) => {
+      // Callers check the slug first; this is another car taking it in the
+      // moment between that check and this write.
+      if (isUniqueViolation(error, "vehicle_slug_unique")) {
+        throw new ValidationError({ slug: "Another car already uses (or used) this web address." });
+      }
+      throw error;
     });
   return { record, reservation: stored.reservation, sale: stored.sale };
 }

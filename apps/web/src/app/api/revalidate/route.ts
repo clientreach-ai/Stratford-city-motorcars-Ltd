@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 
+import { env } from "@Stratford-city-motorcars-Ltd/env/web";
 import { revalidateTag } from "next/cache";
 
 import { INVENTORY_CACHE_TAG } from "@/lib/inventory/repository";
@@ -17,7 +18,7 @@ import { SETTINGS_CACHE_TAG } from "@/lib/settings";
  * Disabled (404) unless REVALIDATE_SECRET is set.
  */
 export async function POST(request: Request) {
-  const secret = process.env.REVALIDATE_SECRET?.trim();
+  const secret = env.REVALIDATE_SECRET;
   if (!secret) return new Response(null, { status: 404 });
 
   const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";

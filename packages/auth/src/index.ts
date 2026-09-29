@@ -1,4 +1,4 @@
-import { getDb } from "@Stratford-city-motorcars-Ltd/db";
+import { eq, getDb } from "@Stratford-city-motorcars-Ltd/db";
 import * as schema from "@Stratford-city-motorcars-Ltd/db/schema/auth";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { betterAuth } from "better-auth";
@@ -7,11 +7,12 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 /**
  * Staff authentication for the dealership admin.
  *
- * Accounts are for dealership staff only, so public sign-up is off: the
- * `/api/auth/sign-up/email` endpoint refuses every request. Members join
- * through an invitation from the owner, and the first owner is created from the
- * command line (`pnpm --filter server staff:create`), which builds a separate
- * instance with `allowSignUp`.
+ * Accounts are for dealership staff only, so public sign-up is off. The API
+ * does not expose Better Auth's own endpoints at all: the admin signs in and
+ * out through /api/admin/session, which calls `auth.api` directly. Members are
+ * added by the owner, and the first owner is created from the command line
+ * (`pnpm --filter server staff:create`), which builds a separate instance with
+ * `allowSignUp`.
  *
  * `role` and `status` are admin fields (packages/core/src/team.ts); they can
  * never be set through Better Auth's own endpoints.
@@ -68,6 +69,24 @@ export function createAuth(options: { allowSignUp?: boolean } = {}) {
         sameSite: production ? "none" : "lax",
         secure: production,
         httpOnly: true,
+      },
+    },
+    databaseHooks: {
+      session: {
+        create: {
+          // Only an active member may hold a session, however it is created:
+          // a deactivated or invited account is refused here even if its
+          // password is right. A row not found yet (sign-up creating the user
+          // in the same transaction) is left to the foreign key.
+          before: async (created) => {
+            const [member] = await db
+              .select({ status: schema.user.status })
+              .from(schema.user)
+              .where(eq(schema.user.id, created.userId))
+              .limit(1);
+            if (member && member.status !== "active") return false;
+          },
+        },
       },
     },
     plugins: [],

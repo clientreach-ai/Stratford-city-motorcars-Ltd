@@ -53,13 +53,26 @@ export function getDb(connectionString: string): Database {
   return db;
 }
 
+/**
+ * Ends the process's pool once its queries have finished, for a clean
+ * shutdown: Postgres sees the connections closed rather than dropped. A later
+ * `getDb` call opens a new pool.
+ */
+export async function closeDb(): Promise<void> {
+  const cached = globalForDb.__scmDb;
+  if (!cached) return;
+  globalForDb.__scmDb = undefined;
+  // drizzle keeps the pool it was given as `$client`.
+  await (cached.db as Database & { $client: Pool }).$client.end();
+}
+
 export * as tables from "./schema";
 
 /**
  * Query helpers from the same drizzle-orm instance as the tables. Consumers
  * import them from here so there is never a second copy with incompatible types.
  */
-export { and, asc, count, desc, eq, gte, inArray, lt, ne, or, sql, type SQL } from "drizzle-orm";
+export { and, asc, count, desc, eq, gte, inArray, isNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
 
 export { emailKey, phoneKey, recordWebsiteEnquiry, type WebsiteEnquiry } from "./enquiries";
-export { describeError, errorFrames } from "./errors";
+export { describeError, errorFrames, isUniqueViolation } from "./errors";
