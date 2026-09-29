@@ -8,7 +8,7 @@ import { clientAddressFromHeaders } from "@Stratford-city-motorcars-Ltd/domain/r
 
 import { resolveVehicleBySlug } from "@/lib/inventory/repository";
 import { deliverLead } from "@/lib/leads/deliver";
-import { allowSubmission } from "@/lib/leads/rate-limit";
+import { allowSubmission, refundSubmission } from "@/lib/leads/rate-limit";
 
 import type { FormState } from "./options";
 import {
@@ -101,12 +101,17 @@ async function submit<Schema extends z.ZodType<LeadInput>>(
     return { status: "invalid", fieldErrors: flattened.fieldErrors as Record<string, string[]>, values };
   }
 
-  if (!allowSubmission(await clientKey())) {
+  const client = await clientKey();
+  if (!allowSubmission(client)) {
     return { status: "unavailable", message: THROTTLED_MESSAGE, values };
   }
 
   const result = await deliverLead(await withStoredVehicle(parsed.data));
   if (!result.delivered) {
+    // Nothing reached the dealership, so the attempt shouldn't count: a
+    // customer retrying through an outage would otherwise be told they had
+    // sent several messages.
+    refundSubmission(client);
     return { status: "unavailable", message: UNAVAILABLE_MESSAGE, values };
   }
 
