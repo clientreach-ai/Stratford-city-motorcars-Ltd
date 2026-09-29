@@ -1,6 +1,6 @@
 import { ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import type { PhotoVariantFormat } from "@Stratford-city-motorcars-Ltd/core/vehicle";
-import { meetsPhotoSize, MINIMUM_PHOTO_SIZE } from "@Stratford-city-motorcars-Ltd/core/visibility";
+import { MAX_PHOTO_BYTES, meetsPhotoSize, MINIMUM_PHOTO_SIZE } from "@Stratford-city-motorcars-Ltd/core/visibility";
 import { availableParallelism } from "node:os";
 import { deflateSync } from "node:zlib";
 
@@ -52,7 +52,6 @@ import sharp, { type Sharp } from "sharp";
 sharp.cache(false);
 sharp.concurrency(Math.min(2, availableParallelism()));
 
-export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
 /** Guards against decompression bombs: about a 200-megapixel photograph. */
 const MAX_INPUT_PIXELS = 200_000_000;
 /**
