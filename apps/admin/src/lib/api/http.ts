@@ -67,7 +67,8 @@ function toQuery(params: object): string {
   return text ? `?${text}` : "";
 }
 
-async function toError(response: Response, write: boolean): Promise<Error> {
+/** `unanswered` is what to say when nobody can tell whether the request was carried out. */
+async function toError(response: Response, unanswered: string): Promise<Error> {
   const body = ((await response.json().catch(() => null)) ?? {}) as ErrorBody;
   switch (response.status) {
     case 401:
@@ -80,13 +81,16 @@ async function toError(response: Response, write: boolean): Promise<Error> {
       return new ConflictError(body.error, body.currentUpdatedAt);
     case 422:
       return new ValidationError(body.fields, body.error, body.issues);
+    case 413:
+      // Too large is a refusal of what was sent, like any other rule.
+      return new ValidationError(body.fields, body.error);
     default:
       // The API's own words when it sent some — including a 503 when it is too
       // busy for another photograph. Without them the answer came from
       // something in between, such as a proxy giving up on a sleeping server,
       // and nobody can say whether the request was carried out.
       if (body.error) return new Error(body.error);
-      return new Error(response.status >= 500 ? noAnswer(write) : "Something went wrong on the server. Nothing was changed.");
+      return new Error(response.status >= 500 ? unanswered : "Something went wrong on the server. Nothing was changed.");
   }
 }
 
@@ -139,7 +143,7 @@ export function createHttpApi(origin: string): AdminApi {
         if (limit.timedOut()) throw new Error(noAnswer(write));
         throw new Error("Could not reach the server. Check your connection and try again.");
       }
-      if (!response.ok) throw await toError(response, write);
+      if (!response.ok) throw await toError(response, noAnswer(write));
       if (response.status === 204) return undefined as T;
       try {
         return (await response.json()) as T;
@@ -239,7 +243,7 @@ export function createHttpApi(origin: string): AdminApi {
               status: xhr.status,
               headers: { "content-type": "application/json" },
             });
-            toError(response, true).then(reject, () => reject(new Error(NO_ANSWER_UPLOAD)));
+            toError(response, NO_ANSWER_UPLOAD).then(reject, () => reject(new Error(NO_ANSWER_UPLOAD)));
           };
           wait(UPLOAD_STALL_TIMEOUT);
           xhr.send(form);

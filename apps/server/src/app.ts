@@ -1,4 +1,5 @@
 import { auth } from "@Stratford-city-motorcars-Ltd/auth";
+import { MAX_PHOTO_BYTES } from "@Stratford-city-motorcars-Ltd/core/visibility";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -12,7 +13,6 @@ import { loadSession, sameOriginWrites } from "./middleware/auth";
 import { adminRoutes } from "./modules/admin";
 import { healthRoutes } from "./modules/health/routes";
 import { mediaRoutes } from "./modules/media/routes";
-import { MAX_PHOTO_BYTES } from "./modules/media/photos";
 import { publicVehicleRoutes } from "./modules/vehicles/public-routes";
 import type { AppEnv } from "./types";
 

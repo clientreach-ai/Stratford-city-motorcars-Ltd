@@ -17,6 +17,7 @@ import {
   listingRecommendations,
   passwordProblem,
   meetsPhotoSize,
+  MAX_PHOTO_BYTES,
   MINIMUM_PHOTO_SIZE,
   statusAfterRestore,
   stockActionRefusal,
@@ -731,7 +732,7 @@ export function createMockApi(): AdminApi {
         if (!["image/jpeg", "image/png", "image/webp", "image/avif", "image/heic", "image/heif"].includes(file.type)) {
           throw new ValidationError({ file: `“${file.name}” is not a JPEG, PNG, WebP, AVIF or HEIC photograph.` }, "This file type is not supported.");
         }
-        if (file.size > 25 * 1024 * 1024) {
+        if (file.size > MAX_PHOTO_BYTES) {
           throw new ValidationError({ file: `“${file.name}” is larger than 25 MB.` }, "This photograph is too large.");
         }
         const processed = await processImage(file, onProgress);
