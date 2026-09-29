@@ -6,7 +6,7 @@ import { WhatsAppIcon } from "@/components/ui/icons";
 import { getAvailableVehicles } from "@/lib/inventory/repository";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { getMapLinks, getSite } from "@/lib/settings";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 type FooterHref = React.ComponentProps<typeof Link>["href"];
 
@@ -76,7 +76,7 @@ export async function SiteFooter() {
                 {site.phone.display}
               </a>
               <a
-                href={whatsappLinks.general}
+                href={whatsappLinksFor(site).general}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex min-h-11 items-center gap-2.5 border border-bone/20 px-4 py-2.5 text-xs tracking-wide transition-colors hover:border-whatsapp hover:bg-whatsapp hover:text-whatsapp-ink"

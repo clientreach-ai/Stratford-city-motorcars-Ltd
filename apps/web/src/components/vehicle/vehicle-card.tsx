@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
+import { getSite } from "@/lib/settings";
 import { whatsappForVehicle } from "@/lib/whatsapp";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -20,7 +21,7 @@ import { CardPhoto } from "@/components/vehicle/card-photo";
  * underlines itself and the arrow tile fills — three quiet signals that the
  * whole card is live, none of which moves the layout.
  */
-export function VehicleCard({
+export async function VehicleCard({
   vehicle,
   priority = false,
   sizes = "(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 92vw",
@@ -33,6 +34,7 @@ export function VehicleCard({
   sizes?: string;
   className?: string;
 }) {
+  const site = await getSite();
   const { cover, isSold } = vehicle;
   // The second look on hover: the next exterior shot, else the interior.
   const alternate =
@@ -99,7 +101,7 @@ export function VehicleCard({
             <div className="flex items-center gap-1.5">
               {!isSold ? (
                 <a
-                  href={whatsappForVehicle(vehicle)}
+                  href={whatsappForVehicle(site, vehicle)}
                   target="_blank"
                   rel="noopener noreferrer"
                   // Above the stretched link so it stays independently clickable.

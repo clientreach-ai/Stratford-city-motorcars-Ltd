@@ -3,7 +3,7 @@ import { Car, Mail, MapPin, Phone, TrainFront } from "lucide-react";
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { getMapLinks, getSite } from "@/lib/settings";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /**
  * Showroom details: the map and how to travel here, beside the address, phone
@@ -90,7 +90,7 @@ export async function ShowroomPanel({
               Call the showroom
             </ExternalButtonLink>
             <ExternalButtonLink
-              href={whatsappLinks.bookViewing}
+              href={whatsappLinksFor(site).bookViewing}
               target="_blank"
               rel="noopener noreferrer"
               variant="whatsapp"
