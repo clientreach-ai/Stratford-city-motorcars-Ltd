@@ -422,7 +422,7 @@ modules/admin          the admin API: session, overview, stock, enquiries,
 | `GET /media/:vehicleId/:file` | public | Stored photos when the bucket has no public URL |
 | `GET /api/vehicles`, `/featured`, `/makes`, `/:slug`, `/:slug/related` | public | Stock that passes the publishing rules (`{ data, meta }`); old slugs 308 |
 | `/api/admin/*` | admin | Everything in [the admin contract](./STRATFORD_ADMIN_CONTRACT.md), with role checks |
-| `/api/auth/*` | none | Better Auth, used by `/api/admin/session`; sign-up disabled |
+| `/api/auth/*` | — | Not mounted: `/api/admin/session` calls Better Auth in-process, and only active members can hold a session |
 
 - **Accounts**: members have a role (`owner`, `staff`) and a status (`invited`,
   `active`, `deactivated`) on `user`. The first owner comes from

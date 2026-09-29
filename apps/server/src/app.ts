@@ -1,4 +1,3 @@
-import { auth } from "@Stratford-city-motorcars-Ltd/auth";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -21,11 +20,15 @@ import type { AppEnv } from "./types";
  *
  *   /health               uptime check
  *   /media/*              stored photographs (when the bucket has no public URL)
- *   /api/auth/*           Better Auth (used by /api/admin/session)
  *   /api/vehicles/*       public stock
  *   /api/admin/*          the admin API (docs/STRATFORD_ADMIN_CONTRACT.md)
  *
  * Error responses follow lib/http.ts.
+ *
+ * Better Auth's own endpoints (/api/auth/*) are deliberately not mounted: the
+ * admin uses none of them, and they would let an account bypass the admin's
+ * rules — change its name or password, or list its sessions — outside the
+ * team page. /api/admin/session calls `auth.api` in-process instead.
  */
 export function createApp() {
   const app = new Hono<AppEnv>();
@@ -56,8 +59,6 @@ export function createApp() {
   app.use("/api/*", (c, next) =>
     c.req.method === "POST" && /^\/api\/admin\/vehicles\/[^/]+\/media$/.test(c.req.path) ? photoLimit(c, next) : tooLarge(c, next),
   );
-
-  app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
   app.use("/api/*", sameOriginWrites, loadSession);
 
