@@ -29,7 +29,7 @@ import { Field, FieldGrid, Select, TextArea, TextInput } from "@/components/ui/f
 import { DefinitionList, EmptyState, ErrorState, LoadingBlock, LoadingRows, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { DataTable, rowLinkClass, type Column } from "@/components/ui/table";
 import { Pagination, SearchField, SegmentedFilter, Toolbar } from "@/components/ui/toolbar";
-import { GuardedLink, useUnsavedChanges } from "@/components/ui/unsaved";
+import { GuardedLink, useLeaveGuard, useUnsavedChanges } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
 import { formatDateTime, formatRelative, plural } from "@/lib/format";
 import { queryKeys, useAdminMutation } from "@/lib/query";
@@ -75,7 +75,7 @@ export function CustomerList() {
   const listQuery: CustomerListQuery = { filter, sort, search: debounced || undefined, page, pageSize: DEFAULT_PAGE_SIZE };
   const { data, isPending, error, refetch, isPlaceholderData } = useQuery({
     queryKey: queryKeys.customers(listQuery),
-    queryFn: () => api.customers.list(listQuery),
+    queryFn: ({ signal }) => api.customers.list(listQuery, { signal }),
     placeholderData: keepPreviousData,
   });
 
@@ -187,7 +187,7 @@ export function CustomerList() {
 }
 
 export function CustomerProfile({ id }: { id: string }) {
-  const query = useQuery({ queryKey: queryKeys.customer(id), queryFn: () => api.customers.get(id) });
+  const query = useQuery({ queryKey: queryKeys.customer(id), queryFn: ({ signal }) => api.customers.get(id, { signal }) });
   // Only when there is nothing to show: a background refresh that fails — or a
   // customer erased from this page — must not flash an error on the way out.
   if (query.error && !query.data) {
@@ -216,7 +216,7 @@ export function CustomerProfile({ id }: { id: string }) {
 function Profile({ detail }: { detail: CustomerDetail }) {
   const { customer, enquiries, appointments, purchases } = detail;
   const { can } = useSession();
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const [editing, setEditing] = useState(false);
   const [erasing, setErasing] = useState(false);
 
@@ -342,16 +342,16 @@ function Profile({ detail }: { detail: CustomerDetail }) {
         </aside>
       </div>
 
-      {erasing ? <EraseDialog customer={customer} onClose={() => setErasing(false)} onErased={() => router.replace(routes.customers)} /> : null}
+      {erasing ? <EraseDialog customer={customer} onClose={() => setErasing(false)} onErased={() => void leave(routes.customers, { replace: true })} /> : null}
     </PageBody>
   );
 }
 
 function EraseDialog({ customer, onClose, onErased }: { customer: Customer; onClose: () => void; onErased: () => void }) {
   const [typed, setTyped] = useState("");
+  // Failures are shown in the dialog: a toast would sit underneath it, unseen.
   const mutation = useAdminMutation(() => api.customers.erase(customer.id), {
     success: "Customer erased",
-    failure: "The customer was not erased",
     onSuccess: onErased,
   });
   const ready = typed.trim().toLowerCase() === customer.name.trim().toLowerCase();
@@ -382,6 +382,11 @@ function EraseDialog({ customer, onClose, onErased }: { customer: Customer; onCl
           {(c) => <TextInput {...c} value={typed} autoComplete="off" spellCheck={false} onChange={(event) => setTyped(event.target.value)} />}
         </Field>
         <p className="text-xs text-ink-600">Also remove them from anything held outside this system, such as WhatsApp chats or the enquiry email inbox.</p>
+        {mutation.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage(mutation.error)}
+          </p>
+        ) : null}
       </div>
     </Dialog>
   );

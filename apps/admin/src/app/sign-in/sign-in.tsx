@@ -15,9 +15,12 @@ import { SAMPLE_PASSWORD } from "@/lib/api/mock/fixtures";
 import { queryKeys } from "@/lib/query";
 import { useSessionQuery } from "@/lib/session";
 
-/** Only same-app paths are followed after sign-in; anything else goes to the overview. */
+/**
+ * Only same-app paths are followed after sign-in, with their query string (a
+ * filtered list, an open tab); anything else goes to the overview.
+ */
 function safeNext(value: string | null): Route {
-  return (value && /^\/[a-z0-9/_-]*$/i.test(value) && !value.startsWith("//") ? value : "/dashboard") as Route;
+  return (value && /^\/[a-z0-9/_-]*(\?[^#\s\\]*)?$/i.test(value) && !value.startsWith("//") ? value : "/dashboard") as Route;
 }
 
 export function SignIn() {

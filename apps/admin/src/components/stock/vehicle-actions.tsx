@@ -9,8 +9,8 @@ import {
   type SaveVehicleResult,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { routes } from "@/components/shell/routes";
@@ -18,6 +18,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Dialog, useConfirm } from "@/components/ui/dialog";
 import { Field, NumberInput, Select, TextArea, TextInput } from "@/components/ui/form";
 import { notify } from "@/components/ui/toast";
+import { useLeaveGuard } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
 import { dateKey } from "@/lib/format";
 import { queryKeys, useAdminMutation } from "@/lib/query";
@@ -44,10 +45,13 @@ type Run = (vehicle: AdminVehicle) => Promise<SaveVehicleResult>;
 export function useVehicleActions(options: { onChange?: (result: SaveVehicleResult) => void; onDiscard?: (vehicle: AdminVehicle) => void } = {}) {
   const { can } = useSession();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const [blocked, setBlocked] = useState<{ vehicle: AdminVehicle; issues: PublicationIssue[] } | null>(null);
   const [reserving, setReserving] = useState<AdminVehicle | null>(null);
   const [selling, setSelling] = useState<AdminVehicle | null>(null);
+  const [copying, setCopying] = useState(false);
+  // State alone lags a second press made before the next render.
+  const duplicating = useRef(false);
 
   const mutation = useAdminMutation(({ run, vehicle }: { run: Run; vehicle: AdminVehicle; success: string }) => run(vehicle), {
     success: undefined,
@@ -83,7 +87,7 @@ export function useVehicleActions(options: { onChange?: (result: SaveVehicleResu
   });
 
   const actions = {
-    busy: mutation.isPending || discarding.isPending,
+    busy: mutation.isPending || discarding.isPending || copying,
 
     publish: (vehicle: AdminVehicle) => perform(vehicle, (v) => api.stock.publish(v.id, version(v)), "Published — for sale on the website"),
 
@@ -173,12 +177,19 @@ export function useVehicleActions(options: { onChange?: (result: SaveVehicleResu
     },
 
     duplicate: async (vehicle: AdminVehicle) => {
+      // One copy per press, however often the menu item is chosen while the first is on its way.
+      if (duplicating.current) return;
+      duplicating.current = true;
+      setCopying(true);
       try {
         const copy = await api.stock.duplicate(vehicle.id);
         notify.success("Copy created as a draft", "Photographs, registration and history are not copied.");
-        router.push(routes.vehicle(copy.id));
+        await leave(routes.vehicle(copy.id));
       } catch (error) {
         notify.error("The copy was not created", errorMessage(error));
+      } finally {
+        duplicating.current = false;
+        setCopying(false);
       }
     },
 
@@ -257,7 +268,7 @@ function BlockedDialog({ vehicle, issues, onClose }: { vehicle: AdminVehicle; is
 function useCustomerOptions() {
   return useQuery({
     queryKey: queryKeys.customers({ picker: true }),
-    queryFn: () => api.customers.list({ sort: "name", pageSize: 500 }),
+    queryFn: ({ signal }) => api.customers.list({ sort: "name", pageSize: 500 }, { signal }),
     select: (page) => page.items,
   });
 }
@@ -384,7 +395,7 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
 
   const enquiries = useQuery({
     queryKey: queryKeys.enquiries({ vehicleId: vehicle.id, picker: true }),
-    queryFn: () => api.enquiries.list({ vehicleId: vehicle.id, status: "all", pageSize: 50 }),
+    queryFn: ({ signal }) => api.enquiries.list({ vehicleId: vehicle.id, status: "all", pageSize: 50 }, { signal }),
     select: (page) => page.items,
   });
 
@@ -445,12 +456,12 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
             {(control) => <TextInput {...control} type="date" max={today} value={soldOn} onChange={(event) => setSoldOn(event.target.value)} />}
           </Field>
           {can("stock.salePrice") ? (
-            <Field label="Sale price" description={vehicle.price ? `Listed at ${formatPrice(vehicle.price)}` : vehicle.priceOnApplication ? "Listed as POA" : undefined}>
+            <Field label="Sale price" error={fieldErrors.salePrice} description={vehicle.price ? `Listed at ${formatPrice(vehicle.price)}` : vehicle.priceOnApplication ? "Listed as POA" : undefined}>
               {(control) => <NumberInput {...control} prefix="£" value={salePrice} onValueChange={setSalePrice} />}
             </Field>
           ) : null}
         </div>
-        <CustomerChoice customerId={customer.customerId} name={customer.name} onChange={setCustomer} />
+        <CustomerChoice customerId={customer.customerId} name={customer.name} error={fieldErrors.customerName} onChange={setCustomer} />
         <Field label="From enquiry" description="Linking it marks that enquiry as sold.">
           {(control) => (
             <Select {...control} value={enquiryId} onChange={(event) => setEnquiryId(event.target.value)} disabled={enquiries.isPending}>
@@ -463,7 +474,7 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
             </Select>
           )}
         </Field>
-        {mutation.error && !(mutation.error instanceof ValidationError && Object.keys(mutation.error.fields).length) ? (
+        {mutation.error && !(mutation.error instanceof ValidationError && Object.keys(mutation.error.fields).length && Object.keys(mutation.error.fields).every((key) => SELL_FIELDS.includes(key))) ? (
           <p role="alert" className="text-sm text-destructive">
             {errorMessage(mutation.error)}
           </p>
@@ -472,3 +483,6 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
     </Dialog>
   );
 }
+
+/** Fields the sell dialog marks itself; a refusal about anything else is spelled out below them. */
+const SELL_FIELDS = ["soldOn", "salePrice", "customerName"];
