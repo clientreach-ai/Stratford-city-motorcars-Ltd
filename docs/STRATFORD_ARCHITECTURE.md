@@ -42,6 +42,12 @@ interface can write, ready for the admin's API.
 Build and runtime must use the same `DATABASE_URL`: vehicle pages are
 prerendered at build time from whichever source is configured.
 
+The unset mode is for local development and Vercel previews only. The seed
+records are all drafts, so a production website without a database would show
+no cars; `packages/env/src/web.ts` fails a production build without it
+(`VERCEL_ENV=production`, or `NODE_ENV=production` off Vercel), and the same
+check runs again when the server first loads the inventory store.
+
 ## Inventory
 
 Code: `apps/web/src/lib/inventory/`.
