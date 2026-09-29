@@ -1,12 +1,11 @@
 import { eq, tables } from "@Stratford-city-motorcars-Ltd/db";
 import { ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import type { BusinessDetails, Settings } from "@Stratford-city-motorcars-Ltd/core/settings";
-import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { db } from "../../lib/db";
-import { revalidateWebsite } from "../../lib/revalidate";
+import { revalidateWebsite, websiteNotificationChannels } from "../../lib/revalidate";
 import { validate } from "../../lib/validation";
 import { getMediaStorage } from "../media/storage";
 import { checkVersion, requireCapability, stamp, type AdminEnv } from "./context";
@@ -81,17 +80,21 @@ async function loadBusiness(): Promise<{ business: BusinessDetails; updatedAt: D
     : { business: DEFAULT_BUSINESS, updatedAt: DEFAULT_UPDATED_AT };
 }
 
-function toSettings(business: BusinessDetails, updatedAt: Date): Settings {
+async function toSettings(business: BusinessDetails, updatedAt: Date): Promise<Settings> {
+  // The website emails and posts new enquiries, so it is asked what it sends;
+  // this server's own settings say nothing about that.
+  const channels = await websiteNotificationChannels();
   return {
     business,
     integrations: {
       storage: "connected",
       notifications: [
-        { channel: "webhook", configured: Boolean(env.LEADS_WEBHOOK_URL) },
-        { channel: "email", configured: Boolean(env.RESEND_API_KEY && env.EMAIL_FROM && env.ENQUIRY_EMAIL_TO) },
+        { channel: "webhook", configured: channels?.includes("webhook") ?? false },
+        { channel: "email", configured: channels?.includes("email") ?? false },
         // Texts still need a provider (or the webhook above).
         { channel: "sms", configured: false },
       ],
+      notificationsChecked: channels !== null,
       media: getMediaStorage() ? "object-storage" : "local-disk",
     },
     compliance: {
@@ -129,7 +132,7 @@ function validateBusiness(input: BusinessDetails): void {
 export const settingsRoutes = new Hono<AdminEnv>()
   .get("/", async (c) => {
     const { business, updatedAt } = await loadBusiness();
-    return c.json(toSettings(business, updatedAt));
+    return c.json(await toSettings(business, updatedAt));
   })
 
   .put("/business", validate("json", updateBody), async (c) => {
@@ -155,5 +158,5 @@ export const settingsRoutes = new Hono<AdminEnv>()
     });
     // The website caches these facts; drop that cache so the change shows now.
     revalidateWebsite("settings");
-    return c.json(toSettings(business, saved));
+    return c.json(await toSettings(business, saved));
   });

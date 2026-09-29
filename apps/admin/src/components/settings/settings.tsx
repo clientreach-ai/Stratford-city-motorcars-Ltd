@@ -74,6 +74,8 @@ function SettingsView({ settings }: { settings: SettingsData }) {
   const canSave = dirty || Boolean(mutation.error);
 
   const notifications = settings.integrations.notifications;
+  // The website sends the notifications; when it couldn't be asked, "not set up" would be a guess.
+  const notificationsChecked = settings.integrations.notificationsChecked !== false;
   const anyNotification = notifications.some((item) => item.configured);
   const failure =
     mutation.error && !(mutation.error instanceof ValidationError && Object.keys(mutation.error.fields).length)
@@ -207,7 +209,12 @@ function SettingsView({ settings }: { settings: SettingsData }) {
           <Panel title="Enquiry notifications">
             <ul className="space-y-2.5">
               {notifications.map((item) => (
-                <StatusRow key={item.channel} ok={item.configured} label={item.channel === "webhook" ? "Webhook (Zapier, Make, n8n)" : item.channel === "email" ? "Email" : "Text message (SMS)"} value={item.configured ? "Connected" : "Not set up"} />
+                <StatusRow
+                  key={item.channel}
+                  ok={item.configured}
+                  label={item.channel === "webhook" ? "Webhook (Zapier, Make, n8n)" : item.channel === "email" ? "Email" : "Text message (SMS)"}
+                  value={item.configured ? "Connected" : notificationsChecked ? "Not set up" : "Couldn't check"}
+                />
               ))}
             </ul>
             <p className="mt-4 text-xs leading-relaxed text-ink-500">Connected by your developer with the provider&rsquo;s account details — never entered here.</p>
