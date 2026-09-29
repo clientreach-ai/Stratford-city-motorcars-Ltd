@@ -69,8 +69,6 @@ function postalAddressFor(details: Site) {
   };
 }
 
-const postalAddress = postalAddressFor(site);
-
 /**
  * The dealership itself. Emitted once, from the root layout, with an @id that
  * the vehicle offers point back to so search engines connect seller to stock.

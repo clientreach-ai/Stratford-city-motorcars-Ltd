@@ -56,6 +56,7 @@ export function HeroShowcase({ slides, children }: { slides: HeroSlide[]; childr
   const paused = userPaused || offscreen || reduced;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read the motion preference only after hydration, so server and client first render agree
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
