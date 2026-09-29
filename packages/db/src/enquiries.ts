@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import type { Database } from "./index";
 import { appointment, customer, lead, leadActivity } from "./schema";
@@ -50,6 +50,14 @@ export async function recordWebsiteEnquiry(db: Database, enquiry: WebsiteEnquiry
   return db.transaction(async (tx) => {
     const byEmail = emailKey(enquiry.email);
     const byPhone = phoneKey(enquiry.phone);
+
+    // Two enquiries from a new customer arriving together would each find no
+    // match and each create a customer. Holding a lock on the person's keys
+    // until this transaction ends makes the second wait and then find the
+    // first. Taken in a fixed order, so two transactions can't deadlock.
+    for (const key of [byEmail && `customer:email:${byEmail}`, byPhone && `customer:phone:${byPhone}`].filter((key): key is string => Boolean(key)).sort()) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
+    }
 
     let match: { id: string } | undefined;
     if (byEmail) {
