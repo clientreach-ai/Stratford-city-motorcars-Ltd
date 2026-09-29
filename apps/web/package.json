@@ -9,7 +9,8 @@
     "check-content": "node scripts/check-content.mjs",
     "check-inventory": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-inventory.mjs",
     "start": "next start",
-    "inventory:import-seed": "bun scripts/import-seed.ts"
+    "inventory:import-seed": "bun scripts/import-seed.ts",
+    "lint": "eslint --max-warnings=0 ."
   },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/core": "workspace:*",
@@ -37,6 +38,7 @@
     "@types/node": "^26.2.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   }

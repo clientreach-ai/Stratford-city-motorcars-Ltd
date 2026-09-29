@@ -17,6 +17,10 @@
   "devDependencies": {
     "@Stratford-city-motorcars-Ltd/config": "workspace:*",
     "@types/bun": "catalog:",
+    "eslint": "catalog:",
     "typescript": "catalog:"
+  },
+  "scripts": {
+    "lint": "eslint --max-warnings=0 ."
   }
 }
