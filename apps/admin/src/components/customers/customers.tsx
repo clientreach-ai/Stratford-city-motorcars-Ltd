@@ -349,9 +349,9 @@ function Profile({ detail }: { detail: CustomerDetail }) {
 
 function EraseDialog({ customer, onClose, onErased }: { customer: Customer; onClose: () => void; onErased: () => void }) {
   const [typed, setTyped] = useState("");
+  // Failures are shown in the dialog: a toast would sit underneath it, unseen.
   const mutation = useAdminMutation(() => api.customers.erase(customer.id), {
     success: "Customer erased",
-    failure: "The customer was not erased",
     onSuccess: onErased,
   });
   const ready = typed.trim().toLowerCase() === customer.name.trim().toLowerCase();
@@ -382,6 +382,11 @@ function EraseDialog({ customer, onClose, onErased }: { customer: Customer; onCl
           {(c) => <TextInput {...c} value={typed} autoComplete="off" spellCheck={false} onChange={(event) => setTyped(event.target.value)} />}
         </Field>
         <p className="text-xs text-ink-600">Also remove them from anything held outside this system, such as WhatsApp chats or the enquiry email inbox.</p>
+        {mutation.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage(mutation.error)}
+          </p>
+        ) : null}
       </div>
     </Dialog>
   );
