@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarCheck } from "lucide-react";
 
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
-import { ExternalTextLink } from "@/components/ui/text-link";
+import { TextLink } from "@/components/ui/text-link";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { Container, Eyebrow } from "@/components/ui/section";
 import { SplitText } from "@/components/ui/split-text";
@@ -110,10 +110,10 @@ export function Spotlight({ vehicle }: { vehicle: PublicVehicle }) {
                 WhatsApp us
               </ExternalButtonLink>
             </div>
-            <ExternalTextLink href={`${href}#book-viewing`} arrow className="reveal mt-7 text-bone">
+            <TextLink href={`${href}#book-viewing` as Route} className="reveal mt-7 text-bone">
               <CalendarCheck aria-hidden className="size-4 text-brass" />
               Book a viewing of this car
-            </ExternalTextLink>
+            </TextLink>
           </div>
         </div>
       </Container>
