@@ -3,6 +3,7 @@ import "server-only";
 import { getDb, eq, tables } from "@Stratford-city-motorcars-Ltd/db";
 import type { BusinessDetails } from "@Stratford-city-motorcars-Ltd/core/settings";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import { databaseUrl } from "./inventory/store";
 import { DEFAULT_BUSINESS, buildSite, mapLinksFor, type Site } from "./site";
@@ -42,8 +43,15 @@ const loadBusiness = unstable_cache(
   { tags: [SETTINGS_CACHE_TAG], revalidate: 300 },
 );
 
-/** The dealership's business details: saved settings over the confirmed facts. */
-export async function getBusiness(): Promise<BusinessDetails> {
+/**
+ * The dealership's business details: saved settings over the confirmed facts.
+ *
+ * Memoised for one server render with React's `cache()`: the layout, header,
+ * footer and showroom panel each ask, and on a cold render every ask was its
+ * own read of the cached settings. The memo never outlives the request, so
+ * revalidating the `settings` tag still reaches the next render.
+ */
+export const getBusiness = cache(async (): Promise<BusinessDetails> => {
   const stored = await loadBusiness();
   if (!stored) return DEFAULT_BUSINESS;
   return {
@@ -51,7 +59,7 @@ export async function getBusiness(): Promise<BusinessDetails> {
     ...stored,
     hours: { ...DEFAULT_BUSINESS.hours, ...stored.hours },
   };
-}
+});
 
 /** `site`, rebuilt from the saved settings. Use this wherever a page shows business facts. */
 export async function getSite(): Promise<Site> {
