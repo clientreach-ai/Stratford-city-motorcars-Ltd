@@ -9,12 +9,17 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
  * Selects are native on purpose. On a phone the OS picker beats any custom
  * dropdown for speed and accessibility, and it costs no JavaScript — which
  * matters when half the audience is filtering stock on mobile data.
+ *
+ * Controls are 16px on phones: iOS Safari zooms into any field set smaller
+ * when it takes focus, and leaves the page zoomed after the keyboard closes.
+ * The slightly tighter 15px returns from sm, where that no longer applies.
  */
 
 const controlBase =
-  "w-full rounded-sm border bg-[var(--surface-raised)] px-4 text-[0.9375rem] text-[var(--foreground)] " +
+  "w-full rounded-sm border bg-[var(--surface-raised)] px-4 text-base text-[var(--foreground)] sm:text-[0.9375rem] " +
   "transition-[border-color,background-color,box-shadow] duration-300 ease-[var(--ease-out-expo)] " +
-  "placeholder:text-[var(--muted-foreground)]/70 hover:border-[var(--muted-foreground)] " +
+  // Placeholders at 80% still read as hints but clear 4.5:1 on the white field.
+  "placeholder:text-[var(--muted-foreground)]/80 hover:border-[var(--muted-foreground)] " +
   // A soft brass halo inside the crisp focus outline.
   "focus-visible:shadow-[0_0_0_5px_color-mix(in_oklab,var(--color-brass)_16%,transparent)] " +
   "focus-visible:border-[var(--ring)] focus-visible:outline-2 focus-visible:outline-offset-2 " +
@@ -30,7 +35,7 @@ export function Label({
   return (
     <label
       className={cn(
-        "block font-roman text-[0.625rem] uppercase tracking-[0.18em] text-[var(--muted-foreground)]",
+        "block font-roman text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]",
         className,
       )}
       {...props}

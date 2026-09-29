@@ -10,7 +10,8 @@
     "start": "node dist/index.mjs",
     "staff:create": "bun scripts/create-staff.ts",
     "staff:password": "bun scripts/reset-password.ts",
-    "photos:variants": "bun scripts/generate-photo-variants.ts"
+    "photos:variants": "bun scripts/generate-photo-variants.ts",
+    "lint": "eslint --max-warnings=0 ."
   },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/auth": "workspace:*",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@Stratford-city-motorcars-Ltd/config": "workspace:*",
     "@types/bun": "catalog:",
+    "eslint": "catalog:",
     "tsdown": "^0.22.14",
     "typescript": "catalog:"
   }

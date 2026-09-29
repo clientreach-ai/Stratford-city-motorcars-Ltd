@@ -309,6 +309,8 @@ function MobileSheet({
         aria-label="Filter stock"
         className={cn(
           "absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col bg-[var(--background)]",
+          // Keeps the close button and actions clear of the notch in landscape.
+          "pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
           "transition-transform duration-300 ease-[var(--ease-out-expo)]",
           open ? "translate-y-0" : "translate-y-full",
         )}
@@ -328,7 +330,8 @@ function MobileSheet({
 
         <div data-lenis-prevent className="flex-1 overflow-y-auto px-5 py-6">{children}</div>
 
-        <div className="shrink-0 border-t border-[var(--border)] p-4">
+        {/* Sits above the home indicator rather than underneath it. */}
+        <div className="shrink-0 border-t border-[var(--border)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button type="button" onClick={onClose} size="lg" className="w-full">
             Show {resultCount} {resultCount === 1 ? "vehicle" : "vehicles"}
           </Button>

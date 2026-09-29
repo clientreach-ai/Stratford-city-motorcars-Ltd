@@ -80,6 +80,9 @@ export const viewport: Viewport = {
   colorScheme: "light",
   width: "device-width",
   initialScale: 1,
+  // Without this iOS reports every safe-area inset as zero, and the fixed
+  // enquiry bar and filter sheet sat on top of the home indicator.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

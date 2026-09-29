@@ -73,6 +73,7 @@ export function BookingActions({ appointment, onOpen }: { appointment: Appointme
     { success: (saved) => statusDone[saved.status], failure: "The appointment could not be updated" },
   );
 
+  // eslint-disable-next-line react-hooks/purity -- deliberately re-read on every render, so the menu follows the clock
   const started = new Date(appointment.startsAt).getTime() < Date.now();
   const status = appointment.status;
   const move = (next: AppointmentStatus, label: string, icon: ReactNode, hidden: boolean, tone?: "danger"): MenuAction => ({

@@ -42,22 +42,31 @@ import type { PhotoCategory, VehicleImage, VehicleRecord } from "./vehicle";
  *  - writes to an existing record carry `expectedUpdatedAt`; a mismatch is 409
  *  - rule failures are 422 with per-field messages (see errors.ts)
  */
+
+/**
+ * For reads: a signal that abandons the request, such as React Query's when
+ * the screen that asked no longer needs the answer.
+ */
+export interface ReadOptions {
+  signal?: AbortSignal;
+}
+
 export interface AdminApi {
   session: {
     /** The current user, or null when signed out. */
-    get(): Promise<SessionUser | null>;
+    get(options?: ReadOptions): Promise<SessionUser | null>;
     signIn(input: { email: string; password: string }): Promise<SessionUser>;
     signOut(): Promise<void>;
   };
 
   overview: {
-    get(): Promise<Overview>;
+    get(options?: ReadOptions): Promise<Overview>;
   };
 
   stock: {
     /** Every car, in every status. */
-    list(): Promise<AdminVehicle[]>;
-    get(id: string): Promise<AdminVehicle>;
+    list(options?: ReadOptions): Promise<AdminVehicle[]>;
+    get(id: string, options?: ReadOptions): Promise<AdminVehicle>;
     /** A new, empty draft. */
     create(): Promise<AdminVehicle>;
     /**
@@ -105,9 +114,9 @@ export interface AdminApi {
   };
 
   enquiries: {
-    list(query: EnquiryListQuery): Promise<Page<Enquiry>>;
-    counts(query?: Pick<EnquiryListQuery, "kind">): Promise<EnquiryCounts>;
-    get(id: string): Promise<{ enquiry: Enquiry; activity: EnquiryActivity[]; appointments: Appointment[] }>;
+    list(query: EnquiryListQuery, options?: ReadOptions): Promise<Page<Enquiry>>;
+    counts(query?: Pick<EnquiryListQuery, "kind">, options?: ReadOptions): Promise<EnquiryCounts>;
+    get(id: string, options?: ReadOptions): Promise<{ enquiry: Enquiry; activity: EnquiryActivity[]; appointments: Appointment[] }>;
     updateStatus(id: string, input: UpdateEnquiryStatusInput, options: Versioned): Promise<Enquiry>;
     assign(id: string, memberId: string | null, options: Versioned): Promise<Enquiry>;
     addNote(id: string, body: string): Promise<EnquiryActivity>;
@@ -118,14 +127,14 @@ export interface AdminApi {
   };
 
   appointments: {
-    list(query: AppointmentListQuery): Promise<Appointment[]>;
+    list(query: AppointmentListQuery, options?: ReadOptions): Promise<Appointment[]>;
     create(input: AppointmentInput): Promise<Appointment>;
     update(id: string, input: AppointmentInput, options: Versioned): Promise<Appointment>;
   };
 
   customers: {
-    list(query: CustomerListQuery): Promise<Page<Customer>>;
-    get(id: string): Promise<CustomerDetail>;
+    list(query: CustomerListQuery, options?: ReadOptions): Promise<Page<Customer>>;
+    get(id: string, options?: ReadOptions): Promise<CustomerDetail>;
     update(id: string, input: CustomerInput, options: Versioned): Promise<Customer>;
     /**
      * Erases a person at their request: the customer, their enquiries and the
@@ -135,7 +144,7 @@ export interface AdminApi {
   };
 
   team: {
-    list(): Promise<TeamMember[]>;
+    list(options?: ReadOptions): Promise<TeamMember[]>;
     /** Needs `team.manage`. Creates an active account with the given password. */
     invite(input: InviteMemberInput): Promise<TeamMember>;
     /**
@@ -148,7 +157,7 @@ export interface AdminApi {
   };
 
   settings: {
-    get(): Promise<Settings>;
+    get(options?: ReadOptions): Promise<Settings>;
     /** Needs `settings.edit`. */
     updateBusiness(input: BusinessDetails, options: Versioned): Promise<Settings>;
   };

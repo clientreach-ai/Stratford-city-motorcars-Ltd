@@ -17,6 +17,7 @@ import {
   listingRecommendations,
   passwordProblem,
   meetsPhotoSize,
+  MAX_PHOTO_BYTES,
   MINIMUM_PHOTO_SIZE,
   statusAfterRestore,
   stockActionRefusal,
@@ -74,9 +75,13 @@ function maybeFail() {
   throw new Error("Could not reach the server. Check your connection and try again. (Simulated failure)");
 }
 
-/** Every mock call: wait, maybe fail, then run with the database. */
-async function call<T>(run: (db: MockDb) => T): Promise<T> {
+/**
+ * Every mock call: wait, maybe fail, then run with the database. A read that
+ * was abandoned while waiting stops there, as a real request would.
+ */
+async function call<T>(run: (db: MockDb) => T, signal?: AbortSignal): Promise<T> {
   await delay();
+  signal?.throwIfAborted();
   maybeFail();
   const db = getDb();
   const result = run(db);
@@ -356,14 +361,14 @@ async function processImage(file: File, onProgress?: (fraction: number) => void)
 export function createMockApi(): AdminApi {
   return {
     session: {
-      get: () =>
+      get: (options) =>
         call((db) => {
           try {
             return sessionUser(db);
           } catch {
             return null;
           }
-        }),
+        }, options?.signal),
       signIn: ({ email, password }) =>
         call((db) => {
           const member = db.team.find((person) => person.email.toLowerCase() === email.trim().toLowerCase());
@@ -385,7 +390,7 @@ export function createMockApi(): AdminApi {
     },
 
     overview: {
-      get: () =>
+      get: (options) =>
         call((db): Overview => {
           sessionUser(db);
           const now = Date.now();
@@ -444,21 +449,21 @@ export function createMockApi(): AdminApi {
               toConfirm: active.filter((item) => item.status === "requested" && new Date(item.startsAt).getTime() > now - 30 * MINUTE).length,
             },
           };
-        }),
+        }, options?.signal),
     },
 
     stock: {
-      list: () =>
+      list: (options) =>
         call((db) => {
           const user = sessionUser(db);
           return db.vehicles.map((vehicle) => toAdminVehicle(db, vehicle, user));
-        }),
+        }, options?.signal),
 
-      get: (id) =>
+      get: (id, options) =>
         call((db) => {
           const user = sessionUser(db);
           return toAdminVehicle(db, findVehicle(db, id), user);
-        }),
+        }, options?.signal),
 
       create: () =>
         call((db) => {
@@ -727,7 +732,7 @@ export function createMockApi(): AdminApi {
         if (!["image/jpeg", "image/png", "image/webp", "image/avif", "image/heic", "image/heif"].includes(file.type)) {
           throw new ValidationError({ file: `“${file.name}” is not a JPEG, PNG, WebP, AVIF or HEIC photograph.` }, "This file type is not supported.");
         }
-        if (file.size > 25 * 1024 * 1024) {
+        if (file.size > MAX_PHOTO_BYTES) {
           throw new ValidationError({ file: `“${file.name}” is larger than 25 MB.` }, "This photograph is too large.");
         }
         const processed = await processImage(file, onProgress);
@@ -750,22 +755,22 @@ export function createMockApi(): AdminApi {
     },
 
     enquiries: {
-      list: (query) =>
+      list: (query, options) =>
         call((db) => {
           sessionUser(db);
           const items = filterEnquiries(db, query).sort((a, b) =>
             query.sort === "oldest" ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt),
           );
           return paginate(items, query.page, query.pageSize);
-        }),
+        }, options?.signal),
 
-      counts: (query = {}) =>
+      counts: (query = {}, options) =>
         call((db) => {
           sessionUser(db);
           return counts(filterEnquiries(db, { kind: query.kind }));
-        }),
+        }, options?.signal),
 
-      get: (id) =>
+      get: (id, options) =>
         call((db) => {
           sessionUser(db);
           const enquiry = findEnquiry(db, id);
@@ -777,7 +782,7 @@ export function createMockApi(): AdminApi {
               .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
               .map((item) => toAppointment(db, item)),
           };
-        }),
+        }, options?.signal),
 
       updateStatus: (id, input, { expectedUpdatedAt }) =>
         call((db) => {
@@ -858,7 +863,7 @@ export function createMockApi(): AdminApi {
     },
 
     appointments: {
-      list: (query) =>
+      list: (query, options) =>
         call((db) => {
           sessionUser(db);
           return db.appointments
@@ -874,7 +879,7 @@ export function createMockApi(): AdminApi {
             })
             .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
             .map((item) => toAppointment(db, item));
-        }),
+        }, options?.signal),
 
       create: (input) =>
         call((db) => {
@@ -920,7 +925,7 @@ export function createMockApi(): AdminApi {
     },
 
     customers: {
-      list: (query) =>
+      list: (query, options) =>
         call((db) => {
           sessionUser(db);
           const items = db.customers
@@ -932,9 +937,9 @@ export function createMockApi(): AdminApi {
             })
             .sort((a, b) => (query.sort === "name" ? a.name.localeCompare(b.name) : b.lastActivityAt.localeCompare(a.lastActivityAt)));
           return paginate(items, query.page, query.pageSize);
-        }),
+        }, options?.signal),
 
-      get: (id) =>
+      get: (id, options) =>
         call((db) => {
           const user = sessionUser(db);
           const customer = db.customers.find((item) => item.id === id);
@@ -959,7 +964,7 @@ export function createMockApi(): AdminApi {
                 salePrice: can(user.role, "stock.salePrice") ? item.sale!.salePrice : null,
               })),
           };
-        }),
+        }, options?.signal),
 
       update: (id, input, { expectedUpdatedAt }) =>
         call((db) => {
@@ -1014,11 +1019,11 @@ export function createMockApi(): AdminApi {
     },
 
     team: {
-      list: () =>
+      list: (options) =>
         call((db) => {
           sessionUser(db);
           return db.team;
-        }),
+        }, options?.signal),
 
       invite: (input) =>
         call((db) => {
@@ -1089,11 +1094,11 @@ export function createMockApi(): AdminApi {
     },
 
     settings: {
-      get: () =>
+      get: (options) =>
         call((db) => {
           sessionUser(db);
           return db.settings;
-        }),
+        }, options?.signal),
 
       updateBusiness: (input, { expectedUpdatedAt }) =>
         call((db) => {

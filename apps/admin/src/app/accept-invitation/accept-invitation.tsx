@@ -37,15 +37,17 @@ export function AcceptInvitation() {
   const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirm?: string }>({});
   const [busy, setBusy] = useState(false);
 
+  // Known without asking the server, so shown straight away.
+  const unusable =
+    dataSource !== "api" || !API
+      ? "Invitations work only when the admin is connected to the API."
+      : !token
+        ? "This link is incomplete. Open the link from your invitation email again."
+        : null;
+  const view: State = unusable ? { step: "invalid", message: unusable } : state;
+
   useEffect(() => {
-    if (dataSource !== "api" || !API) {
-      setState({ step: "invalid", message: "Invitations work only when the admin is connected to the API." });
-      return;
-    }
-    if (!token) {
-      setState({ step: "invalid", message: "This link is incomplete. Open the link from your invitation email again." });
-      return;
-    }
+    if (unusable) return;
     let cancelled = false;
     fetch(`${API}/api/admin/invitations/${encodeURIComponent(token)}`)
       .then(async (response) => {
@@ -63,7 +65,7 @@ export function AcceptInvitation() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, unusable]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,18 +116,18 @@ export function AcceptInvitation() {
         <div className="w-full max-w-sm">
           <p className="admin-eyebrow">Invitation</p>
 
-          {state.step === "loading" ? (
+          {view.step === "loading" ? (
             <p role="status" className="mt-4 text-sm text-muted-foreground">
               Checking your invitation…
             </p>
           ) : null}
 
-          {state.step === "invalid" ? (
+          {view.step === "invalid" ? (
             <>
-              <h1 className="mt-2 font-display text-3xl">This link can't be used</h1>
+              <h1 className="mt-2 font-display text-3xl">This link can&apos;t be used</h1>
               <div role="alert" className="mt-6 flex gap-2.5 border-l-2 border-destructive bg-destructive/6 px-3.5 py-3 text-[0.8125rem] text-ink-800">
                 <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-                {state.message}
+                {view.message}
               </div>
               <ButtonLink href="/sign-in" className="mt-6 w-full">
                 Go to sign in
@@ -133,11 +135,11 @@ export function AcceptInvitation() {
             </>
           ) : null}
 
-          {state.step === "form" ? (
+          {view.step === "form" ? (
             <>
               <h1 className="mt-2 font-display text-3xl">Choose your password</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Hello {state.name}. You'll sign in as <span className="font-medium text-ink-800">{state.email}</span>.
+                Hello {view.name}. You&apos;ll sign in as <span className="font-medium text-ink-800">{view.email}</span>.
               </p>
 
               {error ? (
@@ -148,7 +150,7 @@ export function AcceptInvitation() {
               ) : null}
 
               <form noValidate onSubmit={submit} className="mt-6 space-y-4">
-                <input type="email" name="username" autoComplete="username" value={state.email} readOnly hidden />
+                <input type="email" name="username" autoComplete="username" value={view.email} readOnly hidden />
                 <Field label="New password" description="At least 12 characters." error={fieldErrors.password}>
                   {(control) => <TextInput {...control} name="password" type="password" autoComplete="new-password" />}
                 </Field>
@@ -162,9 +164,9 @@ export function AcceptInvitation() {
             </>
           ) : null}
 
-          {state.step === "done" ? (
+          {view.step === "done" ? (
             <>
-              <h1 className="mt-2 font-display text-3xl">You're all set</h1>
+              <h1 className="mt-2 font-display text-3xl">You&apos;re all set</h1>
               <p role="status" className="mt-4 flex gap-2.5 text-sm text-ink-700">
                 <CircleCheck className="mt-0.5 size-4 shrink-0 text-brass" aria-hidden />
                 Your password is saved. Sign in with your email address and new password.
