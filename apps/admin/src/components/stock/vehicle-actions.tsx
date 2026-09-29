@@ -445,12 +445,12 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
             {(control) => <TextInput {...control} type="date" max={today} value={soldOn} onChange={(event) => setSoldOn(event.target.value)} />}
           </Field>
           {can("stock.salePrice") ? (
-            <Field label="Sale price" description={vehicle.price ? `Listed at ${formatPrice(vehicle.price)}` : vehicle.priceOnApplication ? "Listed as POA" : undefined}>
+            <Field label="Sale price" error={fieldErrors.salePrice} description={vehicle.price ? `Listed at ${formatPrice(vehicle.price)}` : vehicle.priceOnApplication ? "Listed as POA" : undefined}>
               {(control) => <NumberInput {...control} prefix="£" value={salePrice} onValueChange={setSalePrice} />}
             </Field>
           ) : null}
         </div>
-        <CustomerChoice customerId={customer.customerId} name={customer.name} onChange={setCustomer} />
+        <CustomerChoice customerId={customer.customerId} name={customer.name} error={fieldErrors.customerName} onChange={setCustomer} />
         <Field label="From enquiry" description="Linking it marks that enquiry as sold.">
           {(control) => (
             <Select {...control} value={enquiryId} onChange={(event) => setEnquiryId(event.target.value)} disabled={enquiries.isPending}>
@@ -463,7 +463,7 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
             </Select>
           )}
         </Field>
-        {mutation.error && !(mutation.error instanceof ValidationError && Object.keys(mutation.error.fields).length) ? (
+        {mutation.error && !(mutation.error instanceof ValidationError && Object.keys(mutation.error.fields).length && Object.keys(mutation.error.fields).every((key) => SELL_FIELDS.includes(key))) ? (
           <p role="alert" className="text-sm text-destructive">
             {errorMessage(mutation.error)}
           </p>
@@ -472,3 +472,6 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
     </Dialog>
   );
 }
+
+/** Fields the sell dialog marks itself; a refusal about anything else is spelled out below them. */
+const SELL_FIELDS = ["soldOn", "salePrice", "customerName"];

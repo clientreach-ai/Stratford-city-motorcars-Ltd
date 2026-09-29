@@ -106,8 +106,11 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
     });
 
   const changeStatus = (next: EnquiryStatus) => {
-    if (next === "not-proceeding") setClosing(true);
-    else runStatus({ status: next });
+    if (next === "not-proceeding") {
+      // The dialog shows this mutation's error; not one left from an earlier change.
+      status.reset();
+      setClosing(true);
+    } else runStatus({ status: next });
   };
 
   const payload = enquiry.payload;
@@ -273,15 +276,14 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
       {closing ? (
         <ClosedReasonDialog
           busy={status.isPending}
-          onClose={() => setClosing(false)}
+          // In the dialog, not a toast, which would sit underneath it unseen.
+          failure={status.error ? (status.error instanceof ConflictError ? conflictMessage : errorMessage(status.error)) : undefined}
+          onClose={() => {
+            setClosing(false);
+            status.reset();
+          }}
           onConfirm={(reason) => {
-            status.mutate(
-              { status: "not-proceeding", closedReason: reason },
-              {
-                onSuccess: () => setClosing(false),
-                onError: (error) => notify.error("Status not changed", error instanceof ConflictError ? conflictMessage : errorMessage(error)),
-              },
-            );
+            status.mutate({ status: "not-proceeding", closedReason: reason }, { onSuccess: () => setClosing(false) });
           }}
         />
       ) : null}
@@ -619,7 +621,17 @@ function Timeline({ enquiry, activity, canEdit }: { enquiry: Enquiry; activity: 
   );
 }
 
-function ClosedReasonDialog({ onClose, onConfirm, busy }: { onClose: () => void; onConfirm: (reason: ClosedReason) => void; busy: boolean }) {
+function ClosedReasonDialog({
+  onClose,
+  onConfirm,
+  busy,
+  failure,
+}: {
+  onClose: () => void;
+  onConfirm: (reason: ClosedReason) => void;
+  busy: boolean;
+  failure?: string;
+}) {
   const [reason, setReason] = useState<ClosedReason | "">("");
   const [error, setError] = useState<string>();
   return (
@@ -649,9 +661,9 @@ function ClosedReasonDialog({ onClose, onConfirm, busy }: { onClose: () => void;
             </label>
           ))}
         </div>
-        {error ? (
+        {error || failure ? (
           <p role="alert" className="mt-2 text-sm text-destructive">
-            {error}
+            {error ?? failure}
           </p>
         ) : null}
       </fieldset>
@@ -670,11 +682,11 @@ function DeleteDialog({
 }) {
   const [reason, setReason] = useState<"spam" | "erasure-request" | "">("");
   const [typed, setTyped] = useState("");
+  // Failures are shown in the dialog: a toast would sit underneath it, unseen.
   const mutation = useAdminMutation(() => api.enquiries.remove(enquiry.id, reason as "spam" | "erasure-request"), {
     success: "Enquiry deleted",
     // Erasing the person as well is a separate decision, taken on their page.
     successDetail: reason === "erasure-request" ? "Their customer record is still here — erase it from their customer page too." : undefined,
-    failure: "The enquiry was not deleted",
     onSuccess: onDeleted,
   });
   const ready = reason !== "" && typed.trim().toUpperCase() === enquiry.reference;
@@ -719,6 +731,11 @@ function DeleteDialog({
         </Field>
         {reason === "erasure-request" ? (
           <p className="text-xs text-ink-600">Also remove them from anything held outside this system, such as WhatsApp chats or the enquiry email inbox.</p>
+        ) : null}
+        {mutation.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage(mutation.error)}
+          </p>
         ) : null}
       </div>
     </Dialog>
