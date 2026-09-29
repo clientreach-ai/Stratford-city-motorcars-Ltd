@@ -36,7 +36,7 @@ export function StockSearch({
             name="make"
             value={make}
             onChange={(event) => setMake(event.target.value)}
-            className="h-12 truncate border-0 bg-transparent px-0 pr-8 text-[0.9375rem] focus-visible:outline-offset-4"
+            className="h-12 truncate border-0 bg-transparent px-0 pr-8 focus-visible:outline-offset-4"
           >
             <option value="">Any make</option>
             {Object.keys(makeModels).sort().map((option) => (
@@ -52,7 +52,7 @@ export function StockSearch({
             id="search-model"
             name="model"
             disabled={models.length === 0}
-            className="h-12 truncate border-0 bg-transparent px-0 pr-8 text-[0.9375rem] focus-visible:outline-offset-4"
+            className="h-12 truncate border-0 bg-transparent px-0 pr-8 focus-visible:outline-offset-4"
           >
             <option value="">Any model</option>
             {models.map((option) => (

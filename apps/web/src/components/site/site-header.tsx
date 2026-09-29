@@ -354,7 +354,9 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
 
         <div
           className={cn(
-            "container-page shrink-0 space-y-3 py-8 transition-opacity ease-[var(--ease-out-expo)]",
+            // Bottom padding grows to clear the home indicator where there is one.
+            "container-page shrink-0 space-y-3 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))]",
+            "transition-opacity ease-[var(--ease-out-expo)]",
             open ? "opacity-100 delay-500 duration-700" : "opacity-0 duration-200",
           )}
         >
