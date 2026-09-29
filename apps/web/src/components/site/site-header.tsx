@@ -101,8 +101,11 @@ export function SiteHeader({ site }: { site: Site }) {
               // Rendered 36px tall (≈121px wide) on phones and 44px (≈147px) from md.
               sizes="(min-width: 768px) 148px, 121px"
               // Above the fold but tiny and never the LCP element: load it
-              // straight away without a preload competing with the headline.
+              // straight away, behind the hero photograph. React preloads
+              // every eager <img> it renders in the document head unless it is
+              // marked low priority, which put the logo ahead of the LCP.
               loading="eager"
+              fetchPriority="low"
               className={cn(
                 "w-auto transition-[height] duration-500 ease-[var(--ease-out-expo)]",
                 scrolled ? "h-8 md:h-9" : "h-9 md:h-11",
