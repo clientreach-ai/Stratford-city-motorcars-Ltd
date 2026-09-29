@@ -36,3 +36,15 @@ export function errorFrames(error: unknown, depth = 6): string {
     .slice(0, depth)
     .join("\n");
 }
+
+/** True when Postgres raised a unique violation on `constraint`. Drizzle wraps the driver error in `cause`. */
+export function isUniqueViolation(error: unknown, constraint: string): boolean {
+  const candidates = [error, (error as { cause?: unknown })?.cause];
+  return candidates.some(
+    (candidate) =>
+      !!candidate &&
+      typeof candidate === "object" &&
+      (candidate as { code?: string }).code === "23505" &&
+      (candidate as { constraint?: string }).constraint === constraint,
+  );
+}

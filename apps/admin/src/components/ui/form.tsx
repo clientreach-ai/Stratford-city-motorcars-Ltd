@@ -104,7 +104,8 @@ export function Field({
 
 export const controlClass =
   "w-full rounded-sm border border-input bg-surface-raised px-3 font-sans text-[0.9375rem] text-foreground sm:text-sm " +
-  "placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-400 " +
+  // The resting border (--input) is ink-500 for 3:1; hover goes darker still.
+  "placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-600 " +
   "focus:border-ink-900 focus:outline-none focus-visible:outline-none focus:ring-1 focus:ring-ink-900 " +
   "aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive " +
   "disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500";
@@ -202,7 +203,7 @@ export function Checkbox({
           disabled={disabled}
           onChange={(event) => onChange(event.target.checked)}
           aria-describedby={description ? `${id}-d` : undefined}
-          className="peer size-4.5 cursor-pointer appearance-none rounded-[1px] border border-input bg-surface-raised transition-colors checked:border-ink-950 checked:bg-ink-950 hover:border-ink-500 disabled:cursor-not-allowed disabled:opacity-45"
+          className="peer size-4.5 cursor-pointer appearance-none rounded-[1px] border border-input bg-surface-raised transition-colors checked:border-ink-950 checked:bg-ink-950 hover:border-ink-600 disabled:cursor-not-allowed disabled:opacity-45"
         />
         <svg
           aria-hidden
