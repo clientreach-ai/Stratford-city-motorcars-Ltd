@@ -14,7 +14,8 @@ export interface TextRun {
 
 const tones = {
   default: "",
-  muted: "text-[color-mix(in_oklab,var(--foreground)_42%,transparent)]",
+  // Set per surface in motion.css, so the quiet half still clears 3:1 on bone.
+  muted: "text-[var(--headline-muted)]",
   accent: "italic text-[var(--accent-text)]",
 } as const;
 
@@ -22,9 +23,10 @@ const tones = {
  * A headline whose words rise out of their own masks.
  *
  * Rendered on the server as plain words in spans, so the text is in the HTML,
- * selectable and indexable. Screen readers get the whole line from
- * `aria-label`; the word spans are hidden from them so it is never read word
- * by word.
+ * selectable and indexable. Screen readers get the whole line from a
+ * visually hidden copy; the word spans are hidden from them so it is never
+ * read word by word. (Not `aria-label`: it is ignored on a `<p>`, and
+ * support on headings is uneven.)
  *
  * `play="load"` animates on page load with CSS alone (for headlines above the
  * fold); `play="scroll"` hands the element to the page's RevealObserver.
@@ -71,10 +73,10 @@ export function SplitText({
   return (
     <Tag
       id={id}
-      aria-label={label}
       className={cn(play === "load" ? "intro-words" : "reveal reveal-words", className)}
       style={play === "load" ? ({ "--intro-delay": `${delay}ms` } as CSSProperties) : undefined}
     >
+      <span className="sr-only">{label}</span>
       <span aria-hidden>{content}</span>
     </Tag>
   );

@@ -90,7 +90,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
       <JsonLd data={[vehicleSchema(vehicle), breadcrumbSchema(crumbs)]} />
 
       {/* ---- The stage: name, price and photographs on ink ------------------ */}
-      <section data-surface="dark" aria-label={`${name} photographs`} className="grain bg-ink-950 text-bone">
+      <section data-surface="dark" aria-labelledby="vehicle-title" className="grain bg-ink-950 text-bone">
         <Container className="pb-10 pt-6 md:pb-14">
           <Breadcrumbs crumbs={crumbs} />
 
@@ -112,6 +112,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
               </div>
               <SplitText
                 as="h1"
+                id="vehicle-title"
                 play="load"
                 delay={80}
                 runs={vehicle.title}
@@ -263,8 +264,11 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
 
       {!isSold ? (
         <Section id="enquire" tinted size="md" className="scroll-mt-24">
-          {/* Target of "Book a viewing": the form reads the hash and opens on a viewing request. */}
-          <span id="book-viewing" aria-hidden className="block scroll-mt-24" />
+          {/* Target of "Book a viewing": the form reads the hash and opens on a viewing request.
+              The jump focuses this marker, so it names where the visitor has landed. */}
+          <span id="book-viewing" className="block scroll-mt-24">
+            <span className="sr-only">Book a viewing</span>
+          </span>
           <Container>
             <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-20">
               <div>
