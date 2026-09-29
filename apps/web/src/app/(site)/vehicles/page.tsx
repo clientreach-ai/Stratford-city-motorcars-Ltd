@@ -19,10 +19,11 @@ import { ActiveFilterChips, VehicleSort } from "@/components/vehicle/vehicle-sor
 import {
   PAGE_SIZE,
   countActiveFilters,
+  countPages,
   describeQuery,
-  isNonCanonicalQuery,
   parsePage,
   parseSearchParams,
+  stockCanonical,
   toPageSearchString,
 } from "@/lib/inventory/query-params";
 import { faqsByCategory } from "@/lib/content/faqs";
@@ -35,25 +36,23 @@ import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
  * Filtered views share one canonical. Every combination of make, price and body
  * type would otherwise look like a separate near-duplicate page to a crawler,
  * and with stock this size none of them carries enough distinct content to
- * deserve its own listing.
+ * deserve its own listing. Later pages of the full list are different: they are
+ * how a crawler reaches the cars on them, so each is indexed as itself.
  */
 export async function generateMetadata(
   props: PageProps<"/vehicles">,
 ): Promise<Metadata> {
   const searchParams = await props.searchParams;
-  // Any query string — filters, sort, or a stale parameter from the old site —
-  // is a variation of the stock page: kept out of the index, canonical /vehicles.
-  const filtered = isNonCanonicalQuery(searchParams);
+  const { results } = await searchVehicles(parseSearchParams(searchParams));
+  const canonical = stockCanonical(searchParams, countPages(results.length));
 
-  return {
-    ...pageMetadata({
-      title: "Sports & Luxury Cars for Sale in East London",
-      description:
-        "Sports and luxury cars for sale in East London from a small family-owned business in Stratford. Every car photographed inside and out. Finance explained, part exchange welcome, nationwide delivery.",
-      path: "/vehicles",
-    }),
-    ...(filtered ? { robots: { index: false, follow: true } } : {}),
-  };
+  return pageMetadata({
+    title: "Sports & Luxury Cars for Sale in East London",
+    description:
+      "Sports and luxury cars for sale in East London from a small family-owned business in Stratford. Every car photographed inside and out. Finance explained, part exchange welcome, nationwide delivery.",
+    path: canonical.path,
+    noIndex: !canonical.indexable,
+  });
 }
 
 const crumbs = [
@@ -70,7 +69,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
   const summary = describeQuery(query, facets);
   // Stock is listed a page at a time. A page beyond the last one — a stale link
   // or a hand-edited URL — lands on the last page rather than on nothing.
-  const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const pageCount = countPages(results.length);
   const page = Math.min(parsePage(searchParams), pageCount);
   const onThisPage = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   // With no published stock there is nothing to filter or sort: the rail, the
