@@ -41,6 +41,11 @@ export interface IntegrationStatus {
   storage: "connected" | "not-connected";
   /** Who is told about a new enquiry. Empty means nobody is. */
   notifications: { channel: "webhook" | "email" | "sms"; configured: boolean }[];
+  /**
+   * False when the website could not be asked which notifications it sends
+   * (it sends them, not the API), so `notifications` says nothing either way.
+   */
+  notificationsChecked?: boolean;
   media: "local-disk" | "object-storage";
 }
 

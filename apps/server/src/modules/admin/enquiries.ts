@@ -20,6 +20,7 @@ import { db } from "../../lib/db";
 import { validate } from "../../lib/validation";
 import { listVehicles } from "../vehicles/repository";
 import { checkVersion, requireCapability, stamp, type AdminEnv } from "./context";
+import { logDeletions } from "./deletions";
 import {
   loadAppointments,
   loadLeads,
@@ -281,9 +282,18 @@ export const enquiryRoutes = new Hono<AdminEnv>()
   })
 
   .delete("/:id", validate("param", idParam), validate("json", deleteBody), async (c) => {
-    requireCapability(c, "enquiries.delete");
+    const member = requireCapability(c, "enquiries.delete");
+    const { reason } = c.req.valid("json");
     // Activity is removed with the enquiry (cascade); appointments are unlinked (set null).
-    const deleted = await db.delete(lead).where(eq(lead.id, c.req.valid("param").id)).returning({ id: lead.id });
+    // The deletion log keeps who removed it and why, not what it said.
+    const deleted = await db.transaction(async (tx) => {
+      const rows = await tx.delete(lead).where(eq(lead.id, c.req.valid("param").id)).returning({ id: lead.id, reference: lead.reference });
+      await logDeletions(
+        tx,
+        rows.map((row) => ({ entity: "enquiry" as const, entityId: row.id, reference: row.reference, reason, deletedBy: member.id })),
+      );
+      return rows;
+    });
     if (!deleted.length) throw new NotFoundError("This enquiry could not be found. It may have been deleted.");
     return c.body(null, 204);
   });

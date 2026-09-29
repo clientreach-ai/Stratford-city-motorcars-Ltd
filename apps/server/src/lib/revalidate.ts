@@ -31,3 +31,26 @@ export function revalidateWebsite(tag: "inventory" | "settings" = "inventory"): 
       console.warn(`[revalidate] website unreachable: ${error instanceof Error ? error.message : "unknown error"}`);
     });
 }
+
+/**
+ * The enquiry notification channels the website sends ("email", "webhook"),
+ * or null when it can't be asked: no WEB_REVALIDATE_URL or REVALIDATE_SECRET,
+ * or no answer within a few seconds. The website sends enquiry notifications,
+ * so only it knows what is set up.
+ */
+export async function websiteNotificationChannels(): Promise<string[] | null> {
+  const url = env.WEB_REVALIDATE_URL;
+  const secret = env.REVALIDATE_SECRET;
+  if (!url || !secret) return null;
+  try {
+    const response = await fetch(new URL("/api/notifications", url), {
+      headers: { authorization: `Bearer ${secret}` },
+      signal: AbortSignal.timeout(4_000),
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { channels?: unknown };
+    return Array.isArray(body.channels) ? body.channels.filter((channel): channel is string => typeof channel === "string") : null;
+  } catch {
+    return null;
+  }
+}
