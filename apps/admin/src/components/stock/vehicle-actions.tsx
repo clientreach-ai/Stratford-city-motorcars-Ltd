@@ -257,7 +257,7 @@ function BlockedDialog({ vehicle, issues, onClose }: { vehicle: AdminVehicle; is
 function useCustomerOptions() {
   return useQuery({
     queryKey: queryKeys.customers({ picker: true }),
-    queryFn: () => api.customers.list({ sort: "name", pageSize: 500 }),
+    queryFn: ({ signal }) => api.customers.list({ sort: "name", pageSize: 500 }, { signal }),
     select: (page) => page.items,
   });
 }
@@ -384,7 +384,7 @@ function SellDialog({ vehicle, onClose, onDone }: { vehicle: AdminVehicle; onClo
 
   const enquiries = useQuery({
     queryKey: queryKeys.enquiries({ vehicleId: vehicle.id, picker: true }),
-    queryFn: () => api.enquiries.list({ vehicleId: vehicle.id, status: "all", pageSize: 50 }),
+    queryFn: ({ signal }) => api.enquiries.list({ vehicleId: vehicle.id, status: "all", pageSize: 50 }, { signal }),
     select: (page) => page.items,
   });
 

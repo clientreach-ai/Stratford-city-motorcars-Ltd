@@ -4,7 +4,7 @@ import { can as roleCan, type Capability, type SessionUser } from "@Stratford-ci
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query";
@@ -32,7 +32,7 @@ export function useSession(): SessionValue {
 }
 
 export function useSessionQuery() {
-  return useQuery({ queryKey: queryKeys.session, queryFn: () => api.session.get(), staleTime: 60_000 });
+  return useQuery({ queryKey: queryKeys.session, queryFn: ({ signal }) => api.session.get({ signal }), staleTime: 60_000 });
 }
 
 /** Holds every admin screen back until the session is known. */
@@ -89,6 +89,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
         <p role="status" className="admin-eyebrow text-bone/65">
           {isPending ? "Checking your session…" : "Taking you to sign in…"}
         </p>
+        {isPending ? <WakingHint /> : null}
       </Splash>
     );
   }
@@ -97,6 +98,24 @@ export function SessionGate({ children }: { children: ReactNode }) {
     <SessionContext value={{ user, can: (capability) => roleCan(user.role, capability), signOut }}>
       {children}
     </SessionContext>
+  );
+}
+
+/**
+ * The API sleeps after a quiet spell and takes about a minute to wake. Past a
+ * few seconds, say so — otherwise a first visit of the day looks broken.
+ */
+function WakingHint() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 5_000);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!slow) return null;
+  return (
+    <p className="mt-3 max-w-sm text-center text-xs leading-relaxed text-bone/65">
+      The server is starting up after a quiet spell. This can take up to a minute — keep this page open.
+    </p>
   );
 }
 

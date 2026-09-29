@@ -54,7 +54,7 @@ import { useSession } from "@/lib/session";
 import { ContactActions, KindTag, Waiting } from "./parts";
 
 export function EnquiryDetail({ id }: { id: string }) {
-  const query = useQuery({ queryKey: queryKeys.enquiry(id), queryFn: () => api.enquiries.get(id) });
+  const query = useQuery({ queryKey: queryKeys.enquiry(id), queryFn: ({ signal }) => api.enquiries.get(id, { signal }) });
 
   if (query.error && !query.data) {
     const missing = query.error instanceof NotFoundError;
@@ -83,7 +83,7 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
   const { can } = useSession();
   const canEdit = can("enquiries.edit");
   const router = useRouter();
-  const team = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
+  const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
   const [closing, setClosing] = useState(false);
   const [arranging, setArranging] = useState(false);
   const [openAppointment, setOpenAppointment] = useState<string | null>(null);

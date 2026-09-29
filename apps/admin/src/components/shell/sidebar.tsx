@@ -67,7 +67,7 @@ const sections: { label?: string; items: NavItem[] }[] = [
 function useNavCounts() {
   const enquiries = useQuery({
     queryKey: queryKeys.enquiryCounts({ scope: "nav" }),
-    queryFn: () => api.enquiries.counts(),
+    queryFn: ({ signal }) => api.enquiries.counts({}, { signal }),
     refetchInterval: 60_000,
   });
   const today = new Date();
@@ -76,7 +76,7 @@ function useNavCounts() {
   const to = new Date(from.getTime() + 86_400_000);
   const viewings = useQuery({
     queryKey: queryKeys.appointments({ scope: "nav", day: dateKey(today) }),
-    queryFn: () => api.appointments.list({ from: from.toISOString(), to: to.toISOString(), status: "active" }),
+    queryFn: ({ signal }) => api.appointments.list({ from: from.toISOString(), to: to.toISOString(), status: "active" }, { signal }),
     refetchInterval: 5 * 60_000,
   });
   return {

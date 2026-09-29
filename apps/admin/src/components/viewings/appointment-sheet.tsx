@@ -57,12 +57,12 @@ export function AppointmentSheet({
 }) {
   const { user, can } = useSession();
   const canEdit = can("appointments.edit");
-  const stock = useQuery({ queryKey: queryKeys.stock, queryFn: () => api.stock.list() });
-  const team = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
-  const settings = useQuery({ queryKey: queryKeys.settings, queryFn: () => api.settings.get() });
+  const stock = useQuery({ queryKey: queryKeys.stock, queryFn: ({ signal }) => api.stock.list({ signal }) });
+  const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
+  const settings = useQuery({ queryKey: queryKeys.settings, queryFn: ({ signal }) => api.settings.get({ signal }) });
   const customers = useQuery({
     queryKey: queryKeys.customers({ picker: true }),
-    queryFn: () => api.customers.list({ sort: "name", pageSize: 500 }),
+    queryFn: ({ signal }) => api.customers.list({ sort: "name", pageSize: 500 }, { signal }),
     select: (page) => page.items,
   });
 
