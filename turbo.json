@@ -8,6 +8,7 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "env": [
         "DATABASE_URL",
+        "VERCEL_ENV",
         "REVALIDATE_SECRET",
         "MEDIA_PROXY_ORIGIN",
         "MEDIA_ROOT",

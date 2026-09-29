@@ -43,7 +43,7 @@ export const env = createEnv({
     ADMIN_URL: z.url().default("http://localhost:3002"),
     /** Invitation emails are sent through Resend when both are set. */
     RESEND_API_KEY: optionalText,
-    /** e.g. "Stratford City Motorcars <admin@stratfordcitymotorcars.com>" */
+    /** e.g. "Stratford City Motorcars <admin@stratfordcitymotorcars.co.uk>" */
     EMAIL_FROM: optionalText,
     /** Where new enquiries are emailed. With RESEND_API_KEY and EMAIL_FROM, turns enquiry emails on. */
     ENQUIRY_EMAIL_TO: optionalText,

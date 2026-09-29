@@ -10,6 +10,7 @@ import {
   SERVICE_HISTORY_OPTIONS,
   VEHICLE_CONDITIONS,
 } from "./options";
+import { addDays, londonToday } from "./showroom-time";
 
 /**
  * Server-side validation. Messages are written to be read by a customer, not a
@@ -78,8 +79,6 @@ const checkbox = z
 
 // ---- Vehicle enquiry, viewing and test-drive requests ----------------------------
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 export const vehicleEnquirySchema = z
   .object({
     kind: z.literal("vehicle-enquiry"),
@@ -115,8 +114,11 @@ export const vehicleEnquirySchema = z
       });
     }
     if (value.preferredDate) {
-      const latest = new Date(Date.now() + 120 * 86_400_000).toISOString().slice(0, 10);
-      if (value.preferredDate < today()) {
+      // The showroom's calendar, not UTC's: just after midnight in summer UTC
+      // is still on yesterday, which would turn away a booking for today.
+      const today = londonToday();
+      const latest = addDays(today, 120);
+      if (value.preferredDate < today) {
         context.addIssue({ code: "custom", path: ["preferredDate"], message: "Please choose today or a later date" });
       } else if (value.preferredDate > latest) {
         context.addIssue({ code: "custom", path: ["preferredDate"], message: "Please choose a date in the next four months" });

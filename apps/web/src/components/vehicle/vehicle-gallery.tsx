@@ -274,6 +274,9 @@ function GalleryArrow({ side, onClick, label }: { side: "left" | "right"; onClic
   );
 }
 
+/** How far a finger must travel sideways, in CSS pixels, to change photograph. */
+const SWIPE_THRESHOLD = 50;
+
 function Lightbox({
   images,
   active,
@@ -292,6 +295,33 @@ function Lightbox({
   const closeRef = useRef<HTMLButtonElement>(null);
   useDialogFocus({ open: true, containerRef: dialogRef, initialFocusRef: closeRef, onClose });
 
+  // Swipe between photographs on touch. One finger only, and only a clearly
+  // sideways movement counts, so a pinch or a vertical drag never skips a
+  // photograph by accident. Mice have the arrows and the keyboard.
+  const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
+  const canSwipe = images.length > 1;
+
+  const onPointerDown = (event: React.PointerEvent) => {
+    if (!event.isPrimary || event.pointerType === "mouse") {
+      // A second finger means a pinch, not a swipe.
+      swipe.current = null;
+      return;
+    }
+    // Once the page is pinch-zoomed a sideways drag is panning, not paging.
+    if ((window.visualViewport?.scale ?? 1) > 1.01) return;
+    swipe.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  };
+
+  const onPointerUp = (event: React.PointerEvent) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (!start || start.id !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    onGo(dx < 0 ? active + 1 : active - 1);
+  };
+
   return (
     <div
       ref={dialogRef}
@@ -301,7 +331,11 @@ function Lightbox({
       data-surface="dark"
       data-lenis-prevent
       // Fades up from nothing as it mounts (@starting-style), no script involved.
-      className="lightbox fixed inset-0 z-100 flex flex-col bg-ink-950/97 backdrop-blur-sm"
+      // Full-bleed, so its controls step in from the notch and home indicator.
+      className={cn(
+        "lightbox fixed inset-0 z-100 flex flex-col bg-ink-950/97 backdrop-blur-sm",
+        "pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]",
+      )}
     >
       <div className="flex shrink-0 items-center justify-between gap-4 px-5 py-4 md:px-8 md:py-5">
         <div className="min-w-0">
@@ -321,7 +355,21 @@ function Lightbox({
         </button>
       </div>
 
-      <div className="relative flex-1">
+      <div
+        {...(canSwipe
+          ? {
+              onPointerDown,
+              onPointerUp,
+              onPointerCancel: () => {
+                swipe.current = null;
+              },
+            }
+          : {})}
+        // Hands sideways gestures to the handlers above while leaving vertical
+        // panning and pinch-zoom with the browser. Without it a touch browser
+        // claims the drag and cancels the pointer before it ends.
+        className={cn("relative flex-1", canSwipe && "touch-pan-y touch-pinch-zoom")}
+      >
         {/* Keyed on the photograph, so each one dissolves in as it arrives. */}
         <div key={image.id} className="lightbox-frame absolute inset-0 md:inset-x-20">
           {/* Letterboxed, so no blurred placeholder bleeding into the margins. */}

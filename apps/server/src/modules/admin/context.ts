@@ -1,4 +1,4 @@
-import { eq, tables } from "@Stratford-city-motorcars-Ltd/db";
+import { describeError, eq, tables } from "@Stratford-city-motorcars-Ltd/db";
 import { ConflictError, ForbiddenError, UnauthorisedError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import { can, deniedReason, type Capability } from "@Stratford-city-motorcars-Ltd/core/permissions";
 import type { Role, SessionUser } from "@Stratford-city-motorcars-Ltd/core/team";
@@ -39,7 +39,9 @@ export const requireMember = createMiddleware<AdminEnv>(async (c, next) => {
     db.update(tables.user)
       .set({ lastActiveAt: new Date() })
       .where(eq(tables.user.id, user.id))
-      .catch(() => undefined);
+      // Not awaited, so a failure must not reject unhandled — but it is still
+      // worth knowing about. Summarised (see describeError), never the error.
+      .catch((error: unknown) => console.error(`[admin] last-active time not recorded: ${describeError(error)}`));
   }
 
   await next();

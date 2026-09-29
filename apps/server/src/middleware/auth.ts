@@ -3,24 +3,13 @@ import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { createMiddleware } from "hono/factory";
 
 import { HttpError } from "../lib/http";
-import type { AppEnv, StaffEnv } from "../types";
+import type { AppEnv } from "../types";
 
 /** Reads the Better Auth session cookie into `c.var.user` / `c.var.session`. */
 export const loadSession = createMiddleware<AppEnv>(async (c, next) => {
   const result = await auth.api.getSession({ headers: c.req.raw.headers });
   c.set("user", result?.user ?? null);
   c.set("session", result?.session ?? null);
-  await next();
-});
-
-/**
- * Staff-only routes. Every account is a dealership staff account (public
- * sign-up is disabled), so a valid session is the permission.
- */
-export const requireStaff = createMiddleware<StaffEnv>(async (c, next) => {
-  if (!c.get("user") || !c.get("session")) {
-    throw new HttpError(401, "unauthenticated", "Please sign in to continue.");
-  }
   await next();
 });
 
