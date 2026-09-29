@@ -8,6 +8,7 @@ import {
   NotFoundError,
   PUBLIC_PRICE_RANGE,
   TRANSMISSIONS,
+  UnauthorisedError,
   ValidationError,
   errorMessage,
   formatDate,
@@ -60,6 +61,7 @@ import { api, SITE_URL } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
 import { useSession } from "@/lib/session";
+import { notifyUnauthorised } from "@/stores/session";
 
 import { MediaManager } from "./media-manager";
 import { PublishingPanel, SECTIONS, type SectionId } from "./publishing-panel";
@@ -236,6 +238,9 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
     } catch (error) {
       if (error instanceof ConflictError) {
         setConflict(true);
+      } else if (error instanceof UnauthorisedError) {
+        // Asks for the password again and keeps this page, so the save can be repeated.
+        notifyUnauthorised();
       } else if (error instanceof ValidationError) {
         setFieldErrors(error.fields);
         const first = Object.keys(error.fields)[0];
