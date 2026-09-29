@@ -6,8 +6,8 @@ import { Container, Eyebrow } from "@/components/ui/section";
 import { SplitText } from "@/components/ui/split-text";
 import { VehiclePhoto } from "@/components/vehicle/vehicle-photo";
 import type { VehicleImage } from "@/lib/inventory/types";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /**
  * The last thing on the homepage: one line, three ways in.
@@ -16,7 +16,9 @@ import { whatsappLinks } from "@/lib/whatsapp";
  * words — present, but held well back so it reads as atmosphere rather than
  * a second hero. Without stock it is ink and grain alone.
  */
-export function ClosingCta({ photo }: { photo?: VehicleImage }) {
+export async function ClosingCta({ photo }: { photo?: VehicleImage }) {
+  const site = await getSite();
+
   return (
     <section data-surface="dark" className="grain relative overflow-hidden bg-ink-950 text-bone">
       {photo ? (
@@ -47,7 +49,7 @@ export function ClosingCta({ photo }: { photo?: VehicleImage }) {
             Contact us
           </ButtonLink>
           <ExternalButtonLink
-            href={whatsappLinks.browsing}
+            href={whatsappLinksFor(site).browsing}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"

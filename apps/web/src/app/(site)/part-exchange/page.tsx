@@ -13,8 +13,8 @@ import { faqsByCategory } from "@/lib/content/faqs";
 import { partExchangeChecklist, partExchangeSteps } from "@/lib/content/services";
 import { getVehicleLinks } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /*
  * Four steps, then the form. The "what happens next" band told the same four
@@ -37,6 +37,7 @@ const crumbs = [
 ];
 
 export default async function PartExchangePage() {
+  const site = await getSite();
   const cars = await getVehicleLinks();
 
   return (
@@ -109,7 +110,7 @@ export default async function PartExchangePage() {
                   {site.phone.display}
                 </ExternalButtonLink>
                 <ExternalButtonLink
-                  href={whatsappLinks.partExchange}
+                  href={whatsappLinksFor(site).partExchange}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="whatsapp"
@@ -134,7 +135,7 @@ export default async function PartExchangePage() {
 
       <FaqSection
         // "Do you accept part exchange?" is what this whole page answers.
-        faqs={[...faqsByCategory("Part exchange"), ...faqsByCategory("Finance")].filter(
+        faqs={[...faqsByCategory(site, "Part exchange"), ...faqsByCategory(site, "Finance")].filter(
           (faq) => faq.id !== "part-exchange" && faq.id !== "finance" && faq.id !== "finance-credit-check",
         )}
         eyebrow="Part-exchange questions"
