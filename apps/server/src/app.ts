@@ -7,7 +7,7 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 
-import { errorBody, handleError, handleNotFound, ok } from "./lib/http";
+import { errorBody, handleError, handleNotFound, ok, redactPath } from "./lib/http";
 import { loadSession, sameOriginWrites } from "./middleware/auth";
 import { adminRoutes } from "./modules/admin";
 import { healthRoutes } from "./modules/health/routes";
@@ -31,7 +31,7 @@ export function createApp() {
   const app = new Hono<AppEnv>();
 
   app.use(requestId());
-  app.use(logger());
+  app.use(logger((line) => console.log(redactPath(line))));
   app.use(secureHeaders({ crossOriginResourcePolicy: "cross-origin" }));
   app.use(
     "/api/*",
