@@ -9,10 +9,14 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
  * Selects are native on purpose. On a phone the OS picker beats any custom
  * dropdown for speed and accessibility, and it costs no JavaScript — which
  * matters when half the audience is filtering stock on mobile data.
+ *
+ * Controls are 16px on phones: iOS Safari zooms into any field set smaller
+ * when it takes focus, and leaves the page zoomed after the keyboard closes.
+ * The slightly tighter 15px returns from sm, where that no longer applies.
  */
 
 const controlBase =
-  "w-full rounded-sm border bg-[var(--surface-raised)] px-4 text-[0.9375rem] text-[var(--foreground)] " +
+  "w-full rounded-sm border bg-[var(--surface-raised)] px-4 text-base text-[var(--foreground)] sm:text-[0.9375rem] " +
   "transition-[border-color,background-color,box-shadow] duration-300 ease-[var(--ease-out-expo)] " +
   "placeholder:text-[var(--muted-foreground)]/70 hover:border-[var(--muted-foreground)] " +
   // A soft brass halo inside the crisp focus outline.
