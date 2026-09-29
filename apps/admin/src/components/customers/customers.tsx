@@ -75,7 +75,7 @@ export function CustomerList() {
   const listQuery: CustomerListQuery = { filter, sort, search: debounced || undefined, page, pageSize: DEFAULT_PAGE_SIZE };
   const { data, isPending, error, refetch, isPlaceholderData } = useQuery({
     queryKey: queryKeys.customers(listQuery),
-    queryFn: () => api.customers.list(listQuery),
+    queryFn: ({ signal }) => api.customers.list(listQuery, { signal }),
     placeholderData: keepPreviousData,
   });
 
@@ -187,7 +187,7 @@ export function CustomerList() {
 }
 
 export function CustomerProfile({ id }: { id: string }) {
-  const query = useQuery({ queryKey: queryKeys.customer(id), queryFn: () => api.customers.get(id) });
+  const query = useQuery({ queryKey: queryKeys.customer(id), queryFn: ({ signal }) => api.customers.get(id, { signal }) });
   // Only when there is nothing to show: a background refresh that fails — or a
   // customer erased from this page — must not flash an error on the way out.
   if (query.error && !query.data) {

@@ -138,7 +138,7 @@ function errorAnchor(field: string, record: VehicleRecord): string | undefined {
 }
 
 export function VehicleEditor({ id }: { id: string }) {
-  const query = useQuery({ queryKey: queryKeys.vehicle(id), queryFn: () => api.stock.get(id) });
+  const query = useQuery({ queryKey: queryKeys.vehicle(id), queryFn: ({ signal }) => api.stock.get(id, { signal }) });
 
   // Only when there is nothing to show: a background refresh that fails — or a
   // car deleted from under the editor — must not throw away work in progress.
@@ -257,7 +257,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   };
 
   const reload = async () => {
-    const latest = await client.fetchQuery({ queryKey: queryKeys.vehicle(vehicle.id), queryFn: () => api.stock.get(vehicle.id) });
+    const latest = await client.fetchQuery({ queryKey: queryKeys.vehicle(vehicle.id), queryFn: ({ signal }) => api.stock.get(vehicle.id, { signal }) });
     accept(latest);
     setConflict(false);
     notify.info("Loaded the latest version", "Your unsaved changes were discarded.");
