@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { NewTabHint } from "@/components/ui/text-link";
 
 /**
  * The site's button. Deliberately square (2px radius), generous in height and
@@ -111,6 +112,7 @@ export function ExternalButtonLink({
   return (
     <a className={buttonClasses({ variant, size, className })} {...props}>
       {children}
+      {props.target === "_blank" ? <NewTabHint /> : null}
     </a>
   );
 }

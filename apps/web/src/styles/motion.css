@@ -43,10 +43,15 @@
 
   /* Brass for text: the deep, text-safe tone on bone; the bright one on ink. */
   --accent-text: var(--color-brass-deep);
+
+  /* The quiet half of a two-tone headline. 52% on bone/paper clears 3:1 for
+     large text (3.64:1 on bone); ink needs less to get there (3.72:1 at 42%). */
+  --headline-muted: color-mix(in oklab, var(--foreground) 52%, transparent);
 }
 
 [data-surface="dark"] {
   --accent-text: var(--color-brass-bright);
+  --headline-muted: color-mix(in oklab, var(--foreground) 42%, transparent);
 }
 
 /* ---- Layout safety ------------------------------------------------------------ */
