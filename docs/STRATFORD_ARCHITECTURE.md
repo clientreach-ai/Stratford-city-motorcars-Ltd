@@ -42,6 +42,12 @@ interface can write, ready for the admin's API.
 Build and runtime must use the same `DATABASE_URL`: vehicle pages are
 prerendered at build time from whichever source is configured.
 
+The unset mode is for local development and Vercel previews only. The seed
+records are all drafts, so a production website without a database would show
+no cars; `packages/env/src/web.ts` fails a production build without it
+(`VERCEL_ENV=production`, or `NODE_ENV=production` off Vercel), and the same
+check runs again when the server first loads the inventory store.
+
 ## Inventory
 
 Code: `apps/web/src/lib/inventory/`.
@@ -422,7 +428,7 @@ modules/admin          the admin API: session, overview, stock, enquiries,
 | `GET /media/:vehicleId/:file` | public | Stored photos when the bucket has no public URL |
 | `GET /api/vehicles`, `/featured`, `/makes`, `/:slug`, `/:slug/related` | public | Stock that passes the publishing rules (`{ data, meta }`); old slugs 308 |
 | `/api/admin/*` | admin | Everything in [the admin contract](./STRATFORD_ADMIN_CONTRACT.md), with role checks |
-| `/api/auth/*` | none | Better Auth, used by `/api/admin/session`; sign-up disabled |
+| `/api/auth/*` | — | Not mounted: `/api/admin/session` calls Better Auth in-process, and only active members can hold a session |
 
 - **Accounts**: members have a role (`owner`, `staff`) and a status (`invited`,
   `active`, `deactivated`) on `user`. The first owner comes from

@@ -1,20 +1,22 @@
 import { PageHero } from "@/components/site/page-hero";
 import { Container, Section } from "@/components/ui/section";
 import { beingPrepared, type LegalPlaceholder } from "@/lib/content/legal";
-import { site } from "@/lib/site";
+import { getSite } from "@/lib/settings";
 
 /**
  * Interim page for a legal document that is still being prepared. It makes no
  * legal statements of its own — it says the document is not yet available and
  * how to contact the business in the meantime. See `lib/content/legal.ts`.
  */
-export function LegalPlaceholderPage({
+export async function LegalPlaceholderPage({
   document,
   crumbs,
 }: {
   document: LegalPlaceholder;
   crumbs: { name: string; path: string }[];
 }) {
+  const site = await getSite();
+
   return (
     <>
       <PageHero

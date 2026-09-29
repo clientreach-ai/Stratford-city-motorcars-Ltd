@@ -11,8 +11,8 @@ import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/sec
 import { stockSources } from "@/lib/content/services";
 import { getAvailableVehicles } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /*
  * Rewritten from the client intake. Kept from the old site, as the client asked:
@@ -60,7 +60,7 @@ const principles = [
 ];
 
 export default async function AboutPage() {
-  const vehicles = await getAvailableVehicles();
+  const [vehicles, site] = await Promise.all([getAvailableVehicles(), getSite()]);
   const marques = [...new Set(vehicles.map((vehicle) => vehicle.make))].sort();
 
   return (
@@ -160,7 +160,7 @@ export default async function AboutPage() {
                   View cars
                 </ButtonLink>
                 <ExternalButtonLink
-                  href={whatsappLinks.sourcing}
+                  href={whatsappLinksFor(site).sourcing}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="whatsapp"
@@ -216,7 +216,7 @@ export default async function AboutPage() {
                 {site.phone.display}
               </ExternalButtonLink>
               <ExternalButtonLink
-                href={whatsappLinks.general}
+                href={whatsappLinksFor(site).general}
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="whatsapp"
