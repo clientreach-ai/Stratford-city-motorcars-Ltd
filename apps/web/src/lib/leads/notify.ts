@@ -117,8 +117,13 @@ function label(key: string): string {
 export function configuredNotifiers(): LeadNotifier[] {
   const notifiers: LeadNotifier[] = [];
   const endpoint = process.env.LEADS_WEBHOOK_URL?.trim();
-  if (endpoint && /^https?:\/\//.test(endpoint)) {
-    notifiers.push(webhookNotifier(endpoint, process.env.LEADS_WEBHOOK_TOKEN?.trim() || undefined));
+  if (endpoint) {
+    if (secureEndpoint(endpoint)) {
+      notifiers.push(webhookNotifier(endpoint, process.env.LEADS_WEBHOOK_TOKEN?.trim() || undefined));
+    } else {
+      // The URL itself may carry a secret, so it is not logged.
+      console.warn("[leads] LEADS_WEBHOOK_URL ignored: it must be an https:// address");
+    }
   }
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
@@ -127,4 +132,24 @@ export function configuredNotifiers(): LeadNotifier[] {
   if (apiKey && from && to) notifiers.push(emailNotifier({ apiKey, from, to }));
 
   return notifiers;
+}
+
+/**
+ * The webhook carries the bearer token and the customer's details, so it must
+ * travel encrypted. Plain http is allowed only to this machine in development,
+ * for a local test receiver.
+ */
+function secureEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol === "https:") return true;
+  return (
+    url.protocol === "http:" &&
+    process.env.NODE_ENV === "development" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+  );
 }

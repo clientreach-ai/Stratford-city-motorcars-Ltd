@@ -11,15 +11,21 @@ import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
 import { getSite } from "@/lib/settings";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Contact, Viewings & Directions — Stratford, East London",
-  description: `Call, WhatsApp or email us, book a viewing, or visit the showroom at ${site.address.full}. Free parking on site. Open Monday to Friday, ${site.hours.open.opens}–${site.hours.open.closes}; weekends by appointment.`,
-  path: "/contact",
-});
+// The description quotes the address and hours, so it follows the saved
+// settings like the page itself does.
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
+  const { days, opens, closes } = site.hours.open;
+
+  return pageMetadata({
+    title: "Contact, Viewings & Directions — Stratford, East London",
+    description: `Call, WhatsApp or email us, book a viewing, or visit the showroom at ${site.address.full}. ${site.parking} Open ${days[0]} to ${days[days.length - 1]}, ${opens}–${closes}; weekends by appointment.`,
+    path: "/contact",
+  });
+}
 
 const crumbs = [
   { name: "Home", path: "/" },
@@ -49,7 +55,7 @@ export default async function ContactPage() {
             detail={site.hours.compact}
           />
           <ChannelCard
-            href={whatsappLinks.general}
+            href={whatsappLinksFor(site).general}
             external
             icon={<WhatsAppIcon className="size-5" />}
             label="WhatsApp"
@@ -93,7 +99,7 @@ export default async function ContactPage() {
 
               <div className="mt-9 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
                 <ExternalButtonLink
-                  href={whatsappLinks.bookViewing}
+                  href={whatsappLinksFor(site).bookViewing}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="whatsapp"
@@ -204,7 +210,7 @@ export default async function ContactPage() {
       <FaqSection
         // Parking and the hours are answered on the page above, so the list is
         // the three questions someone still asks before setting off.
-        faqs={faqsByCategory("Visiting").filter((faq) => faq.id !== "parking")}
+        faqs={faqsByCategory(site, "Visiting").filter((faq) => faq.id !== "parking")}
         eyebrow="Before you come"
         title="Visiting questions"
       />

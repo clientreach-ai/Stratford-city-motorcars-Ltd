@@ -1,15 +1,19 @@
+"use client";
+
 import { AlertTriangle, Check, Phone } from "lucide-react";
 
+import { useSite } from "@/components/site/site-provider";
 import { ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { site } from "@/lib/site";
+import { whatsappChat } from "@/lib/whatsapp";
 
 /**
  * What the customer sees once a form resolves.
  *
  * The failure case matters as much as the success one: if the lead could not
  * be delivered we say so plainly and put the phone and WhatsApp in front of
- * them, rather than showing a thank-you for a message nobody received.
+ * them, rather than showing a thank-you for a message nobody received. Those
+ * are the owner's saved numbers, so a changed one is what the customer sees.
  */
 
 export function SuccessPanel({
@@ -24,6 +28,8 @@ export function SuccessPanel({
   /** The form that has just been replaced by this panel moves focus here. */
   ref?: React.Ref<HTMLDivElement>;
 }) {
+  const site = useSite();
+
   return (
     <div
       ref={ref}
@@ -62,6 +68,8 @@ export function SuccessPanel({
 }
 
 export function UnavailablePanel({ message }: { message: string }) {
+  const site = useSite();
+
   return (
     <div
       role="alert"
@@ -86,7 +94,7 @@ export function UnavailablePanel({ message }: { message: string }) {
               {site.phone.display}
             </ExternalButtonLink>
             <ExternalButtonLink
-              href={`https://wa.me/${site.whatsapp.number}`}
+              href={whatsappChat(site)}
               target="_blank"
               rel="noopener noreferrer"
               variant="whatsapp"
@@ -104,6 +112,8 @@ export function UnavailablePanel({ message }: { message: string }) {
 
 /** Small inline note reminding people the form is not the only route in. */
 export function DirectContactNote() {
+  const site = useSite();
+
   return (
     <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
       Prefer to talk? Call{" "}

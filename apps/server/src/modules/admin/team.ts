@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne, tables } from "@Stratford-city-motorcars-Ltd/db";
+import { and, asc, eq, gte, inArray, isNull, ne, or, tables } from "@Stratford-city-motorcars-Ltd/db";
 import { OPEN_ENQUIRY_STATUSES } from "@Stratford-city-motorcars-Ltd/core/enquiry";
 import { NotFoundError, ValidationError } from "@Stratford-city-motorcars-Ltd/core/errors";
 import { PASSWORD_LENGTH, passwordProblem, type TeamMember } from "@Stratford-city-motorcars-Ltd/core/team";
@@ -7,7 +7,7 @@ import { hashPassword } from "better-auth/crypto";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { db } from "../../lib/db";
+import { db, isUniqueViolation } from "../../lib/db";
 import { sendEmail } from "../../lib/email";
 import { HttpError } from "../../lib/http";
 import { createRateLimiter } from "../../lib/rate-limit";
@@ -30,6 +30,7 @@ const { user, session, account, lead, teamInvitation } = tables;
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_TAKEN = "Someone on the team already uses this email address.";
 
 const password = z.string().max(PASSWORD_LENGTH.max, `Use at most ${PASSWORD_LENGTH.max} characters.`);
 
@@ -124,21 +125,27 @@ export const teamRoutes = new Hono<AdminEnv>()
     if (!EMAIL.test(email)) fields.email = "That doesn't look like an email address.";
     else {
       const [taken] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
-      if (taken) fields.email = "Someone on the team already uses this email address.";
+      if (taken) fields.email = EMAIL_TAKEN;
     }
     const weak = passwordProblem(input.password);
     if (weak) fields.password = weak;
     if (Object.keys(fields).length) throw new ValidationError(fields);
 
-    const member = await db.transaction(async (tx) => {
-      const now = new Date();
-      const [row] = await tx
-        .insert(user)
-        .values({ id: crypto.randomUUID(), name, email, emailVerified: true, role: input.role, status: "active", createdAt: now, updatedAt: now })
-        .returning();
-      await setCredential(tx, row!.id, input.password);
-      return toMember(row!);
-    });
+    const member = await db
+      .transaction(async (tx) => {
+        const now = new Date();
+        const [row] = await tx
+          .insert(user)
+          .values({ id: crypto.randomUUID(), name, email, emailVerified: true, role: input.role, status: "active", createdAt: now, updatedAt: now })
+          .returning();
+        await setCredential(tx, row!.id, input.password);
+        return toMember(row!);
+      })
+      .catch((error: unknown) => {
+        // Someone added the same address between the check above and this insert.
+        if (isUniqueViolation(error, "user_email_unique")) throw new ValidationError({ email: EMAIL_TAKEN });
+        throw error;
+      });
     return c.json(member, 201);
   })
 
@@ -148,6 +155,15 @@ export const teamRoutes = new Hono<AdminEnv>()
     const input = c.req.valid("json");
 
     const updated = await db.transaction(async (tx) => {
+      // The owners and this member are locked first (in a fixed order), so two
+      // owners demoting or deactivating each other at the same moment are
+      // checked one after the other and can never leave no active owner.
+      await tx
+        .select({ id: user.id })
+        .from(user)
+        .where(or(eq(user.role, "owner"), eq(user.id, id)))
+        .orderBy(asc(user.id))
+        .for("update");
       const members = await loadMembers(tx);
       const member = members.find((item) => item.id === id);
       if (!member) throw new NotFoundError("This person is no longer on the team.");
@@ -235,6 +251,7 @@ const acceptBody = z.object({
 });
 
 const INVALID_LINK = "This invitation link is invalid or has expired. Ask the owner to send a new one.";
+const invalidInvitation = () => new HttpError(410, "invitation_invalid", INVALID_LINK);
 
 async function findInvitation(token: string) {
   const [row] = await db
@@ -244,7 +261,7 @@ async function findInvitation(token: string) {
     .where(eq(teamInvitation.tokenHash, await sha256(token)))
     .limit(1);
   if (!row || row.invitation.usedAt || row.invitation.expiresAt.getTime() < Date.now() || row.member.status !== "invited") {
-    throw new HttpError(410, "invitation_invalid", INVALID_LINK);
+    throw invalidInvitation();
   }
   return row;
 }
@@ -263,13 +280,32 @@ export const invitationRoutes = new Hono<AppEnv>()
 
   .post("/:token/accept", validate("param", tokenParam), validate("json", acceptBody), async (c) => {
     acceptThrottle(c);
-    const { invitation, member } = await findInvitation(c.req.valid("param").token);
-    const now = new Date();
+    const tokenHash = await sha256(c.req.valid("param").token);
 
     await db.transaction(async (tx) => {
-      await tx.update(teamInvitation).set({ usedAt: now }).where(eq(teamInvitation.id, invitation.id));
-      await setCredential(tx, member.id, c.req.valid("json").password);
-      await tx.update(user).set({ status: "active", emailVerified: true, updatedAt: now }).where(eq(user.id, member.id));
+      const now = new Date();
+      const [found] = await tx
+        .select({ userId: teamInvitation.userId })
+        .from(teamInvitation)
+        .where(eq(teamInvitation.tokenHash, tokenHash))
+        .limit(1);
+      if (!found) throw invalidInvitation();
+      // The member's row is locked before the invitation's, the same order as
+      // the team page's own changes, so the two cannot deadlock.
+      const [member] = await tx.select({ status: user.status }).from(user).where(eq(user.id, found.userId)).for("update").limit(1);
+      if (member?.status !== "invited") throw invalidInvitation();
+
+      // Claimed only while unused and in date, in one statement: of two
+      // accepts at the same moment, the second finds it used and is refused.
+      const [claimed] = await tx
+        .update(teamInvitation)
+        .set({ usedAt: now })
+        .where(and(eq(teamInvitation.tokenHash, tokenHash), isNull(teamInvitation.usedAt), gte(teamInvitation.expiresAt, now)))
+        .returning({ id: teamInvitation.id });
+      if (!claimed) throw invalidInvitation();
+
+      await setCredential(tx, found.userId, c.req.valid("json").password);
+      await tx.update(user).set({ status: "active", emailVerified: true, updatedAt: now }).where(eq(user.id, found.userId));
     });
     return c.body(null, 204);
   });
