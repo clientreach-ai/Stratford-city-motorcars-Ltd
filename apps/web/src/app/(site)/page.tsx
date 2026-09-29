@@ -14,15 +14,19 @@ import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { buyingJourney, homeReasons } from "@/lib/content/services";
 import { getAvailableVehicles, getFeaturedVehicles } from "@/lib/inventory/repository";
 import { pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Sports & Luxury Car Sales in East London",
-  description:
-    "Car sales in East London from a small family-owned business. Sports and luxury cars at 21–25 Romford Road, Stratford — book a viewing, finance explained, part exchange welcome, nationwide delivery.",
-  path: "/",
-});
+// The description names the street, so it follows the saved address.
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
+
+  return pageMetadata({
+    title: "Sports & Luxury Car Sales in East London",
+    description: `Car sales in East London from a small family-owned business. Sports and luxury cars at ${site.address.street}, Stratford — book a viewing, finance explained, part exchange welcome, nationwide delivery.`,
+    path: "/",
+  });
+}
 
 /** Cars shown on the homepage: two rows of four on desktop. */
 const STOCK_ON_HOME = 8;
@@ -37,9 +41,10 @@ const STOCK_ON_HOME = 8;
  * carry the detail. Long explanations on the way to the cars only lose people.
  */
 export default async function HomePage() {
-  const [featured, available] = await Promise.all([
+  const [featured, available, site] = await Promise.all([
     getFeaturedVehicles(STOCK_ON_HOME + 1),
     getAvailableVehicles(),
+    getSite(),
   ]);
 
   // One hand-picked car takes the spotlight: the next one after those the hero
@@ -92,7 +97,7 @@ export default async function HomePage() {
                 <p className="text-sm text-[var(--muted-foreground)]">
                   Not listed?{" "}
                   <ExternalTextLink
-                    href={whatsappLinks.sourcing}
+                    href={whatsappLinksFor(site).sourcing}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[var(--foreground)]"
@@ -219,7 +224,7 @@ export default async function HomePage() {
                 {site.phone.display}
               </ExternalButtonLink>
               <ExternalButtonLink
-                href={whatsappLinks.general}
+                href={whatsappLinksFor(site).general}
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="whatsapp"

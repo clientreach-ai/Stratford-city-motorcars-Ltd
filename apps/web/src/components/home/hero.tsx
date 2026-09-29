@@ -11,7 +11,8 @@ import { StockSearch } from "@/components/vehicle/stock-search";
 import { formatPrice, formatVehiclePrice } from "@/lib/format";
 import { getAvailableVehicles, getFeaturedVehicles, getMakeModelIndex } from "@/lib/inventory/repository";
 import type { PublicVehicle } from "@/lib/inventory/types";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /** At most this many hand-picked cars take turns in the hero. */
 const HERO_SLIDES = 3;
@@ -56,10 +57,11 @@ const delay = (ms: number) => ({ "--intro-delay": `${ms}ms` }) as CSSProperties;
  * then the line beneath, then the actions — so nothing waits for JavaScript.
  */
 export async function Hero() {
-  const [featured, available, makeModels] = await Promise.all([
+  const [featured, available, makeModels, site] = await Promise.all([
     getFeaturedVehicles(HERO_SLIDES),
     getAvailableVehicles(),
     getMakeModelIndex(),
+    getSite(),
   ]);
 
   // With no published stock the stock summary and the search are left out
@@ -103,7 +105,7 @@ export async function Hero() {
             Book a viewing
           </ButtonLink>
           <ExternalButtonLink
-            href={whatsappLinks.browsing}
+            href={whatsappLinksFor(site).browsing}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"
@@ -150,7 +152,7 @@ export async function Hero() {
                 <div className="flex items-center justify-between gap-4 border-b border-bone/12 px-4 py-3 md:px-5">
                   <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-brass">Find your car</p>
                   <ExternalButtonLink
-                    href={whatsappLinks.browsing}
+                    href={whatsappLinksFor(site).browsing}
                     target="_blank"
                     rel="noopener noreferrer"
                     variant="ghost"

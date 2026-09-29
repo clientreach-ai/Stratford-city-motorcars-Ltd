@@ -10,7 +10,7 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import type { Site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 import { useNavStore } from "@/stores/nav";
 import { navItems } from "./nav-config";
 
@@ -196,7 +196,7 @@ function UtilityStrip({ site }: { site: Site }) {
             {site.phone.display}
           </a>
           <a
-            href={whatsappLinks.general}
+            href={whatsappLinksFor(site).general}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 tracking-wide transition-colors hover:text-whatsapp"
@@ -365,7 +365,7 @@ function MobileNav({ open, onClose, site }: { open: boolean; onClose: () => void
             {site.phone.display}
           </ExternalButtonLink>
           <ExternalButtonLink
-            href={whatsappLinks.general}
+            href={whatsappLinksFor(site).general}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"
