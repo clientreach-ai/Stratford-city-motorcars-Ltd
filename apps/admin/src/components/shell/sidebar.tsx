@@ -1,6 +1,6 @@
 "use client";
 
-import { ROLES, type Capability } from "@Stratford-city-motorcars-Ltd/core";
+import { ROLES, errorMessage, type Capability } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery } from "@tanstack/react-query";
 import type { Route } from "next";
 import Image from "next/image";
@@ -25,11 +25,13 @@ import {
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 
 import { Hint } from "@/components/ui/hint";
+import { notify } from "@/components/ui/toast";
 import { GuardedLink } from "@/components/ui/unsaved";
 import { api, SITE_URL } from "@/lib/api";
 import { dateKey, initials } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
 import { useSession } from "@/lib/session";
+import { useShellStore } from "@/stores/shell";
 
 import { routes } from "./routes";
 
@@ -185,12 +187,18 @@ export function Wordmark({ compact, className }: { compact?: boolean; className?
 export function AccountPanel({ collapsed }: { collapsed: boolean }) {
   const { user, signOut } = useSession();
   const [leaving, setLeaving] = useState(false);
+  const closeDrawer = useShellStore((state) => state.closeDrawer);
   const role = ROLES.find((item) => item.value === user.role);
 
   const leave = async () => {
     setLeaving(true);
     try {
       await signOut();
+    } catch (error) {
+      // Still signed in, so say so rather than seem to do nothing — with the
+      // phone's menu closed, which would otherwise cover the message.
+      closeDrawer();
+      notify.error("You were not signed out", errorMessage(error, "Try again."));
     } finally {
       setLeaving(false);
     }
