@@ -36,7 +36,7 @@ export const env = createEnv({
     REVALIDATE_SECRET: z.string().trim().min(24, "REVALIDATE_SECRET must be at least 24 characters.").optional(),
   },
   client: {
-    /** Canonical origin. Defaults to https://www.stratfordcitymotorcars.com in site.ts. */
+    /** Canonical origin; the default lives in site.ts. */
     NEXT_PUBLIC_SITE_URL: z.url().optional(),
   },
   runtimeEnv: {
