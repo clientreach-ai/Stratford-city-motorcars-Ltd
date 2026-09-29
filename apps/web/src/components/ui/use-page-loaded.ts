@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribe(onChange: () => void) {
+  window.addEventListener("load", onChange, { once: true });
+  return () => window.removeEventListener("load", onChange);
+}
+
+const isLoaded = () => document.readyState === "complete";
+
+// The server never has a loaded page, so hydration always starts from false.
+const isLoadedOnServer = () => false;
 
 /**
  * True once the page has finished loading (the window `load` event).
@@ -11,17 +21,5 @@ import { useEffect, useState } from "react";
  * that are only a swipe or a few seconds away.
  */
 export function usePageLoaded(): boolean {
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    if (document.readyState === "complete") {
-      setLoaded(true);
-      return;
-    }
-    const onLoad = () => setLoaded(true);
-    window.addEventListener("load", onLoad, { once: true });
-    return () => window.removeEventListener("load", onLoad);
-  }, []);
-
-  return loaded;
+  return useSyncExternalStore(subscribe, isLoaded, isLoadedOnServer);
 }

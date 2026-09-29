@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:deploy": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "lint": "eslint --max-warnings=0 ."
   },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/env": "workspace:*",
@@ -27,6 +28,7 @@
     "@Stratford-city-motorcars-Ltd/config": "workspace:*",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }
