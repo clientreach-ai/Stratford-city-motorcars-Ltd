@@ -64,6 +64,9 @@ export function SmoothScroll() {
       };
       const lockWatcher = new MutationObserver(syncLock);
       lockWatcher.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+      // Lenis arrives after a network fetch now, so a dialog may already have
+      // locked the page; match that state rather than waiting for a change.
+      syncLock();
 
       const onClick = (event: MouseEvent) => {
         if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
