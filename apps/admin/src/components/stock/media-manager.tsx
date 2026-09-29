@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  MAX_PHOTO_BYTES,
   PHOTO_CATEGORIES,
   REQUIRED_DEALER_PHOTOS,
+  UnauthorisedError,
   ValidationError,
   errorMessage,
   type PhotoCategory,
@@ -20,6 +22,7 @@ import {
   ImagePlus,
   Link2,
   Orbit,
+  RotateCcw,
   Star,
   Trash2,
   Video,
@@ -33,7 +36,9 @@ import { Button, IconButton, Spinner } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
 import { Field, Select, TextInput } from "@/components/ui/form";
 import { Photo } from "@/components/ui/photo";
+import { useUnsavedChanges } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
+import { notifyUnauthorised } from "@/stores/session";
 
 const CATEGORY_LABEL: Record<PhotoCategory, string> = {
   exterior: "Exterior",
@@ -42,7 +47,8 @@ const CATEGORY_LABEL: Record<PhotoCategory, string> = {
   documents: "Documents",
 };
 
-type Upload = { key: string; name: string; progress: number; error?: string };
+/** A photograph being sent, or one that failed — kept with its file so it can be tried again. */
+type Upload = { key: string; file: File; category: PhotoCategory; progress: number; error?: string; retry?: boolean };
 
 /**
  * Photographs, walkaround video and 360° links for one car.
@@ -81,6 +87,8 @@ export function MediaManager({
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
+  // A photograph still on its way is lost if the page is left, like an unsaved edit.
+  useUnsavedChanges(uploads.some((item) => !item.error));
 
   const images = media.filter((item): item is VehicleImage => item.kind === "image");
   const dealer = images.filter((image) => image.provenance === "dealer");
@@ -89,26 +97,45 @@ export function MediaManager({
   const cover = dealer.find((image) => image.id === coverImageId) ?? dealer.find((image) => image.category === "exterior") ?? dealer[0];
   const counts = Object.fromEntries(PHOTO_CATEGORIES.map((value) => [value, dealer.filter((image) => image.category === value).length])) as Record<PhotoCategory, number>;
 
+  const patchUpload = (key: string, patch: Partial<Upload>) =>
+    setUploads((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)));
+
+  const send = async ({ key, file, category: uploadCategory }: Upload) => {
+    try {
+      const image = await api.stock.uploadImage(vehicleId, file, { category: uploadCategory, alt: "" }, (progress) => patchUpload(key, { progress }));
+      onUploaded(image);
+      setUploads((current) => current.filter((item) => item.key !== key));
+    } catch (caught) {
+      if (caught instanceof UnauthorisedError) notifyUnauthorised();
+      // A refusal of the file itself would only be refused again; anything
+      // else (no answer, a busy server, a dropped connection) may be retried.
+      const refused = caught instanceof ValidationError;
+      const message = refused && caught.fields.file ? caught.fields.file : errorMessage(caught, "The upload failed.");
+      patchUpload(key, { error: message, retry: !refused });
+    }
+  };
+
   const upload = async (files: FileList | File[]) => {
     const list = Array.from(files);
     if (!list.length) return;
-    const batch = list.map((file) => ({ key: `${file.name}-${crypto.randomUUID()}`, name: file.name, progress: 0 }));
+    const batch: Upload[] = list.map((file) => ({
+      key: `${file.name}-${crypto.randomUUID()}`,
+      file,
+      category,
+      progress: 0,
+      // Refused here rather than after sending it all over the showroom Wi-Fi.
+      error: file.size > MAX_PHOTO_BYTES ? `“${file.name}” is larger than ${MAX_PHOTO_BYTES / 1024 / 1024} MB. Export it smaller, or as a JPEG.` : undefined,
+    }));
     setUploads((current) => [...current, ...batch]);
-    const uploadCategory = category;
     // One at a time: a phone on showroom Wi-Fi copes better, and order is kept.
-    for (const [i, file] of list.entries()) {
-      const key = batch[i]!.key;
-      try {
-        const image = await api.stock.uploadImage(vehicleId, file, { category: uploadCategory, alt: "" }, (progress) =>
-          setUploads((current) => current.map((item) => (item.key === key ? { ...item, progress } : item))),
-        );
-        onUploaded(image);
-        setUploads((current) => current.filter((item) => item.key !== key));
-      } catch (caught) {
-        const message = caught instanceof ValidationError && caught.fields.file ? caught.fields.file : errorMessage(caught, "The upload failed.");
-        setUploads((current) => current.map((item) => (item.key === key ? { ...item, error: message } : item)));
-      }
+    for (const item of batch) {
+      if (!item.error) await send(item);
     }
+  };
+
+  const retry = (item: Upload) => {
+    patchUpload(item.key, { error: undefined, retry: false, progress: 0 });
+    void send(item);
   };
 
   const update = (id: string, patch: Partial<VehicleImage>) =>
@@ -254,7 +281,7 @@ export function MediaManager({
             <li key={item.key} className="flex items-center gap-3 px-4 py-3">
               {item.error ? <CircleAlert className="size-4 shrink-0 text-destructive" aria-hidden /> : <Spinner className="shrink-0 text-ink-500" />}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm">{item.name}</p>
+                <p className="truncate text-sm">{item.file.name}</p>
                 {item.error ? (
                   <p className="text-xs text-destructive">{item.error}</p>
                 ) : item.progress >= 1 ? (
@@ -262,11 +289,17 @@ export function MediaManager({
                   // a little while on a small server.
                   <p className="text-xs text-muted-foreground">Preparing web versions…</p>
                 ) : (
-                  <div className="mt-1.5 h-1 bg-ink-150" role="progressbar" aria-valuenow={Math.round(item.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading ${item.name}`}>
+                  <div className="mt-1.5 h-1 bg-ink-150" role="progressbar" aria-valuenow={Math.round(item.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading ${item.file.name}`}>
                     <div className="h-full bg-ink-900 transition-[width] duration-200" style={{ width: `${item.progress * 100}%` }} />
                   </div>
                 )}
               </div>
+              {item.error && item.retry ? (
+                <Button size="sm" onClick={() => retry(item)}>
+                  <RotateCcw aria-hidden />
+                  Retry
+                </Button>
+              ) : null}
               {item.error ? (
                 <IconButton label="Dismiss" size="sm" onClick={() => setUploads((current) => current.filter((entry) => entry.key !== item.key))}>
                   <X aria-hidden />

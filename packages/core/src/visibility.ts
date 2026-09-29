@@ -197,6 +197,8 @@ export function isPubliclyVisible(record: VehicleRecord): boolean {
  *    the image optimiser); the listing checklist suggests replacing them.
  */
 export const MINIMUM_PHOTO_SIZE = { long: 400, short: 300 } as const;
+/** The largest photograph file the API accepts; the admin checks before sending one. */
+export const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
 export const RECOMMENDED_PHOTO_SIZE = { long: 1200, short: 800 } as const;
 
 export function meetsPhotoSize(

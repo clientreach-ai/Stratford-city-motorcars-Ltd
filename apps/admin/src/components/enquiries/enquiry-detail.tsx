@@ -22,7 +22,6 @@ import {
   type ValuationStatus,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
   CalendarPlus,
@@ -44,7 +43,7 @@ import { Field, NumberInput, Select, TextArea, TextInput } from "@/components/ui
 import { DefinitionList, ErrorState, LoadingBlock, Notice, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { Photo } from "@/components/ui/photo";
 import { notify } from "@/components/ui/toast";
-import { GuardedLink, useUnsavedChanges } from "@/components/ui/unsaved";
+import { GuardedLink, useLeaveGuard, useUnsavedChanges } from "@/components/ui/unsaved";
 import { AppointmentSheet } from "@/components/viewings/appointment-sheet";
 import { api } from "@/lib/api";
 import { formatDateTime, formatRelative, formatShortDate, formatTime, formatWeekdayDate } from "@/lib/format";
@@ -54,7 +53,7 @@ import { useSession } from "@/lib/session";
 import { ContactActions, KindTag, Waiting } from "./parts";
 
 export function EnquiryDetail({ id }: { id: string }) {
-  const query = useQuery({ queryKey: queryKeys.enquiry(id), queryFn: () => api.enquiries.get(id) });
+  const query = useQuery({ queryKey: queryKeys.enquiry(id), queryFn: ({ signal }) => api.enquiries.get(id, { signal }) });
 
   if (query.error && !query.data) {
     const missing = query.error instanceof NotFoundError;
@@ -82,8 +81,8 @@ export function EnquiryDetail({ id }: { id: string }) {
 function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activity: EnquiryActivity[]; appointments: Appointment[] }) {
   const { can } = useSession();
   const canEdit = can("enquiries.edit");
-  const router = useRouter();
-  const team = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
+  const { leave } = useLeaveGuard();
+  const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
   const [closing, setClosing] = useState(false);
   const [arranging, setArranging] = useState(false);
   const [openAppointment, setOpenAppointment] = useState<string | null>(null);
@@ -106,8 +105,11 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
     });
 
   const changeStatus = (next: EnquiryStatus) => {
-    if (next === "not-proceeding") setClosing(true);
-    else runStatus({ status: next });
+    if (next === "not-proceeding") {
+      // The dialog shows this mutation's error; not one left from an earlier change.
+      status.reset();
+      setClosing(true);
+    } else runStatus({ status: next });
   };
 
   const payload = enquiry.payload;
@@ -273,15 +275,14 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
       {closing ? (
         <ClosedReasonDialog
           busy={status.isPending}
-          onClose={() => setClosing(false)}
+          // In the dialog, not a toast, which would sit underneath it unseen.
+          failure={status.error ? (status.error instanceof ConflictError ? conflictMessage : errorMessage(status.error)) : undefined}
+          onClose={() => {
+            setClosing(false);
+            status.reset();
+          }}
           onConfirm={(reason) => {
-            status.mutate(
-              { status: "not-proceeding", closedReason: reason },
-              {
-                onSuccess: () => setClosing(false),
-                onError: (error) => notify.error("Status not changed", error instanceof ConflictError ? conflictMessage : errorMessage(error)),
-              },
-            );
+            status.mutate({ status: "not-proceeding", closedReason: reason }, { onSuccess: () => setClosing(false) });
           }}
         />
       ) : null}
@@ -312,7 +313,8 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
           onClose={() => setDeleting(false)}
           onDeleted={async () => {
             setDeleting(false);
-            router.replace(routes.enquiries);
+            // Through the guard, so Back from the list does not find the deleted enquiry.
+            void leave(routes.enquiries, { replace: true });
           }}
         />
       ) : null}
@@ -619,7 +621,17 @@ function Timeline({ enquiry, activity, canEdit }: { enquiry: Enquiry; activity: 
   );
 }
 
-function ClosedReasonDialog({ onClose, onConfirm, busy }: { onClose: () => void; onConfirm: (reason: ClosedReason) => void; busy: boolean }) {
+function ClosedReasonDialog({
+  onClose,
+  onConfirm,
+  busy,
+  failure,
+}: {
+  onClose: () => void;
+  onConfirm: (reason: ClosedReason) => void;
+  busy: boolean;
+  failure?: string;
+}) {
   const [reason, setReason] = useState<ClosedReason | "">("");
   const [error, setError] = useState<string>();
   return (
@@ -649,9 +661,9 @@ function ClosedReasonDialog({ onClose, onConfirm, busy }: { onClose: () => void;
             </label>
           ))}
         </div>
-        {error ? (
+        {error || failure ? (
           <p role="alert" className="mt-2 text-sm text-destructive">
-            {error}
+            {error ?? failure}
           </p>
         ) : null}
       </fieldset>
@@ -670,11 +682,11 @@ function DeleteDialog({
 }) {
   const [reason, setReason] = useState<"spam" | "erasure-request" | "">("");
   const [typed, setTyped] = useState("");
+  // Failures are shown in the dialog: a toast would sit underneath it, unseen.
   const mutation = useAdminMutation(() => api.enquiries.remove(enquiry.id, reason as "spam" | "erasure-request"), {
     success: "Enquiry deleted",
     // Erasing the person as well is a separate decision, taken on their page.
     successDetail: reason === "erasure-request" ? "Their customer record is still here — erase it from their customer page too." : undefined,
-    failure: "The enquiry was not deleted",
     onSuccess: onDeleted,
   });
   const ready = reason !== "" && typed.trim().toUpperCase() === enquiry.reference;
@@ -719,6 +731,11 @@ function DeleteDialog({
         </Field>
         {reason === "erasure-request" ? (
           <p className="text-xs text-ink-600">Also remove them from anything held outside this system, such as WhatsApp chats or the enquiry email inbox.</p>
+        ) : null}
+        {mutation.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {errorMessage(mutation.error)}
+          </p>
         ) : null}
       </div>
     </Dialog>

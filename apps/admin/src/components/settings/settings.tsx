@@ -20,7 +20,7 @@ import { useSession } from "@/lib/session";
 const WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export function Settings() {
-  const { data, error, refetch } = useQuery({ queryKey: queryKeys.settings, queryFn: () => api.settings.get() });
+  const { data, error, refetch } = useQuery({ queryKey: queryKeys.settings, queryFn: ({ signal }) => api.settings.get({ signal }) });
 
   if (error) {
     return (

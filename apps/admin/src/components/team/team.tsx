@@ -37,7 +37,7 @@ export function Team() {
   const { user, can } = useSession();
   const manage = can("team.manage");
   const confirm = useConfirm();
-  const { data, isPending, error, refetch } = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
+  const { data, isPending, error, refetch } = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
   const [inviting, setInviting] = useState(false);
   const [changingRole, setChangingRole] = useState<TeamMember | null>(null);
   const [settingPassword, setSettingPassword] = useState<TeamMember | null>(null);
