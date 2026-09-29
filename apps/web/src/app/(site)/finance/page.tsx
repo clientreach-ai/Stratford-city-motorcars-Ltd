@@ -13,8 +13,8 @@ import { faqsByCategory } from "@/lib/content/faqs";
 import { financeProducts, financeTerms, paymentMethods } from "@/lib/content/services";
 import { getVehicleLinks } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /*
  * Broker, lender-panel, approval-speed and credit-check claims were removed
@@ -41,11 +41,11 @@ const crumbs = [
   { name: "Finance", path: "/finance" },
 ];
 
-/** "Do you offer finance?" is what this whole page answers, so it is dropped. */
-const financeFaqs = faqsByCategory("Finance").filter((faq) => faq.id !== "finance");
-
 export default async function FinancePage() {
+  const site = await getSite();
   const cars = await getVehicleLinks();
+  /** "Do you offer finance?" is what this whole page answers, so it is dropped. */
+  const financeFaqs = faqsByCategory(site, "Finance").filter((faq) => faq.id !== "finance");
 
   return (
     <>
@@ -169,7 +169,7 @@ export default async function FinancePage() {
                   {site.phone.display}
                 </ExternalButtonLink>
                 <ExternalButtonLink
-                  href={whatsappLinks.finance}
+                  href={whatsappLinksFor(site).finance}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="whatsapp"

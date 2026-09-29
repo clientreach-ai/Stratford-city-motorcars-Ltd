@@ -15,8 +15,8 @@ import {
   type FormState,
 } from "@/lib/forms/options";
 import { matchVehicleSlug, type VehicleLink } from "@/lib/inventory/vehicle-link";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { whatsappLinksFor } from "@/lib/whatsapp";
+import { useSite } from "@/components/site/site-provider";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
 import { useFormFeedbackFocus, useSubmissionKey } from "./use-form-feedback";
@@ -41,6 +41,7 @@ export function PartExchangeForm({
   const [state, action] = useActionState(submitPartExchange, initial);
   const { formRef, successRef } = useFormFeedbackFocus(state);
   const selectKey = useSubmissionKey(state);
+  const site = useSite();
 
   if (state.status === "success") {
     return (
@@ -143,7 +144,7 @@ export function PartExchangeForm({
         <div className="flex flex-wrap items-center gap-3 border-l border-[var(--rule)] pl-4 text-sm text-[var(--muted-foreground)]">
           <span>Photos help us give a more accurate figure.</span>
           <ExternalButtonLink
-            href={whatsappLinks.partExchange}
+            href={whatsappLinksFor(site).partExchange}
             target="_blank"
             rel="noopener noreferrer"
             variant="outline"
