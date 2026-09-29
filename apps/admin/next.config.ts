@@ -44,7 +44,6 @@ const nextConfig: NextConfig = {
     if (!apiProxyOrigin) return [];
     return [
       { source: "/api/admin/:path*", destination: `${apiProxyOrigin}/api/admin/:path*` },
-      { source: "/api/auth/:path*", destination: `${apiProxyOrigin}/api/auth/:path*` },
     ];
   },
 
