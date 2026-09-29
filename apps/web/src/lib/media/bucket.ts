@@ -1,6 +1,6 @@
 import "server-only";
 
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -55,27 +55,72 @@ function bucket(): { s3: S3Client; bucket: string } | null {
   return client;
 }
 
-/** A stored file from the bucket, or null when it is missing or the bucket is not configured. */
-export async function readFromBucket(
-  key: string,
-  range: string | null,
-): Promise<{ body: ReadableStream<Uint8Array>; status: 200 | 206; headers: Record<string, string> } | null> {
+/**
+ * What the bucket said about a key. A miss is kept apart from a failure: the
+ * bucket answering "no such file" is final, but wrong credentials or a network
+ * fault say nothing about whether the file exists.
+ */
+export type BucketRead =
+  /** Headers carry no Content-Type: the route derives it from the extension, whatever was stored. */
+  | { kind: "file"; body: ReadableStream<Uint8Array>; status: 200 | 206; headers: Record<string, string> }
+  | { kind: "missing" }
+  /** The range starts past the end of the file; `size` when it could be learned. */
+  | { kind: "unsatisfiable"; size: number | null }
+  /** Not configured, or the read failed for a reason other than the file not being there. */
+  | { kind: "unavailable" };
+
+const READ_TIMEOUT_MS = 15_000;
+
+/** Failures already logged — a wrong credential would otherwise log once per photograph. */
+const logged = new Set<string>();
+
+/** Logs a failure once per error name. Only the name: the key or message could carry details worth keeping out of logs. */
+function logOnce(what: string, error: unknown) {
+  const err = error as { code?: unknown; name?: unknown } | null;
+  const name = typeof err?.code === "string" ? err.code : typeof err?.name === "string" ? err.name : "UnknownError";
+  if (logged.has(`${what}:${name}`)) return;
+  logged.add(`${what}:${name}`);
+  console.warn(`[media] ${what}`, name);
+}
+
+function httpStatus(error: unknown): number | undefined {
+  return (error as { $metadata?: { httpStatusCode?: number } } | null)?.$metadata?.httpStatusCode;
+}
+
+/** A stored file from the bucket. `range` must already be a well-formed single range — the route checks it. */
+export async function readFromBucket(key: string, range: string | null): Promise<BucketRead> {
   const store = bucket();
-  if (!store || !isValidMediaKey(key)) return null;
+  if (!store || !isValidMediaKey(key)) return { kind: "unavailable" };
+  const objectKey = `${OBJECT_PREFIX}${key}`;
   try {
-    const object = await store.s3.send(
-      new GetObjectCommand({ Bucket: store.bucket, Key: `${OBJECT_PREFIX}${key}`, Range: range ?? undefined }),
-      { abortSignal: AbortSignal.timeout(15_000) },
-    );
-    if (!object.Body) return null;
+    const object = await store.s3.send(new GetObjectCommand({ Bucket: store.bucket, Key: objectKey, Range: range ?? undefined }), {
+      abortSignal: AbortSignal.timeout(READ_TIMEOUT_MS),
+    });
+    if (!object.Body) return { kind: "unavailable" };
     const headers: Record<string, string> = {};
-    if (object.ContentType) headers["Content-Type"] = object.ContentType;
     if (object.ContentLength !== undefined) headers["Content-Length"] = String(object.ContentLength);
     if (object.ContentRange) headers["Content-Range"] = object.ContentRange;
     if (object.ETag) headers.ETag = object.ETag;
     if (object.LastModified) headers["Last-Modified"] = object.LastModified.toUTCString();
-    return { body: object.Body.transformToWebStream(), status: object.ContentRange ? 206 : 200, headers };
-  } catch {
+    return { kind: "file", body: object.Body.transformToWebStream(), status: object.ContentRange ? 206 : 200, headers };
+  } catch (error) {
+    const name = (error as { name?: unknown } | null)?.name;
+    if (name === "NoSuchKey" || httpStatus(error) === 404) return { kind: "missing" };
+    if (name === "InvalidRange" || httpStatus(error) === 416) return { kind: "unsatisfiable", size: await objectSize(store, objectKey) };
+    logOnce("bucket read failed", error);
+    return { kind: "unavailable" };
+  }
+}
+
+/** A stored file's size, for the `Content-Range` a 416 should carry. Only asked for then, so a normal read costs one request. */
+async function objectSize(store: { s3: S3Client; bucket: string }, objectKey: string): Promise<number | null> {
+  try {
+    const head = await store.s3.send(new HeadObjectCommand({ Bucket: store.bucket, Key: objectKey }), {
+      abortSignal: AbortSignal.timeout(READ_TIMEOUT_MS),
+    });
+    return head.ContentLength ?? null;
+  } catch (error) {
+    logOnce("bucket head failed", error);
     return null;
   }
 }
@@ -109,7 +154,8 @@ export async function keepInCache(key: string, stream: ReadableStream<Uint8Array
     await mkdir(/*turbopackIgnore: true*/ path.dirname(target), { recursive: true });
     await writeFile(/*turbopackIgnore: true*/ temporary, bytes);
     await rename(/*turbopackIgnore: true*/ temporary, /*turbopackIgnore: true*/ target);
-  } catch {
+  } catch (error) {
+    logOnce("cache write failed", error);
     await rm(/*turbopackIgnore: true*/ temporary, { force: true }).catch(() => undefined);
   }
 }
