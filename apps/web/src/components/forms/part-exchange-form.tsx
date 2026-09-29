@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { ExternalButtonLink } from "@/components/ui/button";
 import { Checkbox, Field, fieldProps, Honeypot, Input, Select, Textarea } from "@/components/ui/field";
@@ -13,6 +14,7 @@ import {
   VEHICLE_CONDITIONS,
   type FormState,
 } from "@/lib/forms/options";
+import { matchVehicleSlug, type VehicleLink } from "@/lib/inventory/vehicle-link";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
@@ -202,6 +204,17 @@ export function PartExchangeForm({
       <DirectContactNote />
     </form>
   );
+}
+
+/**
+ * The form for a car's part-exchange link. `?vehicle=` is read in the browser,
+ * so the page itself stays static, and looked up in the stock the page was
+ * built with: a slug we do not hold prefills nothing, rather than a title made
+ * up from the URL. Render inside <Suspense> with the empty form as its fallback.
+ */
+export function PartExchangeFormForLinkedCar({ cars }: { cars: VehicleLink[] }) {
+  const car = matchVehicleSlug(cars, useSearchParams().get("vehicle"));
+  return <PartExchangeForm vehicleSlug={car?.slug} vehicleName={car?.name} />;
 }
 
 function Legend({ children }: { children: React.ReactNode }) {
