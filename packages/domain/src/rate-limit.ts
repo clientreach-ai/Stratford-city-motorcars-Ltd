@@ -20,6 +20,8 @@ export interface SlidingWindow {
   hit(clientKey: string | null, now?: number): number;
   /** Forgets a caller's attempts. */
   reset(clientKey: string | null): void;
+  /** Takes back a caller's most recent allowed attempt, e.g. one that failed on our side. */
+  undo(clientKey: string | null): void;
 }
 
 export function createSlidingWindow(options: { windowMs: number; max: number; maxClients?: number }): SlidingWindow {
@@ -57,6 +59,9 @@ export function createSlidingWindow(options: { windowMs: number; max: number; ma
     },
     reset(clientKey) {
       hits.delete(clientKey || UNKNOWN_CLIENT);
+    },
+    undo(clientKey) {
+      hits.get(clientKey || UNKNOWN_CLIENT)?.pop();
     },
   };
 }

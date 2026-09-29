@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Phone } from "lucide-react";
 
-import { PartExchangeForm } from "@/components/forms/part-exchange-form";
+import { PartExchangeForm, PartExchangeFormForLinkedCar } from "@/components/forms/part-exchange-form";
 import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ExternalButtonLink } from "@/components/ui/button";
@@ -11,10 +11,10 @@ import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { partExchangeChecklist, partExchangeSteps } from "@/lib/content/services";
-import { resolveVehicleBySlug } from "@/lib/inventory/repository";
+import { getVehicleLinks } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /*
  * Four steps, then the form. The "what happens next" band told the same four
@@ -36,7 +36,10 @@ const crumbs = [
   { name: "Part Exchange", path: "/part-exchange" },
 ];
 
-export default function PartExchangePage(props: PageProps<"/part-exchange">) {
+export default async function PartExchangePage() {
+  const site = await getSite();
+  const cars = await getVehicleLinks();
+
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
@@ -107,7 +110,7 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
                   {site.phone.display}
                 </ExternalButtonLink>
                 <ExternalButtonLink
-                  href={whatsappLinks.partExchange}
+                  href={whatsappLinksFor(site).partExchange}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="whatsapp"
@@ -120,8 +123,10 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
             </div>
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
+              {/* `?vehicle=` on a car's part-exchange link names the car; the
+                  form reads it in the browser so this page stays static. */}
               <Suspense fallback={<PartExchangeForm />}>
-                <PartExchangeFormForLinkedCar searchParams={props.searchParams} />
+                <PartExchangeFormForLinkedCar cars={cars} />
               </Suspense>
             </div>
           </div>
@@ -130,7 +135,7 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
 
       <FaqSection
         // "Do you accept part exchange?" is what this whole page answers.
-        faqs={[...faqsByCategory("Part exchange"), ...faqsByCategory("Finance")].filter(
+        faqs={[...faqsByCategory(site, "Part exchange"), ...faqsByCategory(site, "Finance")].filter(
           (faq) => faq.id !== "part-exchange" && faq.id !== "finance" && faq.id !== "finance-credit-check",
         )}
         eyebrow="Part-exchange questions"
@@ -138,21 +143,4 @@ export default function PartExchangePage(props: PageProps<"/part-exchange">) {
       />
     </>
   );
-}
-
-/**
- * The car comes from `?vehicle=` on a car's part-exchange link, looked up in
- * stock: a slug we do not hold prefills nothing, rather than a title made up
- * from the URL. Reading the query renders this part of the page per request,
- * so it sits inside <Suspense> with the empty form as its fallback.
- */
-async function PartExchangeFormForLinkedCar({
-  searchParams,
-}: {
-  searchParams: PageProps<"/part-exchange">["searchParams"];
-}) {
-  const { vehicle } = await searchParams;
-  const car = await resolveVehicleBySlug(Array.isArray(vehicle) ? vehicle[0] : vehicle);
-  if (!car) return <PartExchangeForm />;
-  return <PartExchangeForm vehicleSlug={car.slug} vehicleName={`${car.year} ${car.title}`} />;
 }

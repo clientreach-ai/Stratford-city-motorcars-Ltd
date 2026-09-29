@@ -39,7 +39,10 @@ const listQuery = z.object({
 const inputSchema = z.object({
   type: z.enum(types, { message: "Choose a viewing or a test drive." }),
   status: z.enum(statuses, { message: "Choose a status." }),
-  startsAt: z.string().max(40),
+  // A full ISO 8601 date and time with its offset, as the admin sends it:
+  // `Date.parse` alone accepts loose forms whose meaning depends on the
+  // server's time zone.
+  startsAt: z.string().datetime({ offset: true, message: "Choose a date and time." }),
   durationMinutes: z.number().int().min(5, "Choose how long it takes.").max(600),
   vehicleId: z.string().max(64).nullable(),
   customerId: z.string().max(64).nullable().default(null),
