@@ -335,7 +335,9 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                 <VehicleCard
                   key={item.id}
                   vehicle={item}
-                  sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+                  // Three across from lg, stopping at 416px once the container
+                  // reaches its 88rem cap.
+                  sizes="(min-width: 1408px) 416px, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
                   className="reveal"
                 />
               ))}

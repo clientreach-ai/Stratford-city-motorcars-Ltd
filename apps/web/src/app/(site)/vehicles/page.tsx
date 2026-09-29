@@ -163,7 +163,9 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                           vehicle={vehicle}
                           // Only the first card can be the LCP element on a phone.
                           priority={index === 0}
-                          sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
+                          // Three across beside the 17rem filter rail from xl,
+                          // stopping at 304px once the container reaches its cap.
+                          sizes="(min-width: 1408px) 304px, (min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
                           className="reveal"
                         />
                       ))}

@@ -23,7 +23,9 @@ export async function ClosingCta({ photo }: { photo?: VehicleImage }) {
     <section data-surface="dark" className="grain relative overflow-hidden bg-ink-950 text-bone">
       {photo ? (
         <div aria-hidden className="reveal reveal-image absolute inset-0">
-          <VehiclePhoto image={photo} alt="" sizes="100vw" className="object-cover object-[center_60%] opacity-40" />
+          {/* Drawn at 40% under a near-opaque scrim, so no detail survives
+              to need a full-width file: half the width is indistinguishable. */}
+          <VehiclePhoto image={photo} alt="" sizes="50vw" className="object-cover object-[center_60%] opacity-40" />
           <div className="absolute inset-0 bg-[radial-gradient(90%_75%_at_50%_45%,rgb(10_10_11/0.55)_0%,rgb(10_10_11/0.92)_70%,var(--color-ink-950)_100%)]" />
         </div>
       ) : null}
