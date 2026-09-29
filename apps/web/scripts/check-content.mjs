@@ -92,10 +92,12 @@ const RULES = [
   },
   { group: "retired positioning", pattern: /prestige used cars|prestige,? performance|prestige (&|and) classic/i },
 
-  // The legacy site's contradictory contact details and hire schema.
+  // The legacy site's contradictory contact details and hire schema. (Its
+  // markup also pointed at a .co.uk that did not resolve then; that domain is
+  // now the site's own, so it is no longer rejected.)
   {
     group: "legacy contact details",
-    pattern: /Unit 12|Stratford Business Park|0000 000000|stratfordcitymotorcars\.co\.uk/i,
+    pattern: /Unit 12|Stratford Business Park|0000 000000/i,
   },
   { group: "hire", pattern: /CarRental/ },
 
