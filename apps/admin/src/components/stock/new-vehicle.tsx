@@ -9,6 +9,7 @@ import { routes } from "@/components/shell/routes";
 import { Button } from "@/components/ui/button";
 import { ErrorState, LoadingBlock, Notice, PageBody, PageHeader } from "@/components/ui/page";
 import { api } from "@/lib/api";
+import { formatTime } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
 
 /**
@@ -54,10 +55,12 @@ function startDraft(): Promise<AdminVehicle> {
 }
 
 /**
- * The draft asked for before a reload, if it arrived: still empty, created
- * no earlier than the request (allowing for the server's clock).
+ * Drafts that could be the one asked for before a reload: still empty, and
+ * created no earlier than the request (allowing for the server's clock).
+ * Nothing ties a draft to the tab that asked for it — a colleague may have
+ * added one in the same minute — so these are offered, never opened unasked.
  */
-async function findDraft(startedAt: number): Promise<AdminVehicle | null> {
+async function possibleDrafts(startedAt: number): Promise<AdminVehicle[]> {
   const vehicles = await api.stock.list();
   const candidates = vehicles.filter(
     (vehicle) =>
@@ -68,7 +71,7 @@ async function findDraft(startedAt: number): Promise<AdminVehicle | null> {
       vehicle.media.length === 0 &&
       Date.parse(vehicle.createdAt) >= startedAt - 60_000,
   );
-  return candidates.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null;
+  return candidates.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 /**
@@ -80,7 +83,8 @@ export function NewVehicle() {
   const router = useRouter();
   const client = useQueryClient();
   const [error, setError] = useState<Error | null>(null);
-  const [interrupted, setInterrupted] = useState(false);
+  /** Reloaded mid-creation: the drafts that might be the one asked for. */
+  const [interrupted, setInterrupted] = useState<AdminVehicle[] | null>(null);
 
   const open = (vehicle: AdminVehicle) => {
     client.setQueryData(queryKeys.vehicle(vehicle.id), vehicle);
@@ -93,7 +97,7 @@ export function NewVehicle() {
 
   const create = () => {
     setError(null);
-    setInterrupted(false);
+    setInterrupted(null);
     void follow(creating ?? startDraft());
   };
 
@@ -107,15 +111,12 @@ export function NewVehicle() {
       create();
       return;
     }
-    // Reloaded while a draft was being created: open it if it arrived, and
-    // otherwise ask, rather than quietly adding a second.
-    findDraft(startedAt)
-      .then((found) => {
-        remember(null);
-        if (found) open(found);
-        else setInterrupted(true);
-      })
-      .catch(() => setInterrupted(true));
+    // Reloaded while a draft was being created: ask, rather than quietly
+    // adding a second — offering the one that may have arrived.
+    possibleDrafts(startedAt)
+      .then(setInterrupted)
+      .catch(() => setInterrupted([]))
+      .finally(() => remember(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on arrival
   }, []);
 
@@ -134,16 +135,24 @@ export function NewVehicle() {
             title="This page was reloaded while a draft was being created"
             action={
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => router.push(routes.stock)}>
-                  Check the cars
-                </Button>
+                {interrupted.length === 1 ? (
+                  <Button size="sm" onClick={() => open(interrupted[0]!)}>
+                    Open that draft
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => router.push(routes.stock)}>
+                    Check the cars
+                  </Button>
+                )}
                 <Button size="sm" variant="primary" onClick={create}>
                   Create a new draft
                 </Button>
               </div>
             }
           >
-            It may have been created anyway. Look for an untitled draft in the list before starting another, so there are not two.
+            {interrupted.length === 1
+              ? `An untitled draft was added at ${formatTime(interrupted[0]!.createdAt)} — probably that one, unless a colleague has just added a car too.`
+              : "It may have been created anyway. Look for an untitled draft in the list before starting another, so there are not two."}
           </Notice>
         </>
       ) : (

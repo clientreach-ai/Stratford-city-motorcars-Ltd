@@ -9,7 +9,7 @@ import {
   type SaveVehicleResult,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 
@@ -18,6 +18,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Dialog, useConfirm } from "@/components/ui/dialog";
 import { Field, NumberInput, Select, TextArea, TextInput } from "@/components/ui/form";
 import { notify } from "@/components/ui/toast";
+import { useLeaveGuard } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
 import { dateKey } from "@/lib/format";
 import { queryKeys, useAdminMutation } from "@/lib/query";
@@ -44,7 +45,7 @@ type Run = (vehicle: AdminVehicle) => Promise<SaveVehicleResult>;
 export function useVehicleActions(options: { onChange?: (result: SaveVehicleResult) => void; onDiscard?: (vehicle: AdminVehicle) => void } = {}) {
   const { can } = useSession();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const [blocked, setBlocked] = useState<{ vehicle: AdminVehicle; issues: PublicationIssue[] } | null>(null);
   const [reserving, setReserving] = useState<AdminVehicle | null>(null);
   const [selling, setSelling] = useState<AdminVehicle | null>(null);
@@ -183,7 +184,7 @@ export function useVehicleActions(options: { onChange?: (result: SaveVehicleResu
       try {
         const copy = await api.stock.duplicate(vehicle.id);
         notify.success("Copy created as a draft", "Photographs, registration and history are not copied.");
-        router.push(routes.vehicle(copy.id));
+        await leave(routes.vehicle(copy.id));
       } catch (error) {
         notify.error("The copy was not created", errorMessage(error));
       } finally {
