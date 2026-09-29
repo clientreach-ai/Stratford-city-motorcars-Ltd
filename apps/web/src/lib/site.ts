@@ -75,11 +75,12 @@ export function buildSite(business: BusinessDetails = DEFAULT_BUSINESS) {
     tagline: "Sports and luxury cars from a small family-owned business in Stratford, East London",
 
     /**
-     * Canonical origin. Override per environment with NEXT_PUBLIC_SITE_URL —
-     * the client currently trades on the .com; their old markup referenced a
-     * .co.uk that does not resolve.
+     * Canonical origin. Override per environment with NEXT_PUBLIC_SITE_URL.
+     * The site is launched on the .co.uk while the .com's DNS is still with the
+     * old site. An empty value falls back too: a blank setting would otherwise
+     * give relative canonicals, sitemap and robots URLs.
      */
-    url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.stratfordcitymotorcars.com").replace(/\/$/, ""),
+    url: (process.env.NEXT_PUBLIC_SITE_URL || "https://www.stratfordcitymotorcars.co.uk").replace(/\/$/, ""),
 
     phone: {
       display: business.phoneDisplay,
@@ -228,9 +229,12 @@ export function buildSite(business: BusinessDetails = DEFAULT_BUSINESS) {
 }
 
 /**
- * The confirmed facts, for metadata and anywhere a page cannot await storage.
- * Pages that show business details use `getSite()` instead, so the owner's
- * saved settings reach them.
+ * The confirmed facts, for what the admin cannot change (the site URL, the
+ * company, the compliance switches), the brand name in page titles, and the
+ * root error page, which has nothing else to read. The contact details the
+ * owner can edit — phone, WhatsApp, email, address, hours, parking — come from
+ * `getSite()` on the server or `useSite()` in the browser, so the saved
+ * settings reach them.
  */
 export const site = buildSite();
 

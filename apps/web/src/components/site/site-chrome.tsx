@@ -4,6 +4,7 @@ import { RevealObserver } from "@/components/ui/reveal";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
+import { SiteProvider } from "@/components/site/site-provider";
 
 /**
  * The public site's frame: skip link, header, main landmark, footer. Used by
@@ -22,13 +23,17 @@ export async function SiteChrome({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
 
-      <div className="flex min-h-dvh flex-col">
-        <SiteHeader site={site} />
-        <main id="main" className="flex-1">
-          <PageTransition>{children}</PageTransition>
-        </main>
-        <SiteFooter />
-      </div>
+      {/* Client components below (forms, the mobile action bar, the error
+          page) read the same details from here rather than the defaults. */}
+      <SiteProvider site={site}>
+        <div className="flex min-h-dvh flex-col">
+          <SiteHeader site={site} />
+          <main id="main" className="flex-1">
+            <PageTransition>{children}</PageTransition>
+          </main>
+          <SiteFooter />
+        </div>
+      </SiteProvider>
 
       <RevealObserver />
       <SmoothScroll />

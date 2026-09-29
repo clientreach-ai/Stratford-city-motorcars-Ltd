@@ -29,4 +29,4 @@ function create(): AdminApi {
 export const api: AdminApi = create();
 
 /** Where the public website lives, for "view on website" links and site-relative media. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.stratfordcitymotorcars.com").replace(/\/+$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.stratfordcitymotorcars.co.uk").replace(/\/+$/, "");

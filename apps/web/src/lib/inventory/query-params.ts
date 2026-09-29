@@ -60,14 +60,31 @@ export function parsePage(params: RawSearchParams): number {
   return Number.isInteger(raw) && raw > 1 ? raw : 1;
 }
 
+/** How many pages a list of this many cars fills. Never fewer than one. */
+export function countPages(resultCount: number): number {
+  return Math.max(1, Math.ceil(resultCount / PAGE_SIZE));
+}
+
 /** Counts the filters a customer has actually applied — sort is not a filter. */
 export function countActiveFilters(query: VehicleQuery): number {
   return (query.make?.length ?? 0) + (query.model?.length ?? 0);
 }
 
-/** True when the URL carries anything beyond the canonical stock page. */
-export function isNonCanonicalQuery(params: RawSearchParams): boolean {
-  return Object.values(params).some((value) => value !== undefined);
+/**
+ * Where search engines should file a stock URL. The full list and each later
+ * page of it (`?page=2`…) show different cars, so each is indexed under its own
+ * address. Anything else is kept out of the index: filters, sort, or a stale
+ * parameter from the old site point at /vehicles; a page number written some
+ * other way (`?page=1`, `?page=02`, a page past the end) points at the page it
+ * actually shows.
+ */
+export function stockCanonical(params: RawSearchParams, pageCount: number): { path: string; indexable: boolean } {
+  const keys = Object.keys(params).filter((key) => params[key] !== undefined);
+  if (keys.some((key) => key !== "page")) return { path: "/vehicles", indexable: false };
+
+  const page = Math.min(parsePage(params), pageCount);
+  if (page === 1) return { path: "/vehicles", indexable: keys.length === 0 };
+  return { path: `/vehicles?page=${page}`, indexable: params.page === String(page) };
 }
 
 /** Rebuilds a query string, dropping empty values so URLs stay clean. */
