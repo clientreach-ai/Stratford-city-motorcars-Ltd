@@ -106,7 +106,10 @@
   --destructive: var(--color-danger);
   --border: var(--color-ink-200);
   --border-strong: var(--color-ink-250);
-  --input: var(--color-ink-250);
+  /* Field and checkbox outlines must reach 3:1 against both the white field
+     and the ground around it (WCAG 1.4.11): ink-500 is 5.05:1 on white, 4.48:1
+     on bone. `--border-strong` stays light; it is decorative. */
+  --input: var(--color-ink-500);
   --ring: var(--color-ink-900);
 
   --radius: 2px;
