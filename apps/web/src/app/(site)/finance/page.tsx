@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Phone } from "lucide-react";
 
-import { FinanceForm } from "@/components/forms/finance-form";
+import { FinanceForm, FinanceFormForLinkedCar } from "@/components/forms/finance-form";
 import { FaqSection } from "@/components/site/faq-section";
 import { PageHero } from "@/components/site/page-hero";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { JsonLd } from "@/components/ui/json-ld";
 import { Container, Eyebrow, Section, SectionHeading } from "@/components/ui/section";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { financeProducts, financeTerms, paymentMethods } from "@/lib/content/services";
-import { resolveVehicleBySlug } from "@/lib/inventory/repository";
+import { getVehicleLinks } from "@/lib/inventory/repository";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { whatsappLinks } from "@/lib/whatsapp";
@@ -44,7 +44,9 @@ const crumbs = [
 /** "Do you offer finance?" is what this whole page answers, so it is dropped. */
 const financeFaqs = faqsByCategory("Finance").filter((faq) => faq.id !== "finance");
 
-export default function FinancePage(props: PageProps<"/finance">) {
+export default async function FinancePage() {
+  const cars = await getVehicleLinks();
+
   return (
     <>
       <JsonLd data={breadcrumbSchema(crumbs)} />
@@ -180,8 +182,10 @@ export default function FinancePage(props: PageProps<"/finance">) {
             </div>
 
             <div className="border border-[var(--border)] bg-[var(--background)] p-6 md:p-9">
+              {/* `?vehicle=` on a car's finance link names the car; the form
+                  reads it in the browser so this page stays static. */}
               <Suspense fallback={<FinanceForm />}>
-                <FinanceFormForLinkedCar searchParams={props.searchParams} />
+                <FinanceFormForLinkedCar cars={cars} />
               </Suspense>
             </div>
           </div>
@@ -200,21 +204,4 @@ export default function FinancePage(props: PageProps<"/finance">) {
       />
     </>
   );
-}
-
-/**
- * The car comes from `?vehicle=` on a car's finance link, looked up in stock:
- * a slug we do not hold prefills nothing, rather than a title made up from the
- * URL. Reading the query renders this part of the page per request, so it sits
- * inside <Suspense> with the empty form as its fallback.
- */
-async function FinanceFormForLinkedCar({
-  searchParams,
-}: {
-  searchParams: PageProps<"/finance">["searchParams"];
-}) {
-  const { vehicle } = await searchParams;
-  const car = await resolveVehicleBySlug(Array.isArray(vehicle) ? vehicle[0] : vehicle);
-  if (!car) return <FinanceForm />;
-  return <FinanceForm vehicleSlug={car.slug} vehicleName={`${car.year} ${car.title}`} />;
 }
