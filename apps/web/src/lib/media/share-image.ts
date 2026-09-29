@@ -46,7 +46,10 @@ async function readStoredFile(key: string): Promise<Buffer | null> {
   }
 
   const stored = await readFromBucket(key, null);
-  if (stored) return bytesOf(stored.body);
+  if (stored.kind === "file") return bytesOf(stored.body);
+  // The bucket saying "no such key" is final, as in the /media route: the API
+  // reads the same bucket. Only a fault is worth asking the API about.
+  if (stored.kind === "missing") return null;
 
   const origin = process.env.MEDIA_PROXY_ORIGIN?.trim().replace(/\/+$/, "");
   if (!origin || !/^https?:\/\//.test(origin)) return null;
