@@ -14,22 +14,44 @@ import { site } from "@/lib/site";
  *  Archivo    — everything functional: body copy, spec tables, forms. Tabular
  *               figures keep mileage and price columns aligned.
  *
- * All three are variable and self-hosted by next/font, so this costs three
- * files with no external requests and no layout shift.
+ * All three are variable and self-hosted by next/font, so there are no
+ * external requests and no layout shift.
+ *
+ * Only the faces most of the first screen is set in are preloaded: Newsreader
+ * upright and Archivo. Every preload is fetched ahead of the hero photograph
+ * (the LCP), so the Cinzel labels (10–11px) and the Newsreader italic (a few
+ * accent words) are left to load when the page first uses them, swapping in
+ * over their metric-matched fallbacks.
  */
 const cinzel = Cinzel({
   subsets: ["latin"],
   weight: ["400", "600"],
   variable: "--font-cinzel",
   display: "swap",
+  preload: false,
 });
 
 const newsreader = Newsreader({
   subsets: ["latin"],
   weight: ["300", "400", "500"],
-  style: ["normal", "italic"],
+  style: ["normal"],
   variable: "--font-newsreader",
   display: "swap",
+});
+
+/**
+ * The italic is its own instance only so it can skip the preload. Its
+ * @font-face rules share the "Newsreader" family name, so `italic` text set in
+ * `--font-newsreader` picks it up; the variable itself is never read, it is
+ * applied below just so the rules ship with every page.
+ */
+const newsreaderItalic = Newsreader({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  style: ["italic"],
+  variable: "--font-newsreader-italic",
+  display: "swap",
+  preload: false,
 });
 
 const archivo = Archivo({
@@ -84,7 +106,7 @@ export default function RootLayout({
       // Next 16 no longer overrides CSS smooth scrolling during navigation
       // unless asked, and route changes should land at the top instantly.
       data-scroll-behavior="smooth"
-      className={`${cinzel.variable} ${newsreader.variable} ${archivo.variable}`}
+      className={`${cinzel.variable} ${newsreader.variable} ${newsreaderItalic.variable} ${archivo.variable}`}
     >
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
