@@ -29,7 +29,7 @@ import { Field, FieldGrid, Select, TextArea, TextInput } from "@/components/ui/f
 import { DefinitionList, EmptyState, ErrorState, LoadingBlock, LoadingRows, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { DataTable, rowLinkClass, type Column } from "@/components/ui/table";
 import { Pagination, SearchField, SegmentedFilter, Toolbar } from "@/components/ui/toolbar";
-import { GuardedLink, useUnsavedChanges } from "@/components/ui/unsaved";
+import { GuardedLink, useLeaveGuard, useUnsavedChanges } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
 import { formatDateTime, formatRelative, plural } from "@/lib/format";
 import { queryKeys, useAdminMutation } from "@/lib/query";
@@ -216,7 +216,7 @@ export function CustomerProfile({ id }: { id: string }) {
 function Profile({ detail }: { detail: CustomerDetail }) {
   const { customer, enquiries, appointments, purchases } = detail;
   const { can } = useSession();
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const [editing, setEditing] = useState(false);
   const [erasing, setErasing] = useState(false);
 
@@ -342,7 +342,7 @@ function Profile({ detail }: { detail: CustomerDetail }) {
         </aside>
       </div>
 
-      {erasing ? <EraseDialog customer={customer} onClose={() => setErasing(false)} onErased={() => router.replace(routes.customers)} /> : null}
+      {erasing ? <EraseDialog customer={customer} onClose={() => setErasing(false)} onErased={() => void leave(routes.customers, { replace: true })} /> : null}
     </PageBody>
   );
 }

@@ -22,7 +22,6 @@ import {
   type ValuationStatus,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
   CalendarPlus,
@@ -44,7 +43,7 @@ import { Field, NumberInput, Select, TextArea, TextInput } from "@/components/ui
 import { DefinitionList, ErrorState, LoadingBlock, Notice, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { Photo } from "@/components/ui/photo";
 import { notify } from "@/components/ui/toast";
-import { GuardedLink, useUnsavedChanges } from "@/components/ui/unsaved";
+import { GuardedLink, useLeaveGuard, useUnsavedChanges } from "@/components/ui/unsaved";
 import { AppointmentSheet } from "@/components/viewings/appointment-sheet";
 import { api } from "@/lib/api";
 import { formatDateTime, formatRelative, formatShortDate, formatTime, formatWeekdayDate } from "@/lib/format";
@@ -82,7 +81,7 @@ export function EnquiryDetail({ id }: { id: string }) {
 function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activity: EnquiryActivity[]; appointments: Appointment[] }) {
   const { can } = useSession();
   const canEdit = can("enquiries.edit");
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
   const [closing, setClosing] = useState(false);
   const [arranging, setArranging] = useState(false);
@@ -314,7 +313,8 @@ function Detail({ enquiry, activity, appointments }: { enquiry: Enquiry; activit
           onClose={() => setDeleting(false)}
           onDeleted={async () => {
             setDeleting(false);
-            router.replace(routes.enquiries);
+            // Through the guard, so Back from the list does not find the deleted enquiry.
+            void leave(routes.enquiries, { replace: true });
           }}
         />
       ) : null}

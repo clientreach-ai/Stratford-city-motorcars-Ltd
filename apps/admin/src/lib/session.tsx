@@ -3,7 +3,7 @@
 import { can as roleCan, errorMessage, ValidationError, type Capability, type SessionUser } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Route } from "next";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,6 @@ export function useSessionQuery() {
  */
 export function SessionGate({ children }: { children: ReactNode }) {
   const client = useQueryClient();
-  const router = useRouter();
   const pathname = usePathname();
   const guard = useLeaveGuard();
   const { data: user, isPending, error, refetch } = useSessionQuery();
@@ -63,8 +62,8 @@ export function SessionGate({ children }: { children: ReactNode }) {
     // Search included, so a filtered list or an open tab comes back as it was.
     const here = pathname ? `${pathname}${window.location.search}` : "";
     const next = here && here !== "/dashboard" ? `?next=${encodeURIComponent(here)}` : "";
-    router.replace(`/sign-in${next}` as Route);
-  }, [pathname, router]);
+    void guard.leave(`/sign-in${next}` as Route, { replace: true });
+  }, [pathname, guard]);
 
   const setUnauthorisedHandler = useSessionStore((state) => state.setUnauthorisedHandler);
 
@@ -87,10 +86,12 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!(await guard.confirmLeave())) return;
+    // A failure here throws before anything is let go, so the page keeps its
+    // unsaved changes and their protection.
     await api.session.signOut();
     client.clear();
-    router.replace("/sign-in");
-  }, [client, guard, router]);
+    await guard.leave("/sign-in", { replace: true });
+  }, [client, guard]);
 
   const current = user ?? (keepPage || ended ? held : null);
 

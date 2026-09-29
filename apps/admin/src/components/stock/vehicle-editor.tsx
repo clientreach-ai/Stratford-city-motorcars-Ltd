@@ -25,7 +25,6 @@ import {
   type VehicleRecord,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDown,
@@ -56,7 +55,7 @@ import { ChoiceGroup, Field, FieldGrid, NumberInput, Select, TextArea, TextInput
 import { ActionMenu, type MenuAction } from "@/components/ui/menu";
 import { ErrorState, LoadingBlock, Notice, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { notify } from "@/components/ui/toast";
-import { useUnsavedChanges } from "@/components/ui/unsaved";
+import { useLeaveGuard, useUnsavedChanges } from "@/components/ui/unsaved";
 import { api, SITE_URL } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
@@ -171,7 +170,7 @@ export function VehicleEditor({ id }: { id: string }) {
 
 function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   const client = useQueryClient();
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const { can } = useSession();
   const canEdit = can("stock.edit");
 
@@ -197,7 +196,8 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   const actions = useVehicleActions({
     onChange: (result) => accept(result.vehicle),
     // The car is gone: leave the editor for the list, which has just refreshed.
-    onDiscard: () => router.replace(routes.stock),
+    // Through the guard, so Back from the list does not find the deleted car.
+    onDiscard: () => void leave(routes.stock, { replace: true }),
   });
 
   // A newer version fetched in the background (a change made elsewhere) is
