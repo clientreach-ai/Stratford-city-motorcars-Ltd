@@ -8,6 +8,7 @@ import {
   NotFoundError,
   PUBLIC_PRICE_RANGE,
   TRANSMISSIONS,
+  UnauthorisedError,
   ValidationError,
   errorMessage,
   formatDate,
@@ -24,7 +25,6 @@ import {
   type VehicleRecord,
 } from "@Stratford-city-motorcars-Ltd/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDown,
@@ -50,16 +50,17 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 
 import { routes } from "@/components/shell/routes";
 import { Tag, VehicleStatusBadge } from "@/components/ui/badge";
-import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { Button, IconButton } from "@/components/ui/button";
 import { ChoiceGroup, Field, FieldGrid, NumberInput, Select, TextArea, TextInput } from "@/components/ui/form";
 import { ActionMenu, type MenuAction } from "@/components/ui/menu";
 import { ErrorState, LoadingBlock, Notice, PageBody, PageHeader, Panel } from "@/components/ui/page";
 import { notify } from "@/components/ui/toast";
-import { useUnsavedChanges } from "@/components/ui/unsaved";
+import { useLeaveGuard, useUnsavedChanges } from "@/components/ui/unsaved";
 import { api, SITE_URL } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/lib/query";
 import { useSession } from "@/lib/session";
+import { notifyUnauthorised } from "@/stores/session";
 
 import { MediaManager } from "./media-manager";
 import { PublishingPanel, SECTIONS, type SectionId } from "./publishing-panel";
@@ -138,7 +139,7 @@ function errorAnchor(field: string, record: VehicleRecord): string | undefined {
 }
 
 export function VehicleEditor({ id }: { id: string }) {
-  const query = useQuery({ queryKey: queryKeys.vehicle(id), queryFn: () => api.stock.get(id) });
+  const query = useQuery({ queryKey: queryKeys.vehicle(id), queryFn: ({ signal }) => api.stock.get(id, { signal }) });
 
   // Only when there is nothing to show: a background refresh that fails — or a
   // car deleted from under the editor — must not throw away work in progress.
@@ -169,7 +170,7 @@ export function VehicleEditor({ id }: { id: string }) {
 
 function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   const client = useQueryClient();
-  const router = useRouter();
+  const { leave } = useLeaveGuard();
   const { can } = useSession();
   const canEdit = can("stock.edit");
 
@@ -195,13 +196,15 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   const actions = useVehicleActions({
     onChange: (result) => accept(result.vehicle),
     // The car is gone: leave the editor for the list, which has just refreshed.
-    onDiscard: () => router.replace(routes.stock),
+    // Through the guard, so Back from the list does not find the deleted car.
+    onDiscard: () => void leave(routes.stock, { replace: true }),
   });
 
   // A newer version fetched in the background (a change made elsewhere) is
   // taken up when there are no unsaved edits; otherwise the version check
   // on save reports the conflict.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- accept() also writes the query cache, which cannot happen during render
     if (!dirty && loaded.updatedAt > vehicle.updatedAt) accept(loaded);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to a newer server version
   }, [loaded.updatedAt]);
@@ -236,6 +239,9 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
     } catch (error) {
       if (error instanceof ConflictError) {
         setConflict(true);
+      } else if (error instanceof UnauthorisedError) {
+        // Asks for the password again and keeps this page, so the save can be repeated.
+        notifyUnauthorised();
       } else if (error instanceof ValidationError) {
         setFieldErrors(error.fields);
         const first = Object.keys(error.fields)[0];
@@ -256,11 +262,20 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
     if (current) await actions.publish(current);
   };
 
+  const [reloading, setReloading] = useState(false);
   const reload = async () => {
-    const latest = await client.fetchQuery({ queryKey: queryKeys.vehicle(vehicle.id), queryFn: () => api.stock.get(vehicle.id) });
-    accept(latest);
-    setConflict(false);
-    notify.info("Loaded the latest version", "Your unsaved changes were discarded.");
+    setReloading(true);
+    try {
+      // Always from the server: the cached copy is the very version that conflicted.
+      const latest = await client.fetchQuery({ queryKey: queryKeys.vehicle(vehicle.id), queryFn: ({ signal }) => api.stock.get(vehicle.id, { signal }), staleTime: 0 });
+      accept(latest);
+      setConflict(false);
+      notify.info("Loaded the latest version", "Your unsaved changes were discarded.");
+    } catch (error) {
+      notify.error("Their version could not be loaded", errorMessage(error));
+    } finally {
+      setReloading(false);
+    }
   };
 
   const name = vehicleName(draft);
@@ -325,7 +340,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
           className="mb-6"
           title="Someone else saved this car after you opened it"
           action={
-            <Button size="sm" onClick={() => void reload()}>
+            <Button size="sm" onClick={() => void reload()} busy={reloading}>
               Load their version
             </Button>
           }
@@ -395,7 +410,8 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                       { value: "price", label: "Cash price" },
                       { value: "poa", label: "Price on application" },
                     ]}
-                    className={cn("sm:max-w-md", !canEdit && "pointer-events-none opacity-60")}
+                    disabled={!canEdit}
+                    className="sm:max-w-md"
                   />
                 )}
               </Field>
@@ -513,7 +529,8 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
                     value={draft.hpiStatus}
                     onChange={(value: HpiStatus) => set("hpiStatus", value)}
                     options={HPI_STATUSES.map((value) => ({ value, label: value === "clear" ? "Clear" : value === "not-checked" ? "Not checked" : "Not known" }))}
-                    className={cn("sm:max-w-md", !canEdit && "pointer-events-none opacity-60")}
+                    disabled={!canEdit}
+                    className="sm:max-w-md"
                   />
                 )}
               </Field>
@@ -701,7 +718,7 @@ function TriState({
         { value: "no", label: "No" },
         { value: "unknown", label: "Not known" },
       ]}
-      className={cn(disabled && "pointer-events-none opacity-60")}
+      disabled={disabled}
     />
   );
 }

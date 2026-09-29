@@ -9,7 +9,9 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "lint": "eslint --max-warnings=0 ."
+  },
   "dependencies": {
     "@Stratford-city-motorcars-Ltd/db": "workspace:*",
     "@Stratford-city-motorcars-Ltd/env": "workspace:*",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@Stratford-city-motorcars-Ltd/config": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

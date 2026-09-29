@@ -77,7 +77,7 @@ export function StockList() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const { data, isPending, error, refetch, isFetching } = useQuery({ queryKey: queryKeys.stock, queryFn: () => api.stock.list() });
+  const { data, isPending, error, refetch, isFetching } = useQuery({ queryKey: queryKeys.stock, queryFn: ({ signal }) => api.stock.list({ signal }) });
   const actions = useVehicleActions();
 
   const statusParam = params.get("status") as StatusFilter | null;

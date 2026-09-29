@@ -20,7 +20,8 @@ import { notifyUnauthorised } from "@/stores/session";
  */
 
 /**
- * An expired session anywhere sends you to sign in. The handler itself lives
+ * An expired session anywhere sends you to sign in — or, with unsaved work on
+ * the page, asks you to sign in again where you are. The handler itself lives
  * in `stores/session.ts`; the gate registers it, this reads it.
  */
 function handleError(error: unknown) {

@@ -57,12 +57,12 @@ export function AppointmentSheet({
 }) {
   const { user, can } = useSession();
   const canEdit = can("appointments.edit");
-  const stock = useQuery({ queryKey: queryKeys.stock, queryFn: () => api.stock.list() });
-  const team = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
-  const settings = useQuery({ queryKey: queryKeys.settings, queryFn: () => api.settings.get() });
+  const stock = useQuery({ queryKey: queryKeys.stock, queryFn: ({ signal }) => api.stock.list({ signal }) });
+  const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
+  const settings = useQuery({ queryKey: queryKeys.settings, queryFn: ({ signal }) => api.settings.get({ signal }) });
   const customers = useQuery({
     queryKey: queryKeys.customers({ picker: true }),
-    queryFn: () => api.customers.list({ sort: "name", pageSize: 500 }),
+    queryFn: ({ signal }) => api.customers.list({ sort: "name", pageSize: 500 }, { signal }),
     select: (page) => page.items,
   });
 
@@ -118,6 +118,7 @@ export function AppointmentSheet({
 
   const hours = settings.data?.business.hours;
   const outsideHours = hours ? !isWithinOpeningHours(showroomClock(form.startsAt), hours) : false;
+  // eslint-disable-next-line react-hooks/purity -- deliberately re-read on every render, so the warning follows the clock
   const inPast = new Date(form.startsAt).getTime() < Date.now() - 30 * 60_000 && (form.status === "requested" || form.status === "confirmed");
 
   // Sold and archived cars are only offered if already chosen.
