@@ -15,6 +15,13 @@
       "when": 1789636762617,
       "tag": "0001_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790665622199,
+      "tag": "0002_deletion_log",
+      "breakpoints": true
     }
   ]
 }
