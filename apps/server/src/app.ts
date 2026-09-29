@@ -1,4 +1,4 @@
-import { auth } from "@Stratford-city-motorcars-Ltd/auth";
+import { MAX_PHOTO_BYTES } from "@Stratford-city-motorcars-Ltd/core/visibility";
 import { env } from "@Stratford-city-motorcars-Ltd/env/server";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -7,12 +7,11 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 
-import { errorBody, handleError, handleNotFound, ok } from "./lib/http";
+import { errorBody, handleError, handleNotFound, ok, redactPath } from "./lib/http";
 import { loadSession, sameOriginWrites } from "./middleware/auth";
 import { adminRoutes } from "./modules/admin";
 import { healthRoutes } from "./modules/health/routes";
 import { mediaRoutes } from "./modules/media/routes";
-import { MAX_PHOTO_BYTES } from "./modules/media/photos";
 import { publicVehicleRoutes } from "./modules/vehicles/public-routes";
 import type { AppEnv } from "./types";
 
@@ -21,17 +20,21 @@ import type { AppEnv } from "./types";
  *
  *   /health               uptime check
  *   /media/*              stored photographs (when the bucket has no public URL)
- *   /api/auth/*           Better Auth (used by /api/admin/session)
  *   /api/vehicles/*       public stock
  *   /api/admin/*          the admin API (docs/STRATFORD_ADMIN_CONTRACT.md)
  *
  * Error responses follow lib/http.ts.
+ *
+ * Better Auth's own endpoints (/api/auth/*) are deliberately not mounted: the
+ * admin uses none of them, and they would let an account bypass the admin's
+ * rules — change its name or password, or list its sessions — outside the
+ * team page. /api/admin/session calls `auth.api` in-process instead.
  */
 export function createApp() {
   const app = new Hono<AppEnv>();
 
   app.use(requestId());
-  app.use(logger());
+  app.use(logger((line) => console.log(redactPath(line))));
   app.use(secureHeaders({ crossOriginResourcePolicy: "cross-origin" }));
   app.use(
     "/api/*",
@@ -56,8 +59,6 @@ export function createApp() {
   app.use("/api/*", (c, next) =>
     c.req.method === "POST" && /^\/api\/admin\/vehicles\/[^/]+\/media$/.test(c.req.path) ? photoLimit(c, next) : tooLarge(c, next),
   );
-
-  app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
   app.use("/api/*", sameOriginWrites, loadSession);
 

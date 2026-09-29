@@ -53,8 +53,9 @@ export function VehicleSort() {
         }
         /* A fixed min-width pushed the results bar past a 320px viewport.
            Take the space that is actually available, and only pin a width
-           from sm upwards. */
-        className="h-11 min-w-0 flex-1 truncate text-sm sm:min-w-45 sm:flex-none"
+           from sm upwards. 16px on phones, like every other field, so iOS
+           does not zoom in when it opens. */
+        className="h-11 min-w-0 flex-1 truncate text-base sm:min-w-45 sm:flex-none sm:text-sm"
       >
         {SORT_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

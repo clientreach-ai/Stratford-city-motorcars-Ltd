@@ -6,12 +6,23 @@ import type { PublicVehicle } from "./inventory/types";
 
 const DEFAULT_OG = "/brand/og-default.jpg";
 
+/** The share image generated for each car, in the size link previews expect. */
+export const SHARE_IMAGE = { width: 1200, height: 630, type: "image/jpeg" } as const;
+
+/** A share image whose size is known, so previews can lay it out before it loads. */
+export interface ShareImage {
+  url: string;
+  width: number;
+  height: number;
+  type: string;
+}
+
 interface PageMetaInput {
   title: string;
   description: string;
   /** Route path beginning with a slash — drives the canonical URL. */
   path: string;
-  image?: string;
+  image?: ShareImage;
   /** Describes the share image; defaults to the business name. */
   imageAlt?: string;
   noIndex?: boolean;
@@ -27,7 +38,7 @@ export function pageMetadata({
   title,
   description,
   path,
-  image = DEFAULT_OG,
+  image,
   imageAlt = site.name,
   noIndex = false,
   type = "website",
@@ -45,13 +56,17 @@ export function pageMetadata({
       siteName: site.name,
       locale: "en_GB",
       type,
-      images: [{ url: image, alt: imageAlt, ...(image === DEFAULT_OG ? { width: 1200, height: 630 } : {}) }],
+      images: [
+        image
+          ? { url: image.url, alt: imageAlt, width: image.width, height: image.height, type: image.type }
+          : { url: DEFAULT_OG, alt: imageAlt, width: 1200, height: 630 },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} | ${site.name}`,
       description,
-      images: [image],
+      images: [image?.url ?? DEFAULT_OG],
     },
     robots: noIndex ? { index: false, follow: true } : undefined,
   };
@@ -240,6 +255,18 @@ export function itemListSchema(vehicles: PublicVehicle[]) {
       url: `${site.url}/vehicles/${vehicle.slug}`,
       name: `${vehicle.year} ${vehicle.title}`,
     })),
+  };
+}
+
+/**
+ * A car's share image (app/(site)/vehicles/[slug]/share.jpg). The cover
+ * photograph's id is part of the address, so a new cover gets a new URL and
+ * each URL's image can be cached for good.
+ */
+export function vehicleShareImage(vehicle: PublicVehicle): ShareImage {
+  return {
+    url: `/vehicles/${vehicle.slug}/share.jpg?v=${encodeURIComponent(vehicle.cover.id)}`,
+    ...SHARE_IMAGE,
   };
 }
 

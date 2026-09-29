@@ -72,7 +72,7 @@ services:
       # to the service's own onrender.com URL instead, or search engines are
       # told to index a host that does not resolve yet.
       - key: NEXT_PUBLIC_SITE_URL
-        value: https://www.stratfordcitymotorcars.com
+        value: https://www.stratfordcitymotorcars.co.uk
 
       # Must match the API's REVALIDATE_SECRET exactly: the API signs cache
       # refresh calls with it and the website checks them. Copy the value from
@@ -129,4 +129,4 @@ services:
       # site-relative paths. Keep this in step with the website's own
       # NEXT_PUBLIC_SITE_URL.
       - key: NEXT_PUBLIC_SITE_URL
-        value: https://www.stratfordcitymotorcars.com
+        value: https://www.stratfordcitymotorcars.co.uk

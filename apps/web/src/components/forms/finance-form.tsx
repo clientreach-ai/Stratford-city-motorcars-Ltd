@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Checkbox, Field, fieldProps, Honeypot, Input } from "@/components/ui/field";
 import { submitFinanceEnquiry } from "@/lib/forms/actions";
 import type { FormState } from "@/lib/forms/options";
+import { matchVehicleSlug, type VehicleLink } from "@/lib/inventory/vehicle-link";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
 import { useFormFeedbackFocus } from "./use-form-feedback";
@@ -122,4 +124,15 @@ export function FinanceForm({
       <DirectContactNote />
     </form>
   );
+}
+
+/**
+ * The form for a car's finance link. `?vehicle=` is read in the browser, so
+ * the page itself stays static, and looked up in the stock the page was built
+ * with: a slug we do not hold prefills nothing, rather than a title made up
+ * from the URL. Render inside <Suspense> with the empty form as its fallback.
+ */
+export function FinanceFormForLinkedCar({ cars }: { cars: VehicleLink[] }) {
+  const car = matchVehicleSlug(cars, useSearchParams().get("vehicle"));
+  return <FinanceForm vehicleSlug={car?.slug} vehicleName={car?.name} />;
 }

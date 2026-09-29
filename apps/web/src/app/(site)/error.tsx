@@ -5,15 +5,23 @@ import { Phone, RotateCcw } from "lucide-react";
 
 import { Button, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { useSite } from "@/components/site/site-provider";
 import { Container, Eyebrow } from "@/components/ui/section";
-import { site } from "@/lib/site";
+import { whatsappChat } from "@/lib/whatsapp";
 
 /**
  * Shown when a public page fails to render (for example the database is
  * briefly unreachable). A buyer should never meet a blank screen: offer a retry
  * and the two ways the business actually takes enquiries.
+ *
+ * This boundary sits inside the site layout, so the saved details reach it
+ * through `SiteProvider` even when the page below failed. `getSite()` never
+ * throws — an unreadable setting falls back to the confirmed facts — so the
+ * layout itself does not fail over them.
  */
 export default function SiteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const site = useSite();
+
   useEffect(() => {
     // The digest links this to the server log without exposing details here.
     console.error("Page failed to render", error.digest ?? "");
@@ -37,7 +45,7 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
             {site.phone.display}
           </ExternalButtonLink>
           <ExternalButtonLink
-            href={`https://wa.me/${site.whatsapp.number}`}
+            href={whatsappChat(site)}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"

@@ -106,7 +106,10 @@
   --destructive: var(--color-danger);
   --border: var(--color-ink-200);
   --border-strong: var(--color-ink-250);
-  --input: var(--color-ink-250);
+  /* Field and checkbox outlines must reach 3:1 against both the white field
+     and the ground around it (WCAG 1.4.11): ink-500 is 5.05:1 on white, 4.48:1
+     on bone. `--border-strong` stays light; it is decorative. */
+  --input: var(--color-ink-500);
   --ring: var(--color-ink-900);
 
   --radius: 2px;
@@ -385,23 +388,27 @@
 }
 
 @layer components {
-  /* The one measurement every page agrees on. */
+  /* The one measurement every page agrees on. The page runs edge to edge
+     (`viewportFit: "cover"`), so on a landscape iPhone the gutter grows to
+     keep content clear of the notch; everywhere else the insets are zero. */
   .container-page {
+    --gutter: 1.25rem;
     width: 100%;
     margin-inline: auto;
     max-width: 88rem;
-    padding-inline: 1.25rem;
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
   }
 
   @media (min-width: 768px) {
     .container-page {
-      padding-inline: 2.5rem;
+      --gutter: 2.5rem;
     }
   }
 
   @media (min-width: 1280px) {
     .container-page {
-      padding-inline: 4rem;
+      --gutter: 4rem;
     }
   }
 
@@ -425,6 +432,16 @@
   .hairline {
     height: 1px;
     background-color: var(--border);
+  }
+
+  /* The vehicle page's enquiry bar is fixed to the foot of the screen on
+     phones, so the footer runs on beneath it instead of losing its last line
+     behind it. A spacer inside <main> only ever cleared what came before the
+     footer. 4.5rem is the bar's height with a little to spare. */
+  @media (width < 64rem) {
+    body:has([data-mobile-action-bar]) footer {
+      padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    }
   }
 }
 

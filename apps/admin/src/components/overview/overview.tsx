@@ -25,7 +25,7 @@ import { useSession } from "@/lib/session";
  */
 export function Overview() {
   const { can } = useSession();
-  const { data, isPending, error, refetch } = useQuery({ queryKey: queryKeys.overview, queryFn: () => api.overview.get() });
+  const { data, isPending, error, refetch } = useQuery({ queryKey: queryKeys.overview, queryFn: ({ signal }) => api.overview.get({ signal }) });
 
   return (
     <PageBody>

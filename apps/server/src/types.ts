@@ -12,11 +12,3 @@ export interface AppEnv {
     session: AuthSession | null;
   };
 }
-
-/** Context after `requireStaff` has run: a signed-in user is guaranteed. */
-export interface StaffEnv {
-  Variables: AppEnv["Variables"] & {
-    user: AuthUser;
-    session: AuthSession;
-  };
-}

@@ -45,7 +45,16 @@ export function ExternalTextLink({ className, children, arrow = false, ...props 
   return (
     <a className={cn(base, className)} {...props}>
       {children}
+      {props.target === "_blank" ? <NewTabHint /> : null}
       {arrow ? <Arrow /> : null}
     </a>
   );
+}
+
+/**
+ * Said, not shown, after a link that opens a new tab (WhatsApp, maps, the 360°
+ * tour), so nobody is surprised to find the site still open behind it.
+ */
+export function NewTabHint() {
+  return <span className="sr-only"> (opens in a new tab)</span>;
 }

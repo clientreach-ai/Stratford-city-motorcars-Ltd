@@ -19,7 +19,7 @@ import {
 } from "@Stratford-city-motorcars-Ltd/core/vehicle";
 import { isValidSlug, listingRecommendations, publicationIssues } from "@Stratford-city-motorcars-Ltd/core/visibility";
 import { eq, tables } from "@Stratford-city-motorcars-Ltd/db";
-import { vehicleRecordSchema } from "@Stratford-city-motorcars-Ltd/domain/inventory/schema";
+import { MAX_VEHICLE_MEDIA, vehicleRecordSchema } from "@Stratford-city-motorcars-Ltd/domain/inventory/schema";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -119,6 +119,15 @@ async function update(
   });
   stockChanged();
   return result(saved, member);
+}
+
+function guardMediaLimit(record: VehicleRecord): void {
+  if (record.media.length >= MAX_VEHICLE_MEDIA) {
+    throw new ValidationError(
+      { file: `A car can hold at most ${MAX_VEHICLE_MEDIA} photographs and videos. Remove some before adding more.` },
+      "This car has no room for another photograph.",
+    );
+  }
 }
 
 function emptyDraft(id: string, slug: string, now: string): StoredVehicle {
@@ -574,15 +583,18 @@ export const stockRoutes = new Hono<AdminEnv>()
     const { id } = c.req.valid("param");
     const body = (await c.req.json().catch(() => ({}))) as { expectedUpdatedAt?: string };
 
-    const stored = await findVehicle(id);
-    if (!stored) throw notFound();
-    checkVersion(stored.record.updatedAt, body.expectedUpdatedAt);
+    // Under the row lock, so a photograph attached while this runs is either
+    // seen (and its files removed) or refused because the car has gone.
+    const files = await withLockedVehicle(id, async (stored, tx) => {
+      if (!stored) throw notFound();
+      checkVersion(stored.record.updatedAt, body.expectedUpdatedAt);
 
-    const reason = discardRefusal(stored.record, await loadLeads());
-    if (reason) throw new ValidationError({}, reason);
+      const reason = discardRefusal(stored.record, await loadLeads(tx));
+      if (reason) throw new ValidationError({}, reason);
 
-    const files = storedFiles(stored.record.media);
-    await db.delete(tables.vehicle).where(eq(tables.vehicle.id, id));
+      await tx.delete(tables.vehicle).where(eq(tables.vehicle.id, id));
+      return storedFiles(stored.record.media);
+    });
     stockChanged();
     await removeStoredMedia(files);
     return c.body(null, 204);
@@ -596,6 +608,9 @@ export const stockRoutes = new Hono<AdminEnv>()
     const target = await findVehicle(id);
     if (!target) throw notFound();
     guardStatus("edit", target.record);
+    // Checked before the photograph is decoded and stored, not left to the
+    // record schema once the work is done.
+    guardMediaLimit(target.record);
 
     const form = await c.req.parseBody();
     const file = form.file;
@@ -632,6 +647,8 @@ export const stockRoutes = new Hono<AdminEnv>()
     try {
       await withLockedVehicle(id, async (stored, tx) => {
         if (!stored) throw notFound();
+        // Again under the lock: another upload may have filled the last place.
+        guardMediaLimit(stored.record);
         stored.record.media = [...stored.record.media, image];
         await writeVehicle(stored, tx);
       });

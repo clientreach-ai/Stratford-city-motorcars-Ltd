@@ -78,9 +78,9 @@ export function Viewings() {
 
   const { data, isPending, error, refetch } = useQuery({
     queryKey: queryKeys.appointments(ALL),
-    queryFn: () => api.appointments.list(ALL),
+    queryFn: ({ signal }) => api.appointments.list(ALL, { signal }),
   });
-  const team = useQuery({ queryKey: queryKeys.team, queryFn: () => api.team.list() });
+  const team = useQuery({ queryKey: queryKeys.team, queryFn: ({ signal }) => api.team.list({ signal }) });
   const members = new Map((team.data ?? []).map((member) => [member.id, member]));
 
   const overdue = (data ?? []).filter((item) => needsOutcome(item)).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
