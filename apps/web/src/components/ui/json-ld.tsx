@@ -12,7 +12,6 @@ export function JsonLd({ data }: { data: object | object[] }) {
   return (
     <script
       type="application/ld+json"
-      // eslint-disable-next-line react/no-danger -- serialised, escaped, first-party data
       dangerouslySetInnerHTML={{ __html: json }}
     />
   );
