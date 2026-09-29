@@ -3,6 +3,7 @@
 import {
   PHOTO_CATEGORIES,
   REQUIRED_DEALER_PHOTOS,
+  UnauthorisedError,
   ValidationError,
   errorMessage,
   type PhotoCategory,
@@ -33,7 +34,9 @@ import { Button, IconButton, Spinner } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
 import { Field, Select, TextInput } from "@/components/ui/form";
 import { Photo } from "@/components/ui/photo";
+import { useUnsavedChanges } from "@/components/ui/unsaved";
 import { api } from "@/lib/api";
+import { notifyUnauthorised } from "@/stores/session";
 
 const CATEGORY_LABEL: Record<PhotoCategory, string> = {
   exterior: "Exterior",
@@ -81,6 +84,8 @@ export function MediaManager({
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
+  // A photograph still on its way is lost if the page is left, like an unsaved edit.
+  useUnsavedChanges(uploads.some((item) => !item.error));
 
   const images = media.filter((item): item is VehicleImage => item.kind === "image");
   const dealer = images.filter((image) => image.provenance === "dealer");
@@ -105,6 +110,7 @@ export function MediaManager({
         onUploaded(image);
         setUploads((current) => current.filter((item) => item.key !== key));
       } catch (caught) {
+        if (caught instanceof UnauthorisedError) notifyUnauthorised();
         const message = caught instanceof ValidationError && caught.fields.file ? caught.fields.file : errorMessage(caught, "The upload failed.");
         setUploads((current) => current.map((item) => (item.key === key ? { ...item, error: message } : item)));
       }
