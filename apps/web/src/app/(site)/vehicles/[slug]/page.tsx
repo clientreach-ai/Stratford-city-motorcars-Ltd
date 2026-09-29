@@ -343,12 +343,9 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
         </Section>
       ) : null}
 
+      {/* The footer makes room for the bar itself; see `data-mobile-action-bar`. */}
       {!isSold ? (
-        <>
-          <MobileActionBar whatsappHref={enquiryWhatsApp} price={formatVehiclePrice(vehicle)} />
-          {/* Clears the sticky bar so it never covers the footer's last line. */}
-          <div aria-hidden className="h-20 lg:hidden" />
-        </>
+        <MobileActionBar whatsappHref={enquiryWhatsApp} price={formatVehiclePrice(vehicle)} />
       ) : null}
     </>
   );
