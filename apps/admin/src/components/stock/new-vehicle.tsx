@@ -108,7 +108,8 @@ export function NewVehicle() {
     }
     const startedAt = recall();
     if (startedAt === null) {
-      create();
+      // As create(), without clearing an error and a notice that can't be showing yet.
+      void follow(startDraft());
       return;
     }
     // Reloaded while a draft was being created: ask, rather than quietly
