@@ -80,6 +80,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   const keepPage = Boolean(held) && !user && !isPending && (ended || guard.isDirty());
   useEffect(() => {
     if (isPending || error || user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to the background session check and the unsaved-work guard (a ref outside React state), so it can't be worked out during render; the prompt must also stay once shown
     if (keepPage) setEnded(true);
     else toSignIn();
   }, [isPending, error, user, keepPage, toSignIn]);

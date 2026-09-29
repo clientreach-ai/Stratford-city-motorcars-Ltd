@@ -57,6 +57,7 @@ export function VehicleEnquiryForm({
   const selectKey = useSubmissionKey(state);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- today's date comes from the visitor's clock after hydration, so the server-rendered form never disagrees with it
     setMinDate(londonToday());
     const fromHash = () => {
       if (window.location.hash === BOOK_VIEWING_HASH) setRequestType("viewing");
