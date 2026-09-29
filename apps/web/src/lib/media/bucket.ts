@@ -92,10 +92,15 @@ export async function readFromBucket(key: string, range: string | null): Promise
   const store = bucket();
   if (!store || !isValidMediaKey(key)) return { kind: "unavailable" };
   const objectKey = `${OBJECT_PREFIX}${key}`;
+  // The time limit covers the wait for the bucket to answer, not the download:
+  // the SDK ties the signal to the whole response, so a signal still live
+  // would cut a slow visitor's video off mid-stream.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), READ_TIMEOUT_MS);
   try {
-    const object = await store.s3.send(new GetObjectCommand({ Bucket: store.bucket, Key: objectKey, Range: range ?? undefined }), {
-      abortSignal: AbortSignal.timeout(READ_TIMEOUT_MS),
-    });
+    const object = await store.s3
+      .send(new GetObjectCommand({ Bucket: store.bucket, Key: objectKey, Range: range ?? undefined }), { abortSignal: controller.signal })
+      .finally(() => clearTimeout(timer));
     if (!object.Body) return { kind: "unavailable" };
     const headers: Record<string, string> = {};
     if (object.ContentLength !== undefined) headers["Content-Length"] = String(object.ContentLength);
@@ -105,7 +110,9 @@ export async function readFromBucket(key: string, range: string | null): Promise
     return { kind: "file", body: object.Body.transformToWebStream(), status: object.ContentRange ? 206 : 200, headers };
   } catch (error) {
     const name = (error as { name?: unknown } | null)?.name;
-    if (name === "NoSuchKey" || httpStatus(error) === 404) return { kind: "missing" };
+    // Only the bucket saying "no such key" means the file isn't there. Any other
+    // 404 (NoSuchBucket: a wrong bucket name) is a fault, and the API is asked.
+    if (name === "NoSuchKey") return { kind: "missing" };
     if (name === "InvalidRange" || httpStatus(error) === 416) return { kind: "unsatisfiable", size: await objectSize(store, objectKey) };
     logOnce("bucket read failed", error);
     return { kind: "unavailable" };

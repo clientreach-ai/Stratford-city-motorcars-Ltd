@@ -104,24 +104,35 @@ const CONTENT_TYPES: Record<string, string> = {
   webm: "video/webm",
 };
 
-function parseRange(header: string | null, size: number): { start: number; end: number } | "invalid" | null {
+/**
+ * The one form of `Range` this route honours: a single `bytes=start-end`,
+ * `bytes=start-` or `bytes=-suffix`. Anything else (several ranges, a
+ * malformed or reversed one) is null, and the whole file is served, as RFC
+ * 9110 §14.2 allows.
+ */
+function rangeForm(header: string | null): { start: number | null; end: number | null } | null {
   if (!header) return null;
   const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
-  if (!match) return "invalid";
+  if (!match) return null;
   const [, rawStart, rawEnd] = match;
-  if (rawStart === "" && rawEnd === "") return "invalid";
-  let start: number;
-  let end: number;
-  if (rawStart === "") {
-    const suffix = Number(rawEnd);
-    start = Math.max(size - suffix, 0);
-    end = size - 1;
-  } else {
-    start = Number(rawStart);
-    end = rawEnd === "" ? size - 1 : Math.min(Number(rawEnd), size - 1);
-  }
-  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) return "invalid";
+  if (rawStart === "" && rawEnd === "") return null;
+  const start = rawStart === "" ? null : Number(rawStart);
+  const end = rawEnd === "" ? null : Number(rawEnd);
+  if ((start !== null && !Number.isSafeInteger(start)) || (end !== null && !Number.isSafeInteger(end))) return null;
+  if (start !== null && end !== null && start > end) return null;
   return { start, end };
+}
+
+/** A honoured range against a known size: the bytes to send, or unsatisfiable when it starts past the end (416). */
+function parseRange(header: string | null, size: number): { start: number; end: number } | "unsatisfiable" | null {
+  const form = rangeForm(header);
+  if (!form) return null;
+  if (form.start === null) {
+    if (form.end === 0) return "unsatisfiable";
+    return { start: Math.max(size - form.end!, 0), end: size - 1 };
+  }
+  if (form.start >= size) return "unsatisfiable";
+  return { start: form.start, end: form.end === null ? size - 1 : Math.min(form.end, size - 1) };
 }
 
 /** Not Content-Type: that always comes from the key's extension, whatever the source stored. */
@@ -142,29 +153,40 @@ function passThrough(key: string, body: ReadableStream<Uint8Array>, cache: boole
 }
 
 /** Streams a stored photo from the API server, or 404s when there is no API. */
-async function proxyToApi(request: Request, key: string, contentType: string, cache: boolean): Promise<Response> {
+async function proxyToApi(key: string, range: string | null, contentType: string, cache: boolean): Promise<Response> {
   const origin = process.env.MEDIA_PROXY_ORIGIN?.trim().replace(/\/+$/, "");
   if (!origin || !/^https?:\/\//.test(origin) || !isValidMediaKey(key)) return notFound(UNCERTAIN);
 
-  const range = request.headers.get("range");
   const attempt = () =>
     fetch(`${origin}/media/${key}`, {
       headers: range ? { range } : undefined,
       cache: "no-store",
       signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
     }).catch(() => null);
+  // A body that won't be sent on is closed, so its connection is freed now rather than whenever it is collected.
+  const discard = (response: Response | null) => void response?.body?.cancel().catch(() => undefined);
+
   let upstream = await attempt();
   // A 404 is an answer; a timeout or a 5xx from a waking server is worth one retry.
-  if (!upstream || upstream.status >= 500) upstream = await attempt();
+  if (!upstream || upstream.status >= 500) {
+    discard(upstream);
+    upstream = await attempt();
+  }
   if (upstream?.status === 404) {
-    rememberMiss(key);
-    return notFound(MISSING);
+    // Not remembered, and not cached: the API also answers 404 when it failed
+    // to read the bucket, so this doesn't prove the file isn't there.
+    discard(upstream);
+    return notFound(UNCERTAIN);
   }
   if (upstream?.status === 416) {
+    discard(upstream);
     const size = /^bytes \*\/(\d+)$/.exec(upstream.headers.get("content-range") ?? "")?.[1];
     return rangeNotSatisfiable(size ? Number(size) : null);
   }
-  if (!upstream || !(upstream.ok || upstream.status === 206)) return notFound(UNCERTAIN);
+  if (!upstream || !(upstream.ok || upstream.status === 206)) {
+    discard(upstream);
+    return notFound(UNCERTAIN);
+  }
 
   const headers = new Headers({ ...(upstream.status === 200 ? COMPLETE : PARTIAL), "X-Content-Type-Options": "nosniff" });
   for (const name of PROXIED_HEADERS) {
@@ -191,7 +213,7 @@ async function serveFromDisk(request: Request, path: string | null, contentType:
   };
 
   const range = parseRange(request.headers.get("range"), head.size);
-  if (range === "invalid") return rangeNotSatisfiable(head.size);
+  if (range === "unsatisfiable") return rangeNotSatisfiable(head.size);
 
   const file = await openFileAt(path, range ?? undefined);
   if (!file) return null;
@@ -222,11 +244,11 @@ export async function GET(request: Request, context: { params: Promise<{ path: s
   if (local) return local;
   if (recentlyMissing(key)) return notFound(MISSING);
 
-  const range = request.headers.get("range");
-  // Checked here because the bucket would reject a malformed range with an
-  // error indistinguishable from any other failure. The size is not known
-  // yet, so only the form is checked: any file is smaller than this.
-  if (range && parseRange(range, Number.MAX_SAFE_INTEGER) === "invalid") return rangeNotSatisfiable(null);
+  // Only a single, well-formed range is passed on; anything else is ignored and
+  // the whole file served. That also keeps a malformed header away from the
+  // bucket, which would reject it like any other failure.
+  const requested = request.headers.get("range");
+  const range = requested && rangeForm(requested) ? requested.trim() : null;
 
   const cache = !range && CACHEABLE.has(extension);
   const stored = await readFromBucket(key, range);
@@ -250,6 +272,6 @@ export async function GET(request: Request, context: { params: Promise<{ path: s
       rememberMiss(key);
       return notFound(MISSING);
     case "unavailable":
-      return proxyToApi(request, key, contentType, cache);
+      return proxyToApi(key, range, contentType, cache);
   }
 }
