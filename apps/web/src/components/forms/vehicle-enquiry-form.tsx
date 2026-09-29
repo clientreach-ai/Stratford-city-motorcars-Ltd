@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState } from "react";
 import { Checkbox, Field, fieldProps, Honeypot, Input, Select, Textarea } from "@/components/ui/field";
 import { submitVehicleEnquiry } from "@/lib/forms/actions";
 import { PREFERRED_TIMES, REQUEST_TYPES, type FormState, type RequestType } from "@/lib/forms/options";
+import { londonToday } from "@/lib/forms/showroom-time";
 import { DirectContactNote, SuccessPanel, UnavailablePanel } from "./form-feedback";
 import { SubmitButton } from "./submit-button";
 import { useFormFeedbackFocus, useSubmissionKey } from "./use-form-feedback";
@@ -56,7 +57,7 @@ export function VehicleEnquiryForm({
   const selectKey = useSubmissionKey(state);
 
   useEffect(() => {
-    setMinDate(new Date().toISOString().slice(0, 10));
+    setMinDate(londonToday());
     const fromHash = () => {
       if (window.location.hash === BOOK_VIEWING_HASH) setRequestType("viewing");
     };

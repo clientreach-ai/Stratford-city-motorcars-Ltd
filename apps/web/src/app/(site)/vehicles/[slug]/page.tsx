@@ -24,9 +24,10 @@ import { formatMileage, formatPrice, formatVehiclePrice } from "@/lib/format";
 import { getRelatedVehicles, getVehicleBySlug, getVehicleSlugs, resolvePreviousSlug } from "@/lib/inventory/repository";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { reservationOffer } from "@/lib/reservations";
-import { breadcrumbSchema, pageMetadata, vehicleMetaDescription, vehicleSchema } from "@/lib/seo";
-import { site } from "@/lib/site";
-import { whatsappForVehicle, whatsappLinks } from "@/lib/whatsapp";
+import { breadcrumbSchema, pageMetadata, vehicleMetaDescription, vehicleSchema, vehicleShareImage } from "@/lib/seo";
+import { getSite } from "@/lib/settings";
+import type { Site } from "@/lib/site";
+import { whatsappForVehicle, whatsappLinksFor } from "@/lib/whatsapp";
 
 /** Prerender every public vehicle, sold ones included — their pages stay up. */
 export async function generateStaticParams() {
@@ -59,7 +60,7 @@ export async function generateMetadata(props: PageProps<"/vehicles/[slug]">): Pr
       (vehicle.isSold ? `${name} — Sold` : `${name} — ${formatVehiclePrice(vehicle)}`),
     description: vehicle.seoDescription ?? vehicleMetaDescription(vehicle),
     path: `/vehicles/${vehicle.slug}`,
-    image: vehicle.cover.src,
+    image: vehicleShareImage(vehicle),
     imageAlt: vehicle.cover.alt,
   });
 }
@@ -73,7 +74,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
     notFound();
   }
 
-  const related = await getRelatedVehicles(slug, 3);
+  const [related, site] = await Promise.all([getRelatedVehicles(slug, 3), getSite()]);
   const name = `${vehicle.year} ${vehicle.title}`;
 
   const crumbs = [
@@ -82,7 +83,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
     { name, path: `/vehicles/${vehicle.slug}` },
   ];
 
-  const enquiryWhatsApp = whatsappForVehicle(vehicle);
+  const enquiryWhatsApp = whatsappForVehicle(site, vehicle);
   const { isSold } = vehicle;
 
   return (
@@ -153,7 +154,7 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
           */}
           <div className="grid gap-12 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-x-16">
             <div className="lg:sticky lg:top-28 lg:col-start-2 lg:row-start-1 lg:self-start">
-              <PricePanel vehicle={vehicle} enquiryWhatsApp={enquiryWhatsApp} />
+              <PricePanel vehicle={vehicle} site={site} enquiryWhatsApp={enquiryWhatsApp} />
 
               <div className="mt-4 border border-[var(--border)] p-6 md:p-7">
                 <h2 className="font-roman text-[0.625rem] uppercase tracking-[0.2em] text-[var(--accent-text)]">
@@ -334,7 +335,9 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
                 <VehicleCard
                   key={item.id}
                   vehicle={item}
-                  sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
+                  // Three across from lg, stopping at 416px once the container
+                  // reaches its 88rem cap.
+                  sizes="(min-width: 1408px) 416px, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 92vw"
                   className="reveal"
                 />
               ))}
@@ -354,7 +357,15 @@ export default async function VehiclePage(props: PageProps<"/vehicles/[slug]">) 
   );
 }
 
-function PricePanel({ vehicle, enquiryWhatsApp }: { vehicle: PublicVehicle; enquiryWhatsApp: string }) {
+function PricePanel({
+  vehicle,
+  site,
+  enquiryWhatsApp,
+}: {
+  vehicle: PublicVehicle;
+  site: Site;
+  enquiryWhatsApp: string;
+}) {
   const finance = financeExampleFor(vehicle);
   const statusStatement = financeStatusStatement();
   const reservation = reservationOffer(vehicle);
@@ -429,7 +440,7 @@ function PricePanel({ vehicle, enquiryWhatsApp }: { vehicle: PublicVehicle; enqu
               See cars for sale
             </ButtonLink>
             <ExternalButtonLink
-              href={whatsappLinks.sourcing}
+              href={whatsappLinksFor(site).sourcing}
               target="_blank"
               rel="noopener noreferrer"
               variant="outline"

@@ -3,8 +3,8 @@ import { Check, Phone } from "lucide-react";
 import { ButtonLink, ExternalButtonLink } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { Eyebrow } from "@/components/ui/section";
-import { site } from "@/lib/site";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 
 /**
  * What a car's own page gives a buyer. Written against what the vehicle page
@@ -26,7 +26,7 @@ const listingIncludes = [
  * car online until it has been properly photographed, and holds more stock than
  * it lists, so an empty grid is a reason to get in touch rather than a dead end.
  */
-export function StockEmptyState({
+export async function StockEmptyState({
   headingLevel = "h2",
   showBrowse = false,
 }: {
@@ -35,6 +35,8 @@ export function StockEmptyState({
   showBrowse?: boolean;
 }) {
   const Heading = headingLevel;
+  const site = await getSite();
+
   return (
     <div className="grid border border-[var(--border)] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
       <div className="p-7 md:p-10 lg:p-12">
@@ -55,7 +57,7 @@ export function StockEmptyState({
 
         <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
           <ExternalButtonLink
-            href={whatsappLinks.sourcing}
+            href={whatsappLinksFor(site).sourcing}
             target="_blank"
             rel="noopener noreferrer"
             variant="whatsapp"

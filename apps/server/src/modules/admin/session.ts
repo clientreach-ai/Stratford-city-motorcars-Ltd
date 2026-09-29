@@ -67,7 +67,13 @@ export const sessionRoutes = new Hono<AppEnv>()
     }
 
     const [member] = await db.select().from(tables.user).where(eq(tables.user.email, email)).limit(1);
-    if (!member || member.status !== "active") throw new ValidationError({}, WRONG_CREDENTIALS);
+    if (!member || member.status !== "active") {
+      // Hashed anyway, as Better Auth does for an unknown address, so this
+      // refusal takes as long as a wrong password and the response time
+      // cannot reveal which addresses have an active account.
+      await (await auth.$context).password.hash(password);
+      throw new ValidationError({}, WRONG_CREDENTIALS);
+    }
 
     const response = await auth.api.signInEmail({
       body: { email, password, rememberMe: true },

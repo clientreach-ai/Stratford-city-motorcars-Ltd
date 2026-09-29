@@ -177,8 +177,9 @@ register in the migration audit.
 14. Trading-history wording (trading since 2019 vs incorporated 2024).
 15. Instagram and TikTok handles, if they should be linked.
 16. Contact form enquiry types.
-17. Canonical domain (`www.stratfordcitymotorcars.com`) and who holds the
-    registrar/DNS login.
+17. Canonical domain: the site launches on `www.stratfordcitymotorcars.co.uk`
+    while the `.com`'s DNS still points at the old site. Once it is fixed,
+    decide which is canonical and permanently redirect the other.
 18. That one dealer exterior plus one dealer interior photograph is the right
     minimum to publish (the 20+ target is advisory).
 19. The £20,000–£1,000,000 public price range, and how to treat a genuine car
