@@ -228,9 +228,12 @@ export function buildSite(business: BusinessDetails = DEFAULT_BUSINESS) {
 }
 
 /**
- * The confirmed facts, for metadata and anywhere a page cannot await storage.
- * Pages that show business details use `getSite()` instead, so the owner's
- * saved settings reach them.
+ * The confirmed facts, for what the admin cannot change (the site URL, the
+ * company, the compliance switches), the brand name in page titles, and the
+ * root error page, which has nothing else to read. The contact details the
+ * owner can edit — phone, WhatsApp, email, address, hours, parking — come from
+ * `getSite()` on the server or `useSite()` in the browser, so the saved
+ * settings reach them.
  */
 export const site = buildSite();
 

@@ -12,7 +12,8 @@ import { DEFAULT_BUSINESS, buildSite, mapLinksFor, type Site } from "./site";
  *
  * The admin writes them to the `setting` table; the website reads them here and
  * rebuilds `site` from them, so a change to the phone number, address or
- * opening hours reaches the header, footer, contact page and structured data.
+ * opening hours reaches every page, link and piece of structured data. Client
+ * components read the same object through `SiteProvider`.
  * Anything not stored — and everything when there is no database — falls back
  * to the confirmed facts in `site.ts`.
  *
