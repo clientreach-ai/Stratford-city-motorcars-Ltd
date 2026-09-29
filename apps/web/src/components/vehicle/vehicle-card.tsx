@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 import { formatMileageShort, formatVehiclePrice } from "@/lib/format";
+import { getSite } from "@/lib/settings";
 import { whatsappForVehicle } from "@/lib/whatsapp";
 import type { PublicVehicle } from "@/lib/inventory/types";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -20,7 +21,7 @@ import { CardPhoto } from "@/components/vehicle/card-photo";
  * underlines itself and the arrow tile fills — three quiet signals that the
  * whole card is live, none of which moves the layout.
  */
-export function VehicleCard({
+export async function VehicleCard({
   vehicle,
   priority = false,
   sizes = "(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 92vw",
@@ -33,6 +34,7 @@ export function VehicleCard({
   sizes?: string;
   className?: string;
 }) {
+  const site = await getSite();
   const { cover, isSold } = vehicle;
   // The second look on hover: the next exterior shot, else the interior.
   const alternate =
@@ -65,7 +67,10 @@ export function VehicleCard({
         <h3 className="mt-2.5 font-display text-xl leading-tight md:text-[1.375rem]">
           <Link
             href={`/vehicles/${vehicle.slug}`}
-            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+            // The link's own outline would hug the title; the ring goes round
+            // the whole tile instead, matching what the link covers. The overlay
+            // needs its own `outline-solid`, as it inherits `outline-none`'s style.
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-solid focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-[var(--ring)]"
           >
             <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-[var(--ease-out-expo)] group-hover:bg-[length:100%_1px]">
               {vehicle.title}
@@ -99,7 +104,7 @@ export function VehicleCard({
             <div className="flex items-center gap-1.5">
               {!isSold ? (
                 <a
-                  href={whatsappForVehicle(vehicle)}
+                  href={whatsappForVehicle(site, vehicle)}
                   target="_blank"
                   rel="noopener noreferrer"
                   // Above the stretched link so it stays independently clickable.

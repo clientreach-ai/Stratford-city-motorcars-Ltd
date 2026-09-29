@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { MessageSquare, Phone } from "lucide-react";
 
 import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
+import { useSite } from "@/components/site/site-provider";
 import { WhatsAppIcon } from "@/components/ui/icons";
-import { site } from "@/lib/site";
 
 /**
  * Sticky enquiry bar for phones.
@@ -26,6 +26,7 @@ export function MobileActionBar({
   formId?: string;
 }) {
   const [visible, setVisible] = useState(false);
+  const site = useSite();
 
   useEffect(() => {
     const form = document.getElementById(formId);

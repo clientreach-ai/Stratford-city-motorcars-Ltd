@@ -12,10 +12,10 @@ export const env = createEnv({
      * and needs nothing else; `api` calls NEXT_PUBLIC_ADMIN_API_URL.
      */
     NEXT_PUBLIC_ADMIN_DATA: z.enum(["mock", "api"]).default("mock"),
-    /** The admin API origin, e.g. https://api.stratfordcitymotorcars.com. Required for `api`. */
+    /** The admin API origin, e.g. https://api.stratfordcitymotorcars.co.uk. Required for `api`. */
     NEXT_PUBLIC_ADMIN_API_URL: z.url().optional(),
     /** The public website, for "view on website" links and site-relative photographs. */
-    NEXT_PUBLIC_SITE_URL: z.url().default("https://www.stratfordcitymotorcars.com"),
+    NEXT_PUBLIC_SITE_URL: z.url().default("https://www.stratfordcitymotorcars.co.uk"),
   },
   runtimeEnv: {
     NEXT_PUBLIC_ADMIN_DATA: process.env.NEXT_PUBLIC_ADMIN_DATA,

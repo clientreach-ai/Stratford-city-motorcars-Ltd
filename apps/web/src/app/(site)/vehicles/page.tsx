@@ -19,41 +19,42 @@ import { ActiveFilterChips, VehicleSort } from "@/components/vehicle/vehicle-sor
 import {
   PAGE_SIZE,
   countActiveFilters,
+  countPages,
   describeQuery,
-  isNonCanonicalQuery,
   parsePage,
   parseSearchParams,
+  stockCanonical,
   toPageSearchString,
 } from "@/lib/inventory/query-params";
 import { faqsByCategory } from "@/lib/content/faqs";
 import { searchVehicles } from "@/lib/inventory/repository";
 import type { VehicleQuery } from "@/lib/inventory/types";
-import { whatsappLinks } from "@/lib/whatsapp";
+import { getSite } from "@/lib/settings";
+import type { Site } from "@/lib/site";
+import { whatsappLinksFor } from "@/lib/whatsapp";
 import { breadcrumbSchema, itemListSchema, pageMetadata } from "@/lib/seo";
 
 /**
  * Filtered views share one canonical. Every combination of make, price and body
  * type would otherwise look like a separate near-duplicate page to a crawler,
  * and with stock this size none of them carries enough distinct content to
- * deserve its own listing.
+ * deserve its own listing. Later pages of the full list are different: they are
+ * how a crawler reaches the cars on them, so each is indexed as itself.
  */
 export async function generateMetadata(
   props: PageProps<"/vehicles">,
 ): Promise<Metadata> {
   const searchParams = await props.searchParams;
-  // Any query string — filters, sort, or a stale parameter from the old site —
-  // is a variation of the stock page: kept out of the index, canonical /vehicles.
-  const filtered = isNonCanonicalQuery(searchParams);
+  const { results } = await searchVehicles(parseSearchParams(searchParams));
+  const canonical = stockCanonical(searchParams, countPages(results.length));
 
-  return {
-    ...pageMetadata({
-      title: "Sports & Luxury Cars for Sale in East London",
-      description:
-        "Sports and luxury cars for sale in East London from a small family-owned business in Stratford. Every car photographed inside and out. Finance explained, part exchange welcome, nationwide delivery.",
-      path: "/vehicles",
-    }),
-    ...(filtered ? { robots: { index: false, follow: true } } : {}),
-  };
+  return pageMetadata({
+    title: "Sports & Luxury Cars for Sale in East London",
+    description:
+      "Sports and luxury cars for sale in East London from a small family-owned business in Stratford. Every car photographed inside and out. Finance explained, part exchange welcome, nationwide delivery.",
+    path: canonical.path,
+    noIndex: !canonical.indexable,
+  });
 }
 
 const crumbs = [
@@ -64,13 +65,13 @@ const crumbs = [
 export default async function VehiclesPage(props: PageProps<"/vehicles">) {
   const searchParams = await props.searchParams;
   const query = parseSearchParams(searchParams);
-  const { results, total, facets } = await searchVehicles(query);
+  const [{ results, total, facets }, site] = await Promise.all([searchVehicles(query), getSite()]);
 
   const activeCount = countActiveFilters(query);
   const summary = describeQuery(query, facets);
   // Stock is listed a page at a time. A page beyond the last one — a stale link
   // or a hand-edited URL — lands on the last page rather than on nothing.
-  const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const pageCount = countPages(results.length);
   const page = Math.min(parsePage(searchParams), pageCount);
   const onThisPage = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   // With no published stock there is nothing to filter or sort: the rail, the
@@ -162,13 +163,15 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
                           vehicle={vehicle}
                           // Only the first card can be the LCP element on a phone.
                           priority={index === 0}
-                          sizes="(min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
+                          // Three across beside the 17rem filter rail from xl,
+                          // stopping at 304px once the container reaches its cap.
+                          sizes="(min-width: 1408px) 304px, (min-width: 1280px) 24vw, (min-width: 1024px) 32vw, (min-width: 640px) 46vw, 92vw"
                           className="reveal"
                         />
                       ))}
                     </div>
                   ) : hasStock ? (
-                    <NoMatches />
+                    <NoMatches site={site} />
                   ) : (
                     <StockEmptyState />
                   )}
@@ -226,7 +229,7 @@ export default async function VehiclesPage(props: PageProps<"/vehicles">) {
           pages that answer them properly, rather than as a wall of text under
           the cars. */}
       <FaqSection
-        faqs={faqsByCategory("Buying").slice(0, 4)}
+        faqs={faqsByCategory(site, "Buying").slice(0, 4)}
         eyebrow="Buying from us"
         title="Questions about buying"
         lede="Anything else, just ask — by phone, WhatsApp or the enquiry form on each car's page."
@@ -344,7 +347,7 @@ function Pagination({
 }
 
 /** Filters that match nothing, while stock exists: point back at a person. */
-function NoMatches() {
+function NoMatches({ site }: { site: Site }) {
   return (
     <div className="mt-6 border border-[var(--border)] px-6 py-16 text-center md:py-20">
       <p className="font-roman text-[0.625rem] uppercase tracking-[0.22em] text-[var(--rule)]">
@@ -361,7 +364,7 @@ function NoMatches() {
         <TextLink href="/vehicles" arrow={false}>
           Clear filters
         </TextLink>
-        <ExternalTextLink href={whatsappLinks.sourcing} target="_blank" rel="noopener noreferrer">
+        <ExternalTextLink href={whatsappLinksFor(site).sourcing} target="_blank" rel="noopener noreferrer">
           Tell us what you want on WhatsApp
         </ExternalTextLink>
       </div>

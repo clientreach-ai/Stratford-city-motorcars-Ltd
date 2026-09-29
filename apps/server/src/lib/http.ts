@@ -52,6 +52,15 @@ export function errorBody(code: string, message: string, extras: Record<string, 
   return { error: message, code, ...extras };
 }
 
+/**
+ * A request path fit for the logs. An invitation link's token is the only
+ * thing needed to take over the invited account until it is accepted, so it is
+ * masked wherever a path is written out.
+ */
+export function redactPath(text: string): string {
+  return text.replace(/(\/api\/admin\/invitations\/)[^/\s?#]+/g, "$1[token]");
+}
+
 export function handleError(error: Error, c: Context) {
   if (error instanceof HttpError) {
     return c.json(errorBody(error.code, error.message, error.extras), error.status);
@@ -79,7 +88,7 @@ export function handleError(error: Error, c: Context) {
   // Summarised, never the error itself: a failed query's message carries its
   // parameters, which are often a customer's personal details.
   console.error(
-    `[api] ${c.req.method} ${c.req.path} failed (request ${c.get("requestId") as string | undefined}): ${describeError(error)}\n${errorFrames(error)}`,
+    `[api] ${c.req.method} ${redactPath(c.req.path)} failed (request ${c.get("requestId") as string | undefined}): ${describeError(error)}\n${errorFrames(error)}`,
   );
   return c.json(errorBody("internal_error", "Something went wrong on the server. Nothing was changed."), 500);
 }
