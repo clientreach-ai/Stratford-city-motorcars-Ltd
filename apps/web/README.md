@@ -45,7 +45,7 @@ All documented in [`.env.example`](./.env.example). Never commit real values.
 
 | Variable | Needed for |
 | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | Canonicals, Open Graph, sitemap, robots (defaults to `https://www.stratfordcitymotorcars.com`; must be a URL) |
+| `NEXT_PUBLIC_SITE_URL` | Canonicals, Open Graph, sitemap, robots (defaults to `https://www.stratfordcitymotorcars.co.uk`; must be a URL) |
 | `DATABASE_URL` | Inventory from Postgres and stored enquiries. Same value at build and runtime. Required in production |
 | `REVALIDATE_SECRET` | Instant cache refresh from the API (24+ characters, same as the API's) |
 | `LEADS_WEBHOOK_URL`, `LEADS_WEBHOOK_TOKEN` | Enquiry notifications to any JSON webhook (Zapier, Make, n8n, a CRM) |

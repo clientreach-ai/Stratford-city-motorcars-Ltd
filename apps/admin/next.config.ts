@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
  * never framed, and it only loads photographs from itself, the website and
  * (later) the media CDN.
  */
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.stratfordcitymotorcars.com").replace(/\/$/, "");
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.stratfordcitymotorcars.co.uk").replace(/\/$/, "");
 const mediaPublicBase = process.env.MEDIA_PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
 
 /**
