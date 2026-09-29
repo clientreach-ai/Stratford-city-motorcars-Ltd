@@ -3,11 +3,9 @@ import "server-only";
 import { getDb, recordWebsiteEnquiry } from "@Stratford-city-motorcars-Ltd/db";
 
 import type { LeadInput } from "@/lib/forms/schemas";
+import { londonDateTime } from "@/lib/forms/showroom-time";
 import { getVehicleBySlug } from "@/lib/inventory/repository";
 import { databaseUrl } from "@/lib/inventory/store";
-
-/** The showroom's time zone: the customer picks a local date and time. */
-const TIME_ZONE = "Europe/London";
 
 /**
  * Enquiries kept in the database, with their first activity entry and the
@@ -60,7 +58,7 @@ async function requestedAppointment(lead: LeadInput, vehicleSlug: string | null)
   if (!lead.preferredDate) return undefined;
 
   const hour = BAND_START_HOUR[lead.preferredTime ?? ""] ?? 12;
-  const startsAt = londonDate(lead.preferredDate, `${String(hour).padStart(2, "0")}:00`);
+  const startsAt = londonDateTime(lead.preferredDate, `${String(hour).padStart(2, "0")}:00`);
   if (!startsAt) return undefined;
 
   const vehicle = vehicleSlug ? await getVehicleBySlug(vehicleSlug) : null;
@@ -70,15 +68,4 @@ async function requestedAppointment(lead: LeadInput, vehicleSlug: string | null)
     durationMinutes: lead.requestType === "test-drive" ? 60 : 45,
     vehicleId: vehicle?.id ?? null,
   } as const;
-}
-
-/** A "YYYY-MM-DD" date and "HH:MM" showroom time as a real instant. */
-function londonDate(date: string, time: string): Date | null {
-  const naive = new Date(`${date}T${time}:00Z`);
-  if (Number.isNaN(naive.getTime())) return null;
-  // How far ahead of UTC London is that day: +1 hour in summer, 0 in winter.
-  // Both sides are read back in the server's own zone, so it cancels out.
-  const asUtc = new Date(naive.toLocaleString("en-US", { timeZone: "UTC" }));
-  const asLondon = new Date(naive.toLocaleString("en-US", { timeZone: TIME_ZONE }));
-  return new Date(naive.getTime() - (asLondon.getTime() - asUtc.getTime()));
 }

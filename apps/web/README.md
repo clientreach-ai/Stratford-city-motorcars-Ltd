@@ -22,6 +22,9 @@ pnpm dev:web                              # http://localhost:3001
 
 With no `DATABASE_URL`, the site runs from the read-only seed records in
 `src/lib/inventory/data.ts`. They are all drafts, so the site shows no cars.
+That is allowed only in development and Vercel previews: a production build
+(`VERCEL_ENV=production`, or `NODE_ENV=production` off Vercel, which includes a
+local `next build`) fails without it.
 
 ### With a database
 
@@ -42,9 +45,9 @@ All documented in [`.env.example`](./.env.example). Never commit real values.
 
 | Variable | Needed for |
 | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | Canonicals, Open Graph, sitemap, robots (defaults to `https://www.stratfordcitymotorcars.com`) |
-| `NEXT_PUBLIC_SERVER_URL` | Optional; only for the template `apps/server` API |
-| `DATABASE_URL` | Inventory from Postgres and stored enquiries. Same value at build and runtime |
+| `NEXT_PUBLIC_SITE_URL` | Canonicals, Open Graph, sitemap, robots (defaults to `https://www.stratfordcitymotorcars.co.uk`; must be a URL) |
+| `DATABASE_URL` | Inventory from Postgres and stored enquiries. Same value at build and runtime. Required in production |
+| `REVALIDATE_SECRET` | Instant cache refresh from the API (24+ characters, same as the API's) |
 | `LEADS_WEBHOOK_URL`, `LEADS_WEBHOOK_TOKEN` | Enquiry notifications to any JSON webhook (Zapier, Make, n8n, a CRM) |
 | `MEDIA_ROOT` | Where vehicle photos and videos are read from (default `apps/web/.data/media`; must be persistent) |
 | `MEDIA_PUBLIC_BASE_URL` | Reserved for object storage behind a CDN |
