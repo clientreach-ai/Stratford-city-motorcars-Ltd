@@ -118,6 +118,7 @@ export function AppointmentSheet({
 
   const hours = settings.data?.business.hours;
   const outsideHours = hours ? !isWithinOpeningHours(showroomClock(form.startsAt), hours) : false;
+  // eslint-disable-next-line react-hooks/purity -- deliberately re-read on every render, so the warning follows the clock
   const inPast = new Date(form.startsAt).getTime() < Date.now() - 30 * 60_000 && (form.status === "requested" || form.status === "confirmed");
 
   // Sold and archived cars are only offered if already chosen.

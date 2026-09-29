@@ -50,7 +50,7 @@ import { cn } from "@Stratford-city-motorcars-Ltd/ui/lib/utils";
 
 import { routes } from "@/components/shell/routes";
 import { Tag, VehicleStatusBadge } from "@/components/ui/badge";
-import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { Button, IconButton } from "@/components/ui/button";
 import { ChoiceGroup, Field, FieldGrid, NumberInput, Select, TextArea, TextInput } from "@/components/ui/form";
 import { ActionMenu, type MenuAction } from "@/components/ui/menu";
 import { ErrorState, LoadingBlock, Notice, PageBody, PageHeader, Panel } from "@/components/ui/page";
@@ -202,6 +202,7 @@ function Editor({ vehicle: loaded }: { vehicle: AdminVehicle }) {
   // taken up when there are no unsaved edits; otherwise the version check
   // on save reports the conflict.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- accept() also writes the query cache, which cannot happen during render
     if (!dirty && loaded.updatedAt > vehicle.updatedAt) accept(loaded);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to a newer server version
   }, [loaded.updatedAt]);
